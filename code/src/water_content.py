@@ -118,7 +118,7 @@ class WaterContent(object):
     def mid(self):
         """
         Auxiliary water content function.
-        :return: the mid-point value between the nim/max values.
+        :return: the mid-point value between the min/max values.
         """
         return 0.5*(self.maximum + self.minimum)
     # _end_def_
