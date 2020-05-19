@@ -31,12 +31,12 @@ class WaterContent(object):
         """
 
         # Do not allow these values to be bellow zero, or above one.
-        self.minimum = self.inRange(minimum)
-        self.maximum = self.inRange(maximum)
-        self.residual = self.inRange(residual)
+        self.minimum = WaterContent.inRange(minimum)
+        self.maximum = WaterContent.inRange(maximum)
+        self.residual = WaterContent.inRange(residual)
 
         # Check if the input values are in the right order.
-        if not self.checkValues():
+        if not self._checkValues():
             raise ValueError(" The volumetric water content input values are incorrect.")
         # _end_if_
 
@@ -58,7 +58,7 @@ class WaterContent(object):
         return np_max(np_min(1.0, new_value), 0.0)
     # _end_def_
 
-    def checkValues(self):
+    def _checkValues(self):
         """
         Check whether the water content values satisfy specific conditions.
         :return: True if the condition is satisfied.
@@ -80,7 +80,7 @@ class WaterContent(object):
         self.minimum = new_value
 
         # Check if the change has broken the correct order of the values.
-        if not self.checkValues():
+        if not self._checkValues():
             # Set back the old value.
             self.minimum = tmp_value
 
@@ -104,7 +104,7 @@ class WaterContent(object):
         self.maximum = new_value
 
         # Check if the change has broken the correct order of the values.
-        if not self.checkValues():
+        if not self._checkValues():
             # Set back the old value.
             self.maximum = tmp_value
 
@@ -137,7 +137,7 @@ class WaterContent(object):
         self.residual = new_value
 
         # Check if the change has broken the correct order of the values.
-        if not self.checkValues():
+        if not self._checkValues():
             # Set back the old value.
             self.residual = tmp_value
 
