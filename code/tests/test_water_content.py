@@ -54,11 +54,11 @@ class TestWaterContent(unittest.TestCase):
     def test_res(self):
         """
         Test the 'res' accessor of the object. Residual water content
-        must be less than the minimum value (but larger then zero).
+        must be less than the minimum value (but larger than zero).
         :return: None
         """
         with self.assertRaises(ValueError):
-            # Setting the residual value '+10%' higher then
+            # Setting the residual value '+10%' higher than
             # the minimum should raise an error (ValueError).
             self.test_obj.res = 1.1*self.test_obj.min
         # _end_with_
