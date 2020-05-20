@@ -74,7 +74,7 @@ class WaterContent(object):
     @min.setter
     def min(self, new_value):
         # Keep the old minimum value.
-        tmp_value = self.minimum
+        old_value = self.minimum
 
         # Make the change.
         self.minimum = new_value
@@ -82,11 +82,11 @@ class WaterContent(object):
         # Check if the change has broken the correct order of the values.
         if not self._checkValues():
             # Set back the old value.
-            self.minimum = tmp_value
+            self.minimum = old_value
 
-            # Show a message.
-            print(" The new minimum: {}, is not consistent with"
-                  " the rest of the values.".format(new_value))
+            # Raise an error with a message.
+            raise ValueError(" The new minimum: {}, is not consistent with"
+                             " the rest of the values.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -98,7 +98,7 @@ class WaterContent(object):
     @max.setter
     def max(self, new_value):
         # Keep the old minimum value.
-        tmp_value = self.maximum
+        old_value = self.maximum
 
         # Make the change.
         self.maximum = new_value
@@ -106,11 +106,11 @@ class WaterContent(object):
         # Check if the change has broken the correct order of the values.
         if not self._checkValues():
             # Set back the old value.
-            self.maximum = tmp_value
+            self.maximum = old_value
 
-            # Show a message.
-            print(" The new maximum: {}, is not consistent with"
-                  " the rest of the values.".format(new_value))
+            # Raise an error with a message.
+            raise ValueError(" The new maximum: {}, is not consistent with"
+                             " the rest of the values.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -131,7 +131,7 @@ class WaterContent(object):
     @res.setter
     def res(self, new_value):
         # Keep the old minimum value.
-        tmp_value = self.residual
+        old_value = self.residual
 
         # Make the change.
         self.residual = new_value
@@ -139,11 +139,11 @@ class WaterContent(object):
         # Check if the change has broken the correct order of the values.
         if not self._checkValues():
             # Set back the old value.
-            self.residual = tmp_value
+            self.residual = old_value
 
-            # Show a message.
-            print(" The new residual: {}, is not consistent with"
-                  " the rest of the values.".format(new_value))
+            # Raise an error with a message.
+            raise ValueError(" The new residual: {}, is not consistent with"
+                             " the rest of the values.".format(new_value))
         # _end_if_
     # _end_def_
 
