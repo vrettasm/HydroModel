@@ -82,6 +82,7 @@ class TestWaterContent(unittest.TestCase):
         :return: None
         """
         with self.assertRaises(ValueError):
+            # Minimum should always be less than maximum.
             _ = WaterContent(minimum=0.2, maximum=0.1)
         # _end_with_
     # _end_def_
