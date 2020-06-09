@@ -71,6 +71,17 @@ class TestHydraulicConductivity(unittest.TestCase):
         # _end_with_
     # _end_def_
 
+    def test_wrong_init_params(self):
+        """
+        Test an object initialization with wrong input parameters.
+        :return: None
+        """
+        with self.assertRaises(ValueError):
+            # Saturated values should be strictly positive.
+            _ = HydraulicConductivity(sat_soil=0.0)
+        # _end_with_
+    # _end_def_
+
 
 if __name__ == '__main__':
     unittest.main()
