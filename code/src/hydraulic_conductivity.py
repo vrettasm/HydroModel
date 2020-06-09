@@ -32,21 +32,21 @@ class HydraulicConductivity(object):
             self.sat_soil = sat_soil
         else:
             raise ValueError(" The saturated value of the Soil layer:"
-                             " {}, should be positive.".format(sat_soil))
+                             " {}, should be strictly positive.".format(sat_soil))
         # _end_if_
 
         if sat_saprolite > 0.0:
             self.sat_saprolite = sat_saprolite
         else:
             raise ValueError(" The saturated value of the Saprolite layer:"
-                             " {}, should be positive.".format(sat_saprolite))
+                             " {}, should be strictly positive.".format(sat_saprolite))
         # _end_if_
 
         if sat_fresh_bedrock > 0.0:
             self.sat_fresh_bedrock = sat_fresh_bedrock
         else:
             raise ValueError(" The saturated value of the Fresh Bedrock layer:"
-                             " {}, should be positive.".format(sat_fresh_bedrock))
+                             " {}, should be strictly positive.".format(sat_fresh_bedrock))
         # _end_if_
 
         # Noise related variables.
@@ -68,7 +68,7 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Soil layer:"
-                             " {}, should be positive.".format(new_value))
+                             " {}, should be strictly positive.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -86,7 +86,7 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Saprolite layer:"
-                             " {}, should be positive.".format(new_value))
+                             " {}, should be strictly positive.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -104,7 +104,7 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Fresh Bedrock layer:"
-                             " {}, should be positive.".format(new_value))
+                             " {}, should be strictly positive.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -116,13 +116,13 @@ class HydraulicConductivity(object):
     @sigmaAmp.setter
     def sigmaAmp(self, new_value):
         # Accept only positive values.
-        if new_value > 0.0:
+        if new_value >= 0.0:
             # Make the change.
             self.sigma_noise = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The sigma amplitude value of the noise mode:"
-                             " {}, should be positive.".format(new_value))
+                             " {}, should be non-negative.".format(new_value))
         # _end_if_
     # _end_def_
 
@@ -134,13 +134,13 @@ class HydraulicConductivity(object):
     @lambdaExp.setter
     def lambdaExp(self, new_value):
         # Accept only positive values.
-        if new_value > 0.0:
+        if new_value >= 0.0:
             # Make the change.
             self.lambda_exponent = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The lambda exponent value of the noise mode:"
-                             " {}, should be positive.".format(new_value))
+                             " {}, should be non-negative.".format(new_value))
         # _end_if_
     # _end_def_
 
