@@ -1,8 +1,8 @@
 import numpy as np
 
-class vanGenuchtenMualem(object):
+class vanGenuchten(object):
     """
-        This class represents a hydrologic model based on the vanGenuchten-Mualem model.
+        This class represents a hydrologic model based on the vanGenuchten model.
 
         -- REFERENCE --
         M. Th. van Genuchten, 1980: A closed-form equation for predicting the hydraulic conductivity
