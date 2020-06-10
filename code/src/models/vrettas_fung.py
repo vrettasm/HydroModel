@@ -14,6 +14,17 @@ class VrettasFung(object):
         -- REFERENCE(S) --
 
     """
-    pass
+
+    def __init__(self):
+        pass
+    # _end_def_
+
+    def __call__(self):
+        pass
+    # _end_def_
+
+    def pressure_head(self):
+        pass
+    # _end_def_
 
 # _end_class_
