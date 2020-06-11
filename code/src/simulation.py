@@ -17,7 +17,7 @@ class Simulation(object):
         self.mData = {}
     # _end_def_
 
-    def setupModelParameters(self, params=None, data=None):
+    def setupModel(self, params=None, data=None):
         pass
     # _end_def_
 
