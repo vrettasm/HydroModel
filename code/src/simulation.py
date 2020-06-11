@@ -10,7 +10,7 @@ class Simulation(object):
         Default constructor of the Simulation class.
 
         :param name: (string) is optional but it will be used for constructing
-        meaningful a filename to save te results at the end of the simulation.
+        a meaningful filename to save the results at the end of the simulation.
         """
         # Check if a simulation name has been given.
         if not name:
