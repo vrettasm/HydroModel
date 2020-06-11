@@ -1,4 +1,8 @@
-# Import packages here.
+# Import locally the json package.
+import json
+import numpy as np
+from pathlib import Path
+from code.src.soil_properties import SoilProperties
 
 class Simulation(object):
     """
@@ -38,7 +42,50 @@ class Simulation(object):
 
         :return: None.
         """
-        pass
+
+        # Copy the well number that is being simulated.
+        self.mData["Well_No"] = params["Well_No"]
+
+        # Open the file in "Read Only" mode.
+        with open(Path(params["Site_Information"]), 'r') as site_file:
+            # Load the site information.
+            site_info = json.load(site_file)
+        # _end_with_
+
+        # Check if the Well number exists in the site info file.
+        if not str(self.mData["Well_No"]) in site_info["Well"]:
+            raise ValueError(" The selected well does not exist in the site information file.")
+        # _end_if_
+
+        # Extract the Well information.
+        well = site_info["Well"][str(self.mData["Well_No"])]
+
+        # Make sure the well is not defined as fully saturated.
+        if well["sat_depth"] >= well["max_depth"]:
+            raise ValueError(" The well seems fully saturated.")
+        # _end_if_
+
+        # Spatial domain parameters for the underground layers [L:cm]:
+        layers = (well["soil"], well["saprolite"], well["weathered"], well["max_depth"])
+
+        # Add the underground layers to the structure.
+        self.mData["layers"] = layers
+
+        # The spacing here defines a Uniform-Grid [L:cm].
+        dz = 5.0
+
+        # Create a vertical grid (increasing downwards)
+        z_grid = np.arange(well["soil"], well["max_depth"]+dz, dz)
+
+        # Length of the vertical grid.
+        dim_z = z_grid.size
+
+        # Create a soil properties object.
+        soil = SoilProperties(params["Soil_Properties"]["n"],
+                              params["Soil_Properties"]["a0"],
+                              params["Soil_Properties"]["psi_sat"],
+                              params["Soil_Properties"]["epsilon"])
+        return dim_z
     # _end_def_
 
     def run(self):
