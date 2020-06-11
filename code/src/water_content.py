@@ -6,7 +6,7 @@ class WaterContent(object):
     This class represents Water content, or soil moisture content.
     """
 
-    __slots__ = ["minimum", "maximum", "residual", "wilting", "field_cap"]
+    __slots__ = ("minimum", "maximum", "residual", "wilting", "field_cap")
 
     # Default constructor.
     def __init__(self, minimum: float = 0.08, maximum: float = 0.30, residual: float = 0.05,
