@@ -17,7 +17,7 @@ __author__ = "Michail Vrettas, PhD"
 __email__ = "michail.vrettas@gmail.com"
 
 
-def validateInputParametersFile(filename: Path):
+def validateInputParametersFile(filename):
     """
     Validates an input (json) file to check if it contains
     the required keys. It does not validate the values of
@@ -67,6 +67,15 @@ def validateInputParametersFile(filename: Path):
 
 # Main function.
 def main(params_file=None, data_file=None):
+    """
+    As the name suggests, this is the main function that is called to initiate the simulation run.
+
+    :param params_file: (string) that points to the input file for the parameters.
+
+    :param data_file: (string) that points to the input file for the water data.
+
+    :return: None
+    """
     # Initialize everything to None.
     params, water_data = None, None
 
