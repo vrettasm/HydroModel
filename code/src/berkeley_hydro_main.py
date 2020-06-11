@@ -7,17 +7,17 @@ TBD
 """
 
 # Load the required packages.
-import os
 import sys
 import pandas as pd
 from pathlib import Path
+from code.src.simulation import Simulation
 
 # INFO:
 __author__ = "Michail Vrettas, PhD"
 __email__ = "michail.vrettas@gmail.com"
 
 
-def validateInputParametersFile(filename):
+def validateInputParametersFile(filename: Path):
     """
     Validates an input (json) file to check if it contains
     the required keys. It does not validate the values of
@@ -26,7 +26,7 @@ def validateInputParametersFile(filename):
     :param filename: Is a "Path" object that contains the input
     model parameters for the simulation.
 
-    :return: Nothing.
+    :return: A dictionary loaded from the input file.
 
     :raises ValueError if a keyword is missing from the file.
     """
@@ -41,10 +41,10 @@ def validateInputParametersFile(filename):
         model_params = json.load(input_file)
 
         # Required keys in the json file.
-        required_keys = ["IC_filename", "Data_filename", "Well_no",
+        required_keys = ["IC_Filename", "Data_Filename", "Well_No",
                          "Water_Content", "Hydraulic_Conductivity",
-                         "Hydrological_Model", "Simulation_Flags",
-                         "Environmental"]
+                         "Hydrological_Model",  "Simulation_Flags",
+                         "Environmental", "Soil_Properties"]
 
         # Check the keywords for membership in the file.
         for k in required_keys:
@@ -55,25 +55,29 @@ def validateInputParametersFile(filename):
             # _end_if_
 
         # _end_for_
+
+        # Show message.
+        print(" Model parameters are given correctly.")
     # _end_with_
 
+    # The dictionary will contain all the input parameters.
+    return model_params
 # _end_def_
 
 
 # Main function.
-def main(model_parameters=None, simulation_data=None):
+def main(params_file=None, data_file=None):
+    # Initialize everything to None.
+    params, water_data = None, None
+
     # Check if we got model parameters.
-    if model_parameters:
-
-        # Make sure model_parameters is a Path object.
-        model_parameters = Path(model_parameters)
-
+    if params_file:
         try:
-            # Check if everything is ok.
-            validateInputParametersFile(model_parameters)
+            # Make sure params_file is a Path object.
+            params_file = Path(params_file)
 
-            # Show message.
-            print(" Model parameters are given correctly.")
+            # Check if everything is ok.
+            params = validateInputParametersFile(params_file)
         except ValueError as e0:
             # Show the error message.
             print(e0)
@@ -81,23 +85,50 @@ def main(model_parameters=None, simulation_data=None):
             # Exit the program.
             sys.exit(1)
         # _end_try_
-
     else:
-        if simulation_data:
-            print(" The simulation will run with default parameters.")
+        if data_file:
+            print(" The simulation will run with default model parameters (NOT recommended).")
         else:
-            print(" The simulation can't run without datafile.")
+            print(" The simulation can't run without input parameters and/or water data.")
 
             # Exit the program.
             sys.exit(1)
     # _end_if_
 
-    # Check if we got simulation data.
-    if simulation_data:
-        print(" Simulation data from: {0}".format(simulation_data))
+    # Check if we got simulation water data. Make sure its a Path object.
+    if data_file:
+        data_file = Path(data_file)
     else:
-        print(" No data.")
+        data_file = Path(params["Data_Filename"])
     # _end_if_
+
+    # Display where we got the water data from.
+    print(" Simulation water data file: {0}".format(data_file))
+
+    try:
+
+        # Open the water data in "Read Only" mode.
+        with open(data_file, 'r') as input_file:
+            water_data = pd.read_csv(input_file)
+        # _end_with_
+
+        # Create a simulation object.
+        sim_01 = Simulation("ID:Name")
+
+        # Setup its parameters.
+        sim_01.setupModelParameters(params, water_data)
+
+        # Run the simulation.
+        sim_01.run()
+
+        # Save the results.
+        sim_01.saveResults()
+    except Exception as e1:
+        print(e1)
+
+        # Exit the program.
+        sys.exit(1)
+    # _end_try_
 
 # _end_maim_
 
