@@ -24,7 +24,7 @@ class SoilProperties(object):
             # Pore size distribution parameter.
             self.n = n
         else:
-            raise ValueError(" Soil property 'n0' should be > 1.")
+            raise ValueError(" Soil property 'n' should be > 1.")
         # _end_if_
 
         # Check for allowed range.
