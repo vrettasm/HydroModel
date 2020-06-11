@@ -37,7 +37,7 @@ def validateInputParametersFile(filename):
     # Open the file in "Read Only" mode.
     with open(filename, 'r') as input_file:
 
-        # Load tha model parameters.
+        # Load the model parameters.
         model_params = json.load(input_file)
 
         # Required keys in the json file.
