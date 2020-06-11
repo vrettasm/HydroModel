@@ -44,7 +44,7 @@ def validateInputParametersFile(filename: Path):
         required_keys = ["IC_Filename", "Data_Filename", "Well_No",
                          "Water_Content", "Hydraulic_Conductivity",
                          "Hydrological_Model",  "Simulation_Flags",
-                         "Environmental", "Soil_Properties"]
+                         "Environmental", "Soil_Properties", "Site_Information"]
 
         # Check the keywords for membership in the file.
         for k in required_keys:
@@ -115,8 +115,8 @@ def main(params_file=None, data_file=None):
         # Create a simulation object.
         sim_01 = Simulation("ID:Name")
 
-        # Setup its parameters.
-        sim_01.setupModelParameters(params, water_data)
+        # Setup its parameters and water data.
+        sim_01.setupModel(params, water_data)
 
         # Run the simulation.
         sim_01.run()
