@@ -21,53 +21,53 @@ class TestHydraulicConductivity(unittest.TestCase):
         self.test_obj = HydraulicConductivity()
     # _end_def_
 
-    def test_satSoil(self):
+    def test_sat_soil(self):
         """
         Saturated values must be strictly positive.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.satSoil = 0.0
+            self.test_obj.sat_soil = 0.0
         # _end_with_
     # _end_def_
 
-    def test_satSaprolite(self):
+    def test_sat_saprolite(self):
         """
         Saturated values must be strictly positive.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.satSaprolite = 0.0
+            self.test_obj.sat_saprolite = 0.0
         # _end_with_
     # _end_def_
 
-    def test_satFreshBedrock(self):
+    def test_sat_fresh_bedrock(self):
         """
         Saturated values must be strictly positive.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.satFreshBedrock = 0.0
+            self.test_obj.sat_fresh_bedrock = 0.0
         # _end_with_
     # _end_def_
 
-    def test_sigmaAmp(self):
+    def test_sigma_noise(self):
         """
         Noise model amplitude parameters can't be negative.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.sigmaAmp = -1.0
+            self.test_obj.sigma_noise = -1.0
         # _end_with_
     # _end_def_
 
-    def test_lambdaExp(self):
+    def test_lambda_exponent(self):
         """
         Noise model exponent parameters can't be negative.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.lambdaExp = -1.0
+            self.test_obj.lambda_exponent = -1.0
         # _end_with_
     # _end_def_
 
