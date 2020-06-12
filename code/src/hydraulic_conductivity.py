@@ -5,7 +5,8 @@ class HydraulicConductivity(object):
     This class represents the hydraulic conductivity of the hydrologic model.
     """
 
-    __slots__ = ("sat_soil", "sat_saprolite", "sat_fresh_bedrock", "sigma_noise", "lambda_exponent")
+    __slots__ = ("param_sat_soil", "param_sat_saprolite", "param_sat_fresh_bedrock",
+                 "param_sigma_noise", "param_lambda_exponent")
 
     # Default constructor.
     def __init__(self, sat_soil: float = 8.5, sat_saprolite: float = 3.2, sat_fresh_bedrock: float = 0.1,
@@ -29,42 +30,42 @@ class HydraulicConductivity(object):
 
         # Soil related variables.
         if sat_soil > 0.0:
-            self.sat_soil = sat_soil
+            self.param_sat_soil = sat_soil
         else:
             raise ValueError(" The saturated value of the Soil layer:"
                              " {}, should be strictly positive.".format(sat_soil))
         # _end_if_
 
         if sat_saprolite > 0.0:
-            self.sat_saprolite = sat_saprolite
+            self.param_sat_saprolite = sat_saprolite
         else:
             raise ValueError(" The saturated value of the Saprolite layer:"
                              " {}, should be strictly positive.".format(sat_saprolite))
         # _end_if_
 
         if sat_fresh_bedrock > 0.0:
-            self.sat_fresh_bedrock = sat_fresh_bedrock
+            self.param_sat_fresh_bedrock = sat_fresh_bedrock
         else:
             raise ValueError(" The saturated value of the Fresh Bedrock layer:"
                              " {}, should be strictly positive.".format(sat_fresh_bedrock))
         # _end_if_
 
         # Noise related variables.
-        self.sigma_noise = np_max(sigma_noise, 0.0)
-        self.lambda_exponent = np_max(lambda_exponent, 0.0)
+        self.param_sigma_noise = np_max(sigma_noise, 0.0)
+        self.param_lambda_exponent = np_max(lambda_exponent, 0.0)
     # _end_def_
 
     @property
-    def satSoil(self):
-        return self.sat_soil
+    def sat_soil(self):
+        return self.param_sat_soil
     # _end_def_
 
-    @satSoil.setter
-    def satSoil(self, new_value):
+    @sat_soil.setter
+    def sat_soil(self, new_value):
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
-            self.sat_soil = new_value
+            self.param_sat_soil = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Soil layer:"
@@ -73,16 +74,16 @@ class HydraulicConductivity(object):
     # _end_def_
 
     @property
-    def satSaprolite(self):
-        return self.sat_saprolite
+    def sat_saprolite(self):
+        return self.param_sat_saprolite
     # _end_def_
 
-    @satSaprolite.setter
-    def satSaprolite(self, new_value):
+    @sat_saprolite.setter
+    def sat_saprolite(self, new_value):
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
-            self.sat_saprolite = new_value
+            self.param_sat_saprolite = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Saprolite layer:"
@@ -91,16 +92,16 @@ class HydraulicConductivity(object):
     # _end_def_
 
     @property
-    def satFreshBedrock(self):
-        return self.sat_fresh_bedrock
+    def sat_fresh_bedrock(self):
+        return self.param_sat_fresh_bedrock
     # _end_def_
 
-    @satFreshBedrock.setter
-    def satFreshBedrock(self, new_value):
+    @sat_fresh_bedrock.setter
+    def sat_fresh_bedrock(self, new_value):
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
-            self.sat_fresh_bedrock = new_value
+            self.param_sat_fresh_bedrock = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The saturated value of the Fresh Bedrock layer:"
@@ -109,16 +110,16 @@ class HydraulicConductivity(object):
     # _end_def_
 
     @property
-    def sigmaAmp(self):
-        return self.sigma_noise
+    def sigma_noise(self):
+        return self.param_sigma_noise
     # _end_def_
 
-    @sigmaAmp.setter
-    def sigmaAmp(self, new_value):
+    @sigma_noise.setter
+    def sigma_noise(self, new_value):
         # Accept only positive values.
         if new_value >= 0.0:
             # Make the change.
-            self.sigma_noise = new_value
+            self.param_sigma_noise = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The sigma amplitude value of the noise mode:"
@@ -127,16 +128,16 @@ class HydraulicConductivity(object):
     # _end_def_
 
     @property
-    def lambdaExp(self):
-        return self.lambda_exponent
+    def lambda_exponent(self):
+        return self.param_lambda_exponent
     # _end_def_
 
-    @lambdaExp.setter
-    def lambdaExp(self, new_value):
+    @lambda_exponent.setter
+    def lambda_exponent(self, new_value):
         # Accept only positive values.
         if new_value >= 0.0:
             # Make the change.
-            self.lambda_exponent = new_value
+            self.param_lambda_exponent = new_value
         else:
             # Raise an error with a message.
             raise ValueError(" The lambda exponent value of the noise mode:"
