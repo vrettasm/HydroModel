@@ -153,11 +153,10 @@ class HydraulicConductivity(object):
 
         :return: a string representation of a HydraulicConductivity object.
         """
-        return " HydraulicConductivity Id({0}):" \
-               " Sat-Soil={1}, Sat-Saprolite={2}, Sat-Fresh-Bedrock={3}," \
-               " Sigma={4}, Lambda={5}".format(id(self),
-                                               self.sat_soil, self.sat_saprolite, self.sat_fresh_bedrock,
-                                               self.sigma_noise, self.lambda_exponent)
+        return " HydraulicConductivity Id({0}):"\
+               " Sat-Soil={1}, Sat-Saprolite={2}, Sat-Fresh-Bedrock={3},"\
+               " Sigma={4}, Lambda={5}".format(id(self), self.sat_soil, self.sat_saprolite,
+                                               self.sat_fresh_bedrock, self.sigma_noise, self.lambda_exponent)
     # _end_def_
 
 # _end_class_
