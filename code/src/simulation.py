@@ -1,4 +1,3 @@
-# Import locally the json package.
 import json
 import numpy as np
 from pathlib import Path
