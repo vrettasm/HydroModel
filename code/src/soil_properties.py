@@ -119,4 +119,17 @@ class SoilProperties(object):
         # _end_if_
     # _end_def_
 
+    # Auxiliary.
+    def __str__(self):
+        """
+        Override to print a readable string presentation of the SoilProperties object.
+        This will include its id(), along with its fields values.
+
+        :return: a string representation of a SoilProperties object.
+        """
+        return " SoilProperties Id({0}): n={1}, alpha={2}, psi_sat={3}," \
+               " epsilon={4}".format(id(self), self.param_n, self.param_a,
+                                     self.param_psi_sat, self.param_epsilon)
+    # _end_def_
+
 # _end_class_
