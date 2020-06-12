@@ -115,7 +115,6 @@ def main(params_file=None, data_file=None):
     print(" Simulation water data file: {0}".format(data_file))
 
     try:
-
         # Open the water data in "Read Only" mode.
         with open(data_file, 'r') as input_file:
             water_data = pd.read_csv(input_file)
