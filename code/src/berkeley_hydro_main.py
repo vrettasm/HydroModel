@@ -76,8 +76,6 @@ def main(params_file=None, data_file=None):
 
     :return: None
     """
-    # Initialize everything to None.
-    params, water_data = None, None
 
     # Check if we got model parameters.
     if params_file:
@@ -95,13 +93,10 @@ def main(params_file=None, data_file=None):
             sys.exit(1)
         # _end_try_
     else:
-        if data_file:
-            print(" The simulation will run with default model parameters (NOT recommended).")
-        else:
-            print(" The simulation can't run without input parameters and/or water data.")
+        print(" The simulation can't run without input parameters.")
 
-            # Exit the program.
-            sys.exit(1)
+        # Exit the program.
+        sys.exit(1)
     # _end_if_
 
     # Check if we got simulation water data. Make sure its a Path object.
