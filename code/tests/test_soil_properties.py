@@ -27,17 +27,17 @@ class TestSoilProperties(unittest.TestCase):
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.param_n = 0.0
+            self.test_obj.n = 0.0
         # _end_with_
     # _end_def_
 
-    def test_a0(self):
+    def test_alpha(self):
         """
-        Soil property 'a0' should be strictly positive.
+        Soil property 'alpha' should be strictly positive.
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.param_a0 = 0.0
+            self.test_obj.alpha = 0.0
         # _end_with_
     # _end_def_
 
@@ -47,7 +47,7 @@ class TestSoilProperties(unittest.TestCase):
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.psiSat = 1.0
+            self.test_obj.psi_sat = 1.0
         # _end_with_
     # _end_def_
 
@@ -57,7 +57,7 @@ class TestSoilProperties(unittest.TestCase):
         :return: None
         """
         with self.assertRaises(ValueError):
-            self.test_obj.param_epsilon = 0.0
+            self.test_obj.epsilon = 0.0
         # _end_with_
     # _end_def_
 
