@@ -201,6 +201,17 @@ class TestPorosity(unittest.TestCase):
         self.assertTrue(np.all(self.theta.min <= poros_0))
     # _end_def_
 
+    def test_wrong_init_params(self):
+        """
+        Test an object initialization with wrong input parameters.
+        :return: None
+        """
+        with self.assertRaises(ValueError):
+            # Unknown value for the profile is given ...
+            _ = Porosity(self.z_grid, self.layers, self.theta, self.soil, 'Unknown')
+        # _end_with_
+    # _end_def_
+
 
 if __name__ == '__main__':
     unittest.main()
