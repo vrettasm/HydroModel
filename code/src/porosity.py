@@ -179,7 +179,7 @@ class Porosity(object):
     def __call__(self, z_new=None):
         """
         A call of the porosity object will return a tuple containing all three
-        profiles (porosity, field capacity, wilting point) for the speicific
+        profiles (i.e. porosity, field capacity, wilting point) for the specific
         input 'z_new'. If no new depth values 'z' are given, the call will return
         the full profiles.
 
