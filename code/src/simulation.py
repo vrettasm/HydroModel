@@ -1,6 +1,7 @@
 import json
 import numpy as np
 from pathlib import Path
+from code.src.porosity import Porosity
 from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
 from code.src.hydraulic_conductivity import HydraulicConductivity
@@ -155,6 +156,11 @@ class Simulation(object):
 
         # Add the water (well/precipitation/etc) data.
         self.mData["wy_data"] = data
+
+        # Create and add the porosity object.
+        self.mData["poros"] = Porosity(z_grid, layers, theta, soil,
+                                       params["Hydrological_Model"]["Porosity_Profile"])
+
     # _end_def_
 
     def run(self):
