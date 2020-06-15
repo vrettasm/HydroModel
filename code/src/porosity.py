@@ -125,7 +125,7 @@ class Porosity(object):
                 mu0_sap = logN_muf(mean_sap, _vsf * np.min(mean_sap))
                 sig_sap = logN_sig(mean_sap, _vsf * np.min(mean_sap))
 
-                # Update the profile in the sparolite zone.
+                # Update the profile in the saprolite zone.
                 q_sat[sap_layer_idx] = logN_rnd(mu0_sap, sig_sap, np.random.randn(n_sap))
             # _end_if_
 
