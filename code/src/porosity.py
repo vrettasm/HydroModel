@@ -32,6 +32,11 @@ class Porosity(object):
                         5) Noisy (assumes random "fractures" in the underground)
         """
 
+        # Make sure the z-grid domain is not empty.
+        if not z_grid.size:
+            raise ValueError(" Input array z_grid is empty.")
+        # _end_if_
+
         # Store the type of profile.
         self.p_model = p_model
 
