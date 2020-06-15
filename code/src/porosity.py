@@ -97,7 +97,7 @@ class Porosity(object):
 
             # Log-Normal functions.
             def logN_muf(mi, vi):
-                return np.log(mi ** 2) / np.sqrt(vi + mi ** 2)
+                return np.log((mi ** 2) / np.sqrt(vi + mi ** 2))
             # _end_def_
 
             def logN_sig(mi, vi):
