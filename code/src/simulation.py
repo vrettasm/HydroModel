@@ -1,6 +1,8 @@
 import json
 import numpy as np
+import pandas as pd
 from pathlib import Path
+
 from code.src.porosity import Porosity
 from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
@@ -20,7 +22,7 @@ class Simulation(object):
         """
         # Check if a simulation name has been given.
         if not name:
-            self.name = "ID:None"
+            self.name = "ID_None"
         else:
             self.name = name
         # _end_if_
@@ -87,7 +89,10 @@ class Simulation(object):
         dz = 5.0
 
         # Create a vertical grid (increasing downwards)
-        z_grid = np.arange(well["soil"], well["max_depth"]+dz, dz)
+        z_grid = np.arange(well["soil"], well["max_depth"] + dz, dz)
+
+        # Length of space vector.
+        dim_z = z_grid.size
 
         # Create a soil properties object.
         try:
@@ -146,20 +151,134 @@ class Simulation(object):
         self.mData["K"] = K
 
         # Add the environmental parameters.
-        self.mData["Env"] = params["Environmental"]
+        self.mData["env_param"] = params["Environmental"]
 
         # Add the selected hydrological model.
-        self.mData["hModel"] = params["Hydrological_Model"]
+        self.mData["hydro_model"] = params["Hydrological_Model"]
 
         # Add the simulation (execution) flags.
         self.mData["sim_flags"] = params["Simulation_Flags"]
 
-        # Add the water (well/precipitation/etc) data.
-        self.mData["wy_data"] = data
-
         # Create and add the porosity object.
-        self.mData["poros"] = Porosity(z_grid, layers, theta, soil,
-                                       params["Hydrological_Model"]["Porosity_Profile"])
+        self.mData["porosity"] = Porosity(z_grid, layers, theta, soil,
+                                          params["Hydrological_Model"]["Porosity_Profile"])
+
+        # Extract the observational data from the pandas.Dataframe:
+        r_datenum = data.loc[:, "Datenum"]
+
+        # We need to convert the dates (from MATLAB to Python).
+        # NOTE: The value 719529 is MATLAB's datenum value of the "Unix epoch"
+        # start (1970-01-01), which is the default origin for pd.to_datetime().
+        timestamps = pd.to_datetime(r_datenum-719529, unit='D')
+
+        # Get the number of time-points.
+        dim_t = timestamps.size
+
+        # Store timestamps in the dictionary.
+        self.mData["time"] = [t.round(freq="s") for t in timestamps]
+
+        # Convert the meters to [L:cm] before storing them.
+        z_wtd_cm = np.array(np.abs(np.round(100.0*data.loc[:, "WTD_m"])))
+
+        # Check if there are NaN values.
+        if np.any(np.isnan(z_wtd_cm)):
+            raise ValueError(" Water table depth observations contain NaN.")
+        # _end_if_
+
+        # Since the observational data are not "gridded" we put them
+        # on the z-grid [L: cm], before store them in the dictionary.
+        self.mData["zWtd_cm"] = np.array([z_grid[z_grid >= k][0] for k in z_wtd_cm])
+
+        # The precipitation data are already in [L: cm].
+        precip_cm = np.array(data.loc[:, "Precipitation_cm"])
+
+        # Check if there are NaN values.
+        if np.any(np.isnan(precip_cm)):
+            raise ValueError(" Precipitation observations contain NaN.")
+        # _end_if_
+
+        # Store to dictionary.
+        self.mData["precip_cm"] = precip_cm
+
+        # TRANSPIRATION AND HYDRAULIC LIFT PARAMETERS:
+
+        # Compute the total atmospheric demand (i.e. root water uptake)
+        # as percentage of the total precipitation over the whole Water Year.
+
+        atm_demand = params["Environmental"]["Atmospheric_Demand"]
+        interception = params["Environmental"]["Interception_pct"]
+
+        # Store to dictionary.
+        self.mData["interception"] = interception
+
+        # total_atm_demand_cm = np.sum(atm_demand*(1.0 - interception)*precip_cm)
+        # This is a test case where we use the precipitation demand from the year
+        # 2008-2009. The '13.4253' [cm] correspond to the 10% demand of that year.
+
+        total_atm_demand_cm = 13.4253 * 10 * atm_demand
+
+        # Make sure evapo-transpiration percentage "et_pct" is within bounds.
+        # NOTE: Wet_Season_pct declares how much of the losses are due to ET.
+        et_pct = np.minimum(np.maximum(params["Environmental"]["Wet_Season_pct"], 0.0), 1.0)
+
+        # Get the amount of ET per season [L: cm].
+        wet_et_cm = et_pct*total_atm_demand_cm
+        dry_et_cm = (1.0 - et_pct)*total_atm_demand_cm
+
+        # Dry counter.
+        n_dry = 0
+
+        for tk in timestamps:
+            # Check if the month belongs in the "dry-months" list.
+            if tk.month in [4, 5, 6, 7, 8, 9]:
+                n_dry += 1
+            # _end_if_
+        # _end_for_
+
+        # Wet counter (complementary to the Dry counter)
+        n_wet = dim_t-n_dry
+
+        # Preallocate the (plant) transpiration array.
+        plant_tp = np.zeros(dim_t)
+
+        # Assign each time-point the value for the ET.
+        for i, tk in enumerate(timestamps):
+            # Dry season ET:
+            # Distribute the dry season amount evenly
+            # in the time points that fall in that season.
+            if tk.month in [4, 5, 6, 7, 8, 9]:
+                plant_tp[i] = 2.0*dry_et_cm/n_dry
+            # _end_if_
+
+            # Wet season ET:
+            if tk.month in [10, 11, 12, 1, 2, 3]:
+                plant_tp[i] = 2.0*wet_et_cm/n_wet
+            # _end_if_
+
+            # N.B.: Here we multiply by 2 each value because half of the
+            # points fall in the day and the other half during the night.
+        # _end_for_
+
+        # SAFEGUARD: Replace NaN with zero.
+        plant_tp[np.isnan(plant_tp)] = 0.0
+
+        # Hydraulic lift related parameters.
+        theta_50 = np.maximum(0.5 ** (1.0 / K.lambda_exponent), 0.05)
+
+        # Inverse of $\psi_{50}$: assumes m=0.5, n=2.
+        inv_psi_50 = soil.alpha / np.sqrt(theta_50 ** (-2.0) - 1.0)
+
+        # Store tree-root related parameters in this structure.
+        self.mData["atm"] = plant_tp
+        self.mData["iPsi_50"] = inv_psi_50
+
+        # EVAPORATION:
+        # We assume a flat value for the surface evaporation throughout the whole
+        # year. Since the discrete time-points are half during the night and half
+        # during the day we multiply the values by 2.
+
+        # Set the evaporation uniformly.
+        self.mData["surface_evap"] = 2.0 * np.sum(params["Environmental"]["Evaporation_pct"] * precip_cm) / dim_t
 
     # _end_def_
 
@@ -168,7 +287,6 @@ class Simulation(object):
         if not self.mData:
             print(" Simulation data structure ('mData') is empty.")
         # _end_if_
-
     # _end_def_
 
     def saveResults(self):
