@@ -88,11 +88,11 @@ class Simulation(object):
         # The spacing here defines a Uniform-Grid [L:cm].
         dz = 5.0
 
+        # Add the spatial discretization to the structure.
+        self.mData["dz"] = dz
+
         # Create a vertical grid (increasing downwards)
         z_grid = np.arange(well["soil"], well["max_depth"] + dz, dz)
-
-        # Length of space vector.
-        dim_z = z_grid.size
 
         # Create a soil properties object.
         try:
@@ -203,7 +203,7 @@ class Simulation(object):
         # TRANSPIRATION AND HYDRAULIC LIFT PARAMETERS:
 
         # Compute the total atmospheric demand (i.e. root water uptake)
-        # as percentage of the total precipitation over the whole Water Year.
+        # as percentage of the total precipitation over the whole year.
 
         atm_demand = params["Environmental"]["Atmospheric_Demand"]
         interception = params["Environmental"]["Interception_pct"]
@@ -214,7 +214,6 @@ class Simulation(object):
         # total_atm_demand_cm = np.sum(atm_demand*(1.0 - interception)*precip_cm)
         # This is a test case where we use the precipitation demand from the year
         # 2008-2009. The '13.4253' [cm] correspond to the 10% demand of that year.
-
         total_atm_demand_cm = 13.4253 * 10 * atm_demand
 
         # Make sure evapo-transpiration percentage "et_pct" is within bounds.
