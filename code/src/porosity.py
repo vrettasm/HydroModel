@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
+from code.src.utilities import logN_muf, logN_sig, logN_rnd
 
 class Porosity(object):
     """
@@ -13,7 +14,8 @@ class Porosity(object):
     can vary.
     """
 
-    __slots__ = ("profile", "field_cap", "wilting_point", "f_interp", "p_model")
+    __slots__ = ("profile", "field_cap", "wilting_point", "f_interp",
+                 "p_model", "p_layers")
 
     def __init__(self, z_grid, layers, theta, soil, p_model):
         """
@@ -46,6 +48,9 @@ class Porosity(object):
         # Extract the limits of the soil layers:
         # (1) Soil, (2) Saprolite, (3) Weathered Bedrock, (4) Fresh Bedrock.
         (_, l_sapr, l_wbed, l_fbed) = layers
+
+        # Add the layers to the object.
+        self.p_layers = layers
 
         # Find the indices of each underground layer.
         sap_layer_idx = np.array((z_grid >= l_sapr) & (z_grid <= l_wbed), dtype=bool)
@@ -94,19 +99,6 @@ class Porosity(object):
             # _end_if_
 
         elif str.upper(p_model) == "NOISY":
-
-            # Log-Normal functions.
-            def logN_muf(mi, vi):
-                return np.log((mi ** 2) / np.sqrt(vi + mi ** 2))
-            # _end_def_
-
-            def logN_sig(mi, vi):
-                return np.sqrt(np.log(vi / (mi ** 2) + 1.0))
-            # _end_def_
-
-            def logN_rnd(mu, sig, en):
-                return np.exp(mu + sig * en)
-            # _end_def_
 
             # Variance Scale Factor (small positive number).
             _vsf = 5.0e-5
@@ -194,7 +186,15 @@ class Porosity(object):
             # Return all three profiles at the new input 'z_new'.
             return self.f_interp(z_new)
         # _end_if_
+    # _end_def_
 
+    @property
+    def layers(self):
+        """
+        Accessor of the underground layers.
+        :return: Tuple with the (L0, L1, ...)
+        """
+        return self.p_layers
     # _end_def_
 
     def __str__(self):
