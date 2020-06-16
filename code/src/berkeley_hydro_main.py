@@ -112,11 +112,13 @@ def main(params_file=None, data_file=None):
     try:
         # Open the water data in "Read Only" mode.
         with open(data_file, 'r') as input_file:
-            water_data = pd.read_csv(input_file)
+            # The file should have four columns.
+            water_data = pd.read_csv(input_file,
+                                     names=["ID", "Datenum", "Precipitation_cm", "WTD_m"])
         # _end_with_
 
         # Create a simulation object.
-        sim_01 = Simulation("ID:Name")
+        sim_01 = Simulation("Sim_01")
 
         # Setup its parameters and water data.
         sim_01.setupModel(params, water_data)
