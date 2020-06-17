@@ -20,6 +20,11 @@ def logN_rnd(mx, vx, en):
     :return: a random variable drawn from LogNormal(mu, sigma)
     """
 
+    # Avoid division by zero error.
+    if mx == 0.0:
+        mx = 1.0e-7
+    # _end_if_
+
     # Parameter 'mu' for the LogNormal distribution.
     mu0 = np.log((mx ** 2) / np.sqrt(vx + mx ** 2))
 
