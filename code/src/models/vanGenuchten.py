@@ -55,12 +55,12 @@ class vanGenuchten(HydrologicalModel):
         # _end_if_
 
         # Create a vector with the K_{sat} values.
-        k_sat = self.k_sat * np.ones(dim_d)
+        k_sat = self.k_hc.sat_soil * np.ones(dim_d)
 
         # Get the porosity at 'z'.
         porous_z = self.porous(z)
 
-        # Initialize 'q' (water) variable.
+        # Initialize 'q' (volumetric water content) variable.
         q = np.zeros(dim_d)
 
         # Repeat if necessary (for vectorization).
@@ -110,12 +110,12 @@ class vanGenuchten(HydrologicalModel):
 
         # Compute the Specific Moisture Capacity [dTheta/dPsi].
         C = (self.m * self.n) * self.alpha *\
-            delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n-1.0)
+            delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n - 1.0)
 
         # Set explicitly the saturated cells to the minimum value.
         C[id_sat] = self.epsilon
 
-        # bad conditions for the Specific moisture capacity.
+        # Bad conditions for the Specific moisture capacity.
         bad_condition = (C < self.epsilon) | ~np.isfinite(C) | (np.imag(C) != 0.0)
 
         # Replace with a small positive number to improve numerical stability.
