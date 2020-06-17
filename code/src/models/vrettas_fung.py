@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.interpolate import interp1d
+from code.src.utilities import logN_rnd
 from code.src.models.hydrological_model import HydrologicalModel
 
 class VrettasFung(HydrologicalModel):
@@ -21,14 +23,19 @@ class VrettasFung(HydrologicalModel):
         super().__init__(soil, porous, k_sat, theta_res, dz)
     # _end_def_
 
-    def __call__(self, psi, z):
+    def __call__(self, psi, z, *args):
         """
+        A direct call to an object of this class will return the water content, along other
+        related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi:
+        :param psi: pressure head (suction) [dim_d x dim_m]
 
-        :param z:
+        :param z: depth values (increasing downwards) [dim_d x 1]
 
-        :return:
+        :param args: in here we pass additional parameters for the noise model.
+
+        :return: q (water content), K (unsaturated hydraulic conductivity),
+        C (specific moisture capacity) and q_inf_max (max infiltration capacity.
         """
 
         # Make sure the input 'psi' has at least shape (d, 1).
@@ -50,19 +57,37 @@ class VrettasFung(HydrologicalModel):
                              " {0} not equal to {1}".format(dim_d, z.size))
         # _end_if_
 
-        # Create a vector with the K_{sat} values.
-        k_bkg = self.k_sat * np.ones(dim_d)
-
         # Get the porosity at 'z'.
         porous_z = self.porous(z)
 
         # Initialize 'q' (water) variable.
         q = np.zeros(dim_d)
 
+        # Initialise at None.
+        Kh, n_rnd = None, None
+
+        # Extract additional parameters.
+        for arg_i in args:
+            # Extract the hydraulic conductivity object.
+            if "K" in arg_i:
+                # If it is already set, avoid re-setting it.
+                if not Kh:
+                    Kh = arg_i["K"]
+            # _end_if_
+
+            # Extract the random noise vector.
+            if "n_rnd" in arg_i:
+                # If it is already set, avoid re-setting it.
+                if not n_rnd:
+                    n_rnd = arg_i["n_rnd"]
+            # _end_if_
+        # _end_for_
+
         # Repeat if necessary (for vectorization).
         if dim_m > 1:
+            # These will be (d, m) arrays.
             q = np.repeat(q, dim_m, 1)
-            k_bkg = np.repeat(k_bkg, dim_m, 1)
+            n_rnd = np.repeat(n_rnd, dim_m, 1)
             porous_z = np.repeat(porous_z, dim_m, 1)
         # _end_if_
 
@@ -95,7 +120,7 @@ class VrettasFung(HydrologicalModel):
         # Pre-compute the $m-th$ root.
         mth_s_eff = s_eff ** (1.0 / self.m)
 
-        # Get *ALL* the underground boundaries.
+        # Get all the underground boundaries.
         (l0, l1, l2, l3) = porous_z.layers
 
         # Find the indexes of each underground layer.
@@ -105,11 +130,118 @@ class VrettasFung(HydrologicalModel):
         sapr_layer_idx = np.array((z >= l1) & (z <= l2), dtype=bool)
         wbed_layer_idx = np.array((z >= l2) & (z <= l3), dtype=bool)
 
-        # SAFEGUARD:
-        K[id_sat] = k_bkg[id_sat]
+        # Create an 1_[d x m] array.
+        ones_dm = np.ones((dim_d, dim_m))
+
+        # Initialize the Unsaturated Hydraulic Conductivity.
+        K = Kh.sat_soil * (s_eff ** (Kh.lambda_exponent*ones_dm))
+
+        # Initialize the Background Hydraulic Conductivity.
+        Kbkg = Kh.sat_soil * ones_dm
+
+        # SOIL LAYER:
+        if np.any(soil_layer_idx):
+            # Number of cells in the soil layer.
+            n_soil = soil_layer_idx.sum()
+
+            # Set the mean values of $Kbkg_soil$.
+            mean_soil = Kh.sat_soil * np.ones((n_soil, dim_m))
+
+            # Soil noise variables: !!! REDUCED !!!
+            rnd_soil = 0.05 * n_rnd[soil_layer_idx]
+
+            # Weight function:
+            s_eff_soil = s_eff[soil_layer_idx]
+
+            # Replicate 'mean' and 'sigma' parameters.
+            sigma_soil = Kh.sigma_noise * (1.0 - s_eff_soil)
+
+            # Update the value of $Kbkg_soil$.
+            Kbkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
+
+            # Hydraulic conductivity for Soil layer.
+            K[soil_layer_idx] = (s_eff_soil ** Kh.lambda_exponent) * Kbkg[soil_layer_idx]
+        # _end_if_
+
+        # SAPROLITE LAYER:
+        if np.any(sapr_layer_idx):
+            # Number of cells in the saprolite layer.
+            n_sapr = sapr_layer_idx.sum()
+
+            # Compute the mean values of $Kbkg_sap$.
+            z_test = np.arange(l1, l2)
+            mean_sapr = interp1d(z_test, np.linspace(Kh.sat_soil, Kh.sat_saprolite, z_test.size))
+            mean_sapr = mean_sapr(z[sapr_layer_idx])
+
+            # Saprolite noise variables: !!! REDUCED !!!
+            rnd_sapr = 0.10 * n_rnd[sapr_layer_idx]
+
+            # Weight function:
+            s_eff_sapr = s_eff[sapr_layer_idx]
+
+            # Replicate 'mean' and 'sigma' parameters
+            # for the vectorized version of the code.
+            mean_sapr = mean_sapr * np.ones((dim_m, n_sapr))
+            sigma_sapr = Kh.sigma_noise * (1.0 - s_eff_sapr)
+
+            # Update the value of $Kbkg_sapr$.
+            Kbkg[sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
+
+            # Hydraulic conductivity for Saprolite layer.
+            K[sapr_layer_idx] = (s_eff_sapr ** Kh.lambda_exponent) * Kbkg[sapr_layer_idx]
+        # _end_if_
+
+        # WEATHERED BEDROCK LAYER:
+        if np.any(wbed_layer_idx):
+            # Number of cells in the weathered bedrock layer.
+            n_wbed = wbed_layer_idx.sum()
+
+            '''
+            # Compute the two parameters of the exponential function:
+                p0 = Kh.sat_saprolite
+                p1 = np.log(p0 / Kh.sat_fresh_bedrock) / l3
+
+                # Mean values.
+                mean_web = p0 * np.exp(-np.linspace(0, l3, n_wbed) * p1)
+            '''
+
+            # Compute the mean values of $Kbkg_wbed$.
+            z_test = np.arange(l2, l3)
+
+            # Compute the two parameters of the exponential function:
+            p0 = Kh.sat_saprolite
+            p1 = np.log(p0 / Kh.sat_fresh_bedrock) / l3
+
+            # Construct the interpolation function.
+            mean_wbed = interp1d(z_test,
+                                 p0 * np.exp(-np.linspace(0, l3, z_test.size) * p1))
+
+            # Get the values at the 'z' (weathered bedrock only).
+            mean_wbed = mean_wbed(z[wbed_layer_idx])
+
+            # Weathered bedrock noise variables:
+            rnd_wbed = n_rnd[wbed_layer_idx]
+
+            # Weight function:
+            s_eff_wbed = s_eff[wbed_layer_idx]
+
+            # Replicate 'mean' and 'sigma' parameters
+            # for the vectorized version of the code.
+            mean_wbed = mean_wbed * np.ones((dim_m, n_wbed))
+            sigma_wbed = Kh.sigma_noise * (1.0 - s_eff_wbed)
+
+            # Update the value of $Kbkg_wbed$.
+            Kbkg[wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
+
+            # Hydraulic conductivity for Saprolite layer.
+            K[wbed_layer_idx] = (s_eff_wbed ** Kh.lambda_exponent) * Kbkg[wbed_layer_idx]
+        # _end_if_
 
         # SAFEGUARD:
-        K = np.minimum(K, k_bkg)
+        K[id_sat] = Kbkg[id_sat]
+
+        # SAFEGUARD:
+        K = np.minimum(K, Kbkg)
 
         # Compute the Specific Moisture Capacity [dTheta/dPsi].
         C = (self.m * self.n) * self.alpha *\
@@ -130,7 +262,7 @@ class VrettasFung(HydrologicalModel):
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_bkg[0])
+        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, Kbkg[0])
 
         # Tuple with all the related variable.
         return q, K, C, q_inf_max
