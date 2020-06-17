@@ -14,7 +14,7 @@ class TestUtilities(unittest.TestCase):
         n_samples = 25000
 
         # Get a random number generator.
-        # Set the seed = 0 (for reproducibility.
+        # Set the seed = 0 (for reproducibility).
         rng = default_rng(0)
 
         # Sample n_samples parameters.
