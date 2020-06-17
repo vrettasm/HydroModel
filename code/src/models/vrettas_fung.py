@@ -117,9 +117,6 @@ class VrettasFung(HydrologicalModel):
         # SAFEGUARD: THIS SHOULD NOT HAPPEN.
         s_eff = np.minimum(np.maximum(s_eff, 0.0), 1.0)
 
-        # Pre-compute the $m-th$ root.
-        mth_s_eff = s_eff ** (1.0 / self.m)
-
         # Get all the underground boundaries.
         (l0, l1, l2, l3) = porous_z.layers
 
@@ -195,15 +192,6 @@ class VrettasFung(HydrologicalModel):
         if np.any(wbed_layer_idx):
             # Number of cells in the weathered bedrock layer.
             n_wbed = wbed_layer_idx.sum()
-
-            '''
-            # Compute the two parameters of the exponential function:
-                p0 = Kh.sat_saprolite
-                p1 = np.log(p0 / Kh.sat_fresh_bedrock) / l3
-
-                # Mean values.
-                mean_web = p0 * np.exp(-np.linspace(0, l3, n_wbed) * p1)
-            '''
 
             # Compute the mean values of $Kbkg_wbed$.
             z_test = np.arange(l2, l3)
