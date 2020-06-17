@@ -20,7 +20,7 @@ class vanGenuchten(HydrologicalModel):
         super().__init__(soil, porous, k_sat, theta_res, dz)
     # _end_def_
 
-    def __call__(self, psi, z):
+    def __call__(self, psi, z, *args):
         """
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
@@ -28,6 +28,8 @@ class vanGenuchten(HydrologicalModel):
         :param psi: pressure head (suction) [dim_d x dim_m]
 
         :param z: depth values (increasing downwards) [dim_d x 1]
+
+        :param args: (for compatibility) to keep a uniform interface.
 
         :return: q (water content), K (unsaturated hydraulic conductivity),
         C (specific moisture capacity) and q_inf_max (max infiltration capacity.
