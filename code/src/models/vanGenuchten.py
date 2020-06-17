@@ -22,12 +22,15 @@ class vanGenuchten(HydrologicalModel):
 
     def __call__(self, psi, z):
         """
+        A direct call to an object of this class will return the water content, along other
+        related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi:
+        :param psi: pressure head (suction) [dim_d x dim_m]
 
-        :param z:
+        :param z: depth values (increasing downwards) [dim_d x 1]
 
-        :return:
+        :return: q (water content), K (unsaturated hydraulic conductivity),
+        C (specific moisture capacity) and q_inf_max (max infiltration capacity.
         """
 
         # Make sure the input 'psi' has at least shape (d, 1).
@@ -122,7 +125,7 @@ class vanGenuchten(HydrologicalModel):
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_bkg[0])
+        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
 
         # Tuple with all the related variable.
         return q, K, C, q_inf_max
