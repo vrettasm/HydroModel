@@ -10,13 +10,13 @@ class HydrologicalModel(object):
     a hydrological model.
     """
 
-    def __init__(self, soil, porous, k_sat, theta_res, dz):
+    def __init__(self, soil, porous, k_hc, theta_res, dz):
         """
         Default constructor.
 
         :param soil: soil properties object
         :param porous: porosity object
-        :param k_sat: hydraulic conductivity (at saturation)
+        :param k_hc: hydraulic conductivity object
         :param theta_res: water content (residual value)
         :param dz: spatial discretization [L: cm]
         """
@@ -28,25 +28,25 @@ class HydrologicalModel(object):
         self.psi_sat = soil.psi_sat
         self.epsilon = np.maximum(soil.epsilon, 1.0e-8)
 
-        # Copy the porosity object.
+        # Copy the porosity and hydraulic conductivity objects.
         self.porous = deepcopy(porous)
+        self.k_hc = deepcopy(k_hc)
 
         # Make a copy of the other input parameters.
-        self.k_sat = k_sat
         self.theta_res = theta_res
-
-        # Spatial discretization [L: cm].
         self.dz = dz
     # _end_def_
 
     def pressure_head(self, theta, z):
         """
+        Returns the pressure head at depth(s) 'z', given as input the volumetric
+        water content theta.
 
-        :param theta:
+        :param theta: volumetric water content.
 
-        :param z:
+        :param z: depth that we want to get the pressure head.
 
-        :return:
+        :return: pressure head (suction) at depth(s) 'z'.
         """
         # Make sure the input 'psi' has at least shape (d, 1).
         if len(theta.shape) == 1:
@@ -86,10 +86,8 @@ class HydrologicalModel(object):
         # (i.e. the "normalized" water content)
         s_eff = (q - self.theta_res) / delta_s
 
-        # =-=-=-=-= THIS SHOULD NOT HAPPEN -=-=-=-=-=-=
-        # NB: Here we do not allow 's_eff' to be equal
-        # to zero because raising zero to the power of
-        # $-1/m$ will result in *Inf* errors.
+        # N.B: Here we do not allow 's_eff' to be equal to zero because
+        # raising zero to the power of '-1/m' will result in Inf errors.
         s_eff = np.minimum(np.maximum(s_eff, self.epsilon), 1.0)
 
         # Check for saturated cells.
@@ -101,6 +99,7 @@ class HydrologicalModel(object):
 
         # Not easily vectorized (because of the index "id_sat").
         for i in range(dim_m):
+            # Extract the saturated locations of the i-th vector.
             j = id_sat[:, i]
 
             # Compute the pressure head (psi) on the unsaturated soil.
@@ -108,7 +107,7 @@ class HydrologicalModel(object):
 
             # Compute the pressure head (psi) on the saturated soil.
             psi_z[~j, i] = np.arange(0, np.sum(j)-1.0) * self.dz
-        # _emd_if_
+        # _end_if_
 
         # SAFEGUARD:
         psi_z[~np.isfinite(psi_z)] = -1.0e+5
