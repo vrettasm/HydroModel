@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from code.src.utilities import logN_muf, logN_sig, logN_rnd
+from code.src.utilities import logN_rnd
 
 class Porosity(object):
     """
@@ -113,12 +113,9 @@ class Porosity(object):
                 # Mean (saprolite) values.
                 mean_sap = np.linspace(theta.max, theta.mid, n_sap)
 
-                # Noise model components (mean, variance).
-                mu0_sap = logN_muf(mean_sap, _vsf * np.min(mean_sap))
-                sig_sap = logN_sig(mean_sap, _vsf * np.min(mean_sap))
-
                 # Update the profile in the saprolite zone.
-                q_sat[sap_layer_idx] = logN_rnd(mu0_sap, sig_sap, np.random.randn(n_sap))
+                q_sat[sap_layer_idx] = logN_rnd(mean_sap, _vsf * np.min(mean_sap),
+                                                np.random.randn(n_sap))
             # _end_if_
 
             if np.any(web_layer_idx):
@@ -132,12 +129,9 @@ class Porosity(object):
                 # Mean values.
                 mean_web = p0 * np.exp(-np.linspace(0, l_fbed, n_web) * p1)
 
-                # Noise model components (mean, variance).
-                mu1_web = logN_muf(mean_web, _vsf * np.min(mean_web))
-                sig_web = logN_sig(mean_web, _vsf * np.min(mean_web))
-
                 # Update the profile in the weathered bedrock zone.
-                q_sat[web_layer_idx] = logN_rnd(mu1_web, sig_web, np.random.randn(n_web))
+                q_sat[web_layer_idx] = logN_rnd(mean_web, _vsf * np.min(mean_web),
+                                                np.random.randn(n_web))
             # _end_if_
 
         else:
