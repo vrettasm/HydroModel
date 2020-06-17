@@ -178,13 +178,15 @@ class Porosity(object):
         :return: the porosity profile at depth(s) 'z'.
         """
 
-        # Return all the profiles (over the whole z-domain).
-        if not z_new:
-            return self.profile, self.field_cap, self.wilting_point
-        else:
+        # Check if we have given input.
+        if np.any(z_new):
             # Return all three profiles at the new input 'z_new'.
             return self.f_interp(z_new)
+        else:
+            # Return all the profiles (over the whole z-domain).
+            return self.profile, self.field_cap, self.wilting_point
         # _end_if_
+
     # _end_def_
 
     @property
