@@ -57,8 +57,8 @@ class vanGenuchten(HydrologicalModel):
         # Create a vector with the K_{sat} values.
         k_sat = self.k_hc.sat_soil * np.ones(dim_d)
 
-        # Get the porosity at 'z'.
-        porous_z = self.porous(z)
+        # Get the porosity field at 'z'.
+        porous_z, _, _ = self.porous(z)
 
         # Initialize 'q' (volumetric water content) variable.
         q = np.zeros(dim_d)

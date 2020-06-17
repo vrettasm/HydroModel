@@ -58,8 +58,8 @@ class VrettasFung(HydrologicalModel):
                              " {0} not equal to {1}".format(dim_d, z.size))
         # _end_if_
 
-        # Get the porosity at 'z'.
-        porous_z = self.porous(z)
+        # Get the porosity field at 'z'.
+        porous_z, _, _ = self.porous(z)
 
         # Initialize 'q' (volumetric water content) variable.
         q = np.zeros(dim_d)
@@ -113,7 +113,7 @@ class VrettasFung(HydrologicalModel):
         s_eff = np.minimum(np.maximum(s_eff, 0.0), 1.0)
 
         # Get all the underground boundaries.
-        (l0, l1, l2, l3) = porous_z.layers
+        (l0, l1, l2, l3) = self.porous.layers
 
         # Find the indexes of each underground layer.
         # NB: To ensure continuity in the interpolating values

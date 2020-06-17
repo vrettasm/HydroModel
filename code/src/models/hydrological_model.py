@@ -67,8 +67,8 @@ class HydrologicalModel(object):
                              " {0} not equal to {1}".format(dim_d, z.size))
         # _end_if_
 
-        # Get the porosity at 'z'.
-        porous_z = self.porous(z)
+        # Get the porosity field at 'z'.
+        porous_z, _, _ = self.porous(z)
 
         # Repeat if necessary (for vectorization).
         if dim_m > 1:
