@@ -3,7 +3,7 @@ import numpy as np
 from math import isclose
 from code.src.utilities import logN_rnd
 
-class MyTestCase(unittest.TestCase):
+class TestUtilities(unittest.TestCase):
 
     def test_logN_rnd(self):
         # Log-Normal parameters.
