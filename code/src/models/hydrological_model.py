@@ -1,6 +1,7 @@
 import numpy as np
 from copy import deepcopy
 
+
 class HydrologicalModel(object):
     """
     This class represents a general (base) class of a hydrological model.
@@ -25,7 +26,7 @@ class HydrologicalModel(object):
         self.m = soil.m
         self.alpha = soil.alpha
         self.psi_sat = soil.psi_sat
-        self.epsilon = np.maximum(soil.epsilon, 1.0e-6)
+        self.epsilon = np.maximum(soil.epsilon, 1.0e-8)
 
         # Copy the porosity object.
         self.porous = deepcopy(porous)
@@ -112,8 +113,8 @@ class HydrologicalModel(object):
         # SAFEGUARD:
         psi_z[~np.isfinite(psi_z)] = -1.0e+5
 
-        # Pressure head (suction).
-        return psi_z
+        # Pressure head (suction), Effective Saturation.
+        return psi_z, s_eff
     # _end_def_
 
 # _end_class_
