@@ -15,7 +15,7 @@ def logN_rnd(mx, vx, en):
 
     :param vx: desired variance (of the Normal distribution).
 
-    :param en: random variable N(0,1)
+    :param en: random variable N(0, 1)
 
     :return: a random variable drawn from LogNormal(mu, sigma)
     """
