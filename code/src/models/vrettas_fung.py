@@ -62,7 +62,7 @@ class VrettasFung(HydrologicalModel):
         porous_z, _, _ = self.porous(z)
 
         # Initialize 'q' (volumetric water content) variable.
-        q = np.zeros(dim_d)
+        q = np.zeros((dim_d, dim_m))
 
         # Initialise at None.
         n_rnd = None
@@ -78,10 +78,14 @@ class VrettasFung(HydrologicalModel):
             # _end_if_
         # _end_for_
 
+        # Make sure the input 'z' has shape (d, 1).
+        if len(n_rnd.shape) == 1:
+            n_rnd = np.reshape(n_rnd, (n_rnd.size, 1))
+        # _end_if_
+
         # Repeat if necessary (for vectorization).
         if dim_m > 1:
             # These will be (d, m) arrays.
-            q = np.repeat(q, dim_m, 1)
             n_rnd = np.repeat(n_rnd, dim_m, 1)
             porous_z = np.repeat(porous_z, dim_m, 1)
         # _end_if_
