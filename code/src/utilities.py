@@ -21,8 +21,8 @@ def logN_rnd(mx, vx, en):
     """
 
     # Avoid division by zero error.
-    if mx == 0.0:
-        mx = 1.0e-7
+    if np.any(mx == 0.0):
+        mx[mx == 0.0] = 1.0e-7
     # _end_if_
 
     # Parameter 'mu' for the LogNormal distribution.
