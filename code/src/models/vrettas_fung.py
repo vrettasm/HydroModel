@@ -194,7 +194,7 @@ class VrettasFung(HydrologicalModel):
 
             # Make sure mean_sapr has at least shape (d, 1).
             if len(mean_sapr.shape) == 1:
-                mean_sapr = np.reshape(mean_sapr, (mean_sapr.size, 1))
+                mean_sapr = mean_sapr.reshape(-1, 1)
             # _end_if_
 
             # Replicate 'mean' and 'sigma' parameters
@@ -232,7 +232,7 @@ class VrettasFung(HydrologicalModel):
 
             # Make sure mean_wbed has at least shape (d, 1).
             if len(mean_wbed.shape) == 1:
-                mean_wbed = np.reshape(mean_wbed, (mean_wbed.size, 1))
+                mean_wbed = mean_wbed.reshape(-1, 1)
             # _end_if_
 
             # Replicate 'mean' and 'sigma' parameters
