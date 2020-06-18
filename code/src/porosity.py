@@ -58,8 +58,8 @@ class Porosity(object):
         self.p_layers = layers
 
         # Find the indices of each underground layer.
-        sap_layer_idx = np.array((z_grid >= l_sapr) & (z_grid <= l_wbed), dtype=bool)
-        web_layer_idx = np.array((z_grid >= l_wbed) & (z_grid <= l_fbed), dtype=bool)
+        sap_layer_idx = np.squeeze(np.array((z_grid >= l_sapr) & (z_grid <= l_wbed), dtype=bool))
+        web_layer_idx = np.squeeze(np.array((z_grid >= l_wbed) & (z_grid <= l_fbed), dtype=bool))
 
         # Create the profile according to the selected type.
         if str.upper(p_model) == "CONSTANT":
