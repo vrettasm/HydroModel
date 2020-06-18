@@ -10,7 +10,6 @@ class TestPorosity(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         print(" >> TestPorosity - START -")
-        cls.ttime = 'noe'
     # _end_def_
 
     @classmethod
@@ -180,7 +179,7 @@ class TestPorosity(unittest.TestCase):
         # Print the object.
         print(test_obj)
 
-        # Get all the profiles.
+        # Get all the profiles (no input).
         poros_0, field_cap_0, wilting_0 = test_obj()
 
         # Make sure the shapes are equal.
@@ -188,7 +187,7 @@ class TestPorosity(unittest.TestCase):
         self.assertEqual(poros_0.shape, field_cap_0.shape)
         self.assertEqual(field_cap_0.shape, wilting_0.shape)
 
-        # Make sure the output sizes match.
+        # Make sure the output sizes match (input is one value).
         poros_1, field_cap_1, wilting_1 = test_obj(101.4)
         self.assertEqual(1, poros_1.size)
         self.assertEqual(poros_1.size, field_cap_1.size)
@@ -199,6 +198,12 @@ class TestPorosity(unittest.TestCase):
 
         # Check Min limit.
         self.assertTrue(np.all(self.theta.min <= poros_0))
+
+        # Make sure the output sizes match (input is multiple values).
+        poros_2, field_cap_2, wilting_2 = test_obj([10.2, 23.5, 43.5, 101.4])
+        self.assertEqual(4, poros_2.size)
+        self.assertEqual(poros_2.size, field_cap_2.size)
+        self.assertEqual(field_cap_2.size, wilting_2.size)
     # _end_def_
 
     def test_wrong_init_params(self):
