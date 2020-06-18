@@ -41,12 +41,12 @@ class VrettasFung(HydrologicalModel):
 
         # Make sure the input 'psi' has at least shape (d, 1).
         if len(psi.shape) == 1:
-            psi = np.reshape(psi, (psi.size, 1))
+            psi = psi.reshape(-1, 1)
         # _end_if_
 
         # Make sure the input 'z' has shape (d, 1).
         if len(z.shape) == 1:
-            z = np.reshape(z, (z.size, 1))
+            z = z.reshape(-1, 1)
         # _end_if_
 
         # Get the dimensions of the input array.
@@ -80,7 +80,7 @@ class VrettasFung(HydrologicalModel):
 
         # Make sure the input 'z' has shape (d, 1).
         if len(n_rnd.shape) == 1:
-            n_rnd = np.reshape(n_rnd, (n_rnd.size, 1))
+            n_rnd = n_rnd.reshape(-1, 1)
         # _end_if_
 
         # Repeat if necessary (for vectorization).
@@ -122,15 +122,15 @@ class VrettasFung(HydrologicalModel):
         # Find the indexes of each underground layer.
         # NB: To ensure continuity in the interpolating values
         # we keep the equality symbol (>=) on all three layers.
-        soil_layer_idx = np.array((z >= l0) & (z <= l1), dtype=bool)
-        sapr_layer_idx = np.array((z >= l1) & (z <= l2), dtype=bool)
-        wbed_layer_idx = np.array((z >= l2) & (z <= l3), dtype=bool)
+        soil_layer_idx = np.squeeze(np.array((z >= l0) & (z <= l1), dtype=bool))
+        sapr_layer_idx = np.squeeze(np.array((z >= l1) & (z <= l2), dtype=bool))
+        wbed_layer_idx = np.squeeze(np.array((z >= l2) & (z <= l3), dtype=bool))
 
         # Create an 1_[d x m] array.
         ones_dm = np.ones((dim_d, dim_m))
 
         # Initialize the Unsaturated Hydraulic Conductivity.
-        K = self.k_hc.sat_soil * (s_eff ** (self.k_hc.lambda_exponent * ones_dm))
+        K = self.k_hc.sat_soil * (s_eff ** self.k_hc.lambda_exponent)
 
         # Initialize the Background Hydraulic Conductivity.
         Kbkg = self.k_hc.sat_soil * ones_dm
@@ -146,11 +146,26 @@ class VrettasFung(HydrologicalModel):
             # Soil noise variables: !!! REDUCED !!!
             rnd_soil = 0.05 * n_rnd[soil_layer_idx]
 
+            # TBD:
+            if len(rnd_soil.shape) == 1:
+                rnd_soil = rnd_soil.reshape(-1, 1)
+            # _end_if_
+
             # Weight function:
             s_eff_soil = s_eff[soil_layer_idx]
 
+            # TBD:
+            if len(s_eff_soil.shape) == 1:
+                s_eff_soil = s_eff_soil.reshape(-1, 1)
+            # _end_if_
+
             # Replicate 'mean' and 'sigma' parameters.
             sigma_soil = self.k_hc.sigma_noise * (1.0 - s_eff_soil)
+
+            # TBD:
+            if len(sigma_soil.shape) == 1:
+                sigma_soil = sigma_soil.reshape(-1, 1)
+            # _end_if_
 
             # Update the value of $Kbkg_soil$.
             Kbkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
@@ -162,14 +177,12 @@ class VrettasFung(HydrologicalModel):
         # SAPROLITE LAYER:
         if np.any(sapr_layer_idx):
             # Test domain for the interpolation function.
-            z_test = np.arange(l1, l2)
+            z_test = np.arange(l1, l2+1)
 
             # Make a interpolation function.
-            fun_sapr = interp1d(z_test,
-                                np.linspace(self.k_hc.sat_soil,
-                                            self.k_hc.sat_saprolite,
-                                            z_test.size))
-
+            fun_sapr = interp1d(z_test,np.linspace(self.k_hc.sat_soil,
+                                                   self.k_hc.sat_saprolite,
+                                                   z_test.size))
             # Compute the mean values of $Kbkg_sap$.
             mean_sapr = fun_sapr(z[sapr_layer_idx])
 
@@ -199,15 +212,14 @@ class VrettasFung(HydrologicalModel):
         # WEATHERED BEDROCK LAYER:
         if np.any(wbed_layer_idx):
             # Compute the mean values of $Kbkg_wbed$.
-            z_test = np.arange(l2, l3)
+            z_test = np.arange(l2, l3+1)
 
             # Compute the two parameters of the exponential function:
             p0 = self.k_hc.sat_saprolite
             p1 = np.log(p0 / self.k_hc.sat_fresh_bedrock) / l3
 
             # Construct the interpolation function.
-            fun_wbed = interp1d(z_test,
-                                p0 * np.exp(-np.linspace(0, l3, z_test.size) * p1))
+            fun_wbed = interp1d(z_test, p0 * np.exp(-np.linspace(0, l3, z_test.size) * p1))
 
             # Get the values at the 'z' (weathered bedrock only).
             mean_wbed = fun_wbed(z[wbed_layer_idx])
