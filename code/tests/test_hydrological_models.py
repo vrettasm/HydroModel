@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+from math import isclose
 
 from code.src.porosity import Porosity
 from code.src.water_content import WaterContent
@@ -16,8 +17,6 @@ class TestHydrologicalModels(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         print(" >> TestHydrologicalModels - START -")
-        cls.ttime = 'noe'
-
     # _end_def_
 
     @classmethod
@@ -65,14 +64,18 @@ class TestHydrologicalModels(unittest.TestCase):
         test_model = HydrologicalModel(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
 
         # Create a 'hypothetical' vol. water content.
-        theta = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+        theta_z = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+
+        # Add a singleton dimension to the input array:
+        if len(theta_z.shape) == 1:
+            theta_z = theta_z.reshape(-1, 1)
+        # _end_if_
 
         # Get the equivalent pressure head and effective saturation.
-        psi_z, s_eff = test_model.pressure_head(theta, self.z_grid)
+        psi_z, s_eff_z = test_model.pressure_head(theta_z, self.z_grid)
 
-        # Check the dimensions.
-        self.assertTrue(theta.shape, psi_z.shape)
-        self.assertTrue(theta.shape, s_eff.shape)
+        self.assertEqual(theta_z.shape, psi_z.shape)
+        self.assertEqual(theta_z.shape, s_eff_z.shape)
     # _end_def_
 
     def test_vanG_model(self):
@@ -86,16 +89,34 @@ class TestHydrologicalModels(unittest.TestCase):
         test_model = vanGenuchten(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
 
         # Create a 'hypothetical' vol. water content.
-        theta_old = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+        theta_1d = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+
+        # Add a singleton dimension to the input array:
+        if len(theta_1d.shape) == 1:
+            theta_1d = theta_1d.reshape(-1, 1)
+        # _end_if_
 
         # Get the equivalent pressure head and effective saturation.
-        psi_new, s_eff = test_model.pressure_head(theta_old, self.z_grid)
+        psi_1d, s_eff_1d = test_model.pressure_head(theta_1d, self.z_grid)
 
         # Get back the theta.
-        theta_new, _, _, _ = test_model(psi_new, self.z_grid)
+        theta_new, _, _, _ = test_model(psi_1d, self.z_grid)
+
+        # The new theta should be the same (within some error).
+        self.assertTrue(isclose(np.abs(np.mean(theta_new - theta_1d)),
+                                0.0, abs_tol=0.1))
+        # Check the dimensions.
+        self.assertEqual(theta_1d.shape, psi_1d.shape)
+        self.assertEqual(theta_1d.shape, s_eff_1d.shape)
+
+        # Vectorised version (multiple input).
+        psi_2d = np.repeat(psi_1d, 5, 1)
+
+        # Get back the vol. water content (theta).
+        theta_2d, _, _, _ = test_model(psi_2d, self.z_grid)
 
         # Check the dimensions.
-        self.assertTrue(theta_old.shape, theta_new.shape)
+        self.assertEqual(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
     def test_VrettasFung_model(self):
@@ -109,16 +130,35 @@ class TestHydrologicalModels(unittest.TestCase):
         test_model = VrettasFung(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
 
         # Create a 'hypothetical' vol. water content.
-        theta_old = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+        theta_1d = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
+
+        # Add a singleton dimension to the input array:
+        if len(theta_1d.shape) == 1:
+            theta_1d = theta_1d.reshape(-1, 1)
+        # _end_if_
 
         # Get the equivalent pressure head and effective saturation.
-        psi_new, s_eff = test_model.pressure_head(theta_old, self.z_grid)
+        psi_1d, s_eff_1d = test_model.pressure_head(theta_1d, self.z_grid)
 
         # Get back the theta.
-        theta_new, _, _, _ = test_model(psi_new, self.z_grid,
-                                        {"n_rnd": np.random.randn(self.z_grid.size,1)})
+        theta_new, _, _, _ = test_model(psi_1d, self.z_grid,
+                                        {"n_rnd": np.random.randn(self.z_grid.size)})
+
+        # The new theta should be the same (within some error).
+        self.assertTrue(isclose(np.abs(np.mean(theta_new-theta_1d)),
+                                0.0, abs_tol=0.1))
         # Check the dimensions.
-        self.assertTrue(theta_old.shape, theta_new.shape)
+        self.assertEqual(theta_1d.shape, psi_1d.shape)
+        self.assertEqual(theta_1d.shape, s_eff_1d.shape)
+
+        # Vectorised version (multiple input).
+        psi_2d = np.repeat(psi_1d, 5, 1)
+
+        # Get back the theta.
+        theta_2d, _, _, _ = test_model(psi_2d, self.z_grid,
+                                       {"n_rnd": np.random.randn(self.z_grid.size)})
+        # Check the dimensions.
+        self.assertTrue(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
 
