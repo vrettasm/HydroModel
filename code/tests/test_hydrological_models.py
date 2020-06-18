@@ -59,6 +59,7 @@ class TestHydrologicalModels(unittest.TestCase):
 
         :return: None
         """
+        print(" Testing HydrologicalModel (parent class).")
 
         # Create a 'test-model' with default parameters.
         test_model = HydrologicalModel(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
@@ -84,6 +85,7 @@ class TestHydrologicalModels(unittest.TestCase):
 
         :return: None
         """
+        print(" Testing vanGenuchten (child class).")
 
         # Create a 'test-model' with default parameters.
         test_model = vanGenuchten(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
@@ -125,6 +127,7 @@ class TestHydrologicalModels(unittest.TestCase):
 
         :return: None
         """
+        print(" Testing Vrettas-Fung (child class).")
 
         # Create a 'test-model' with default parameters.
         test_model = VrettasFung(self.soil, self.porous, self.k_hc, self.theta.res, self.dz)
