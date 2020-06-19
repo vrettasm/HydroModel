@@ -149,12 +149,10 @@ class Porosity(object):
         # Make sure the profile is flatten before assigning it to the object.
         self.profile = q_sat.flatten()
 
-        # Extract soil parameters.
-        (n, m, a0) = (soil.n, soil.m, soil.alpha)
-
         # Helper function.
         def fun_wrc(psi):
-            return theta.res + (q_sat - theta.res) / (1.0 + (a0 * psi) ** n) ** m
+            return theta.res + (q_sat - theta.res) /\
+                   (1.0 + (soil.alpha * psi) ** soil.n) ** soil.m
         # _end_def_
 
         # Field capacity over the whole z-domain.

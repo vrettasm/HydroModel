@@ -37,12 +37,12 @@ class vanGenuchten(HydrologicalModel):
 
         # Make sure the input 'psi' has at least shape (d, 1).
         if len(psi.shape) == 1:
-            psi = np.reshape(psi, (psi.size, 1))
+            psi = psi.reshape(-1, 1)
         # _end_if_
 
         # Make sure the input 'z' has shape (d, 1).
         if len(z.shape) == 1:
-            z = np.reshape(z, (z.size, 1))
+            z = z.reshape(-1, 1)
         # _end_if_
 
         # Get the dimensions of the input array.

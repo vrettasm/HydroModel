@@ -50,12 +50,12 @@ class HydrologicalModel(object):
         """
         # Make sure the input 'psi' has at least shape (d, 1).
         if len(theta.shape) == 1:
-            theta = np.reshape(theta, (theta.size, 1))
+            theta = theta.reshape(-1, 1)
         # _end_if_
 
         # Make sure the input 'z' has shape (d, 1).
         if len(z.shape) == 1:
-            z = np.reshape(z, (z.size, 1))
+            z = z.reshape(-1, 1)
         # _end_if_
 
         # Get the dimensions of the input array.
