@@ -116,7 +116,7 @@ class RootDensity(object):
         specific input 'z_new'. If no new depth values are given, the call will
         return the full profile.
 
-        :param z_new: the depth(s) at which we want the new profile.
+        :param z_new: the depth(s) at which we want the new profile [L: cm].
 
         :return: the density profile at depth(s) 'z'.
         """
