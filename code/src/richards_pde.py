@@ -50,16 +50,23 @@ class RichardsPDE(object):
         self.zxmp1 = self.x_mid - self.x_mesh[0:-1]
     # _end_def_
 
-    # This is the discretePDEs(t, y)
     def __call__(self, t, y):
         """
+        This function implements the space discretization of the PDE.
+        It is vectorized for best performance, so the ode solver can
+        use this property to speed up the solution.
 
         :param t:
 
         :param y:
 
-        :return:
+        :return: dydt
         """
+
+        # Make sure the input 'y' has at least shape (d, 1).
+        if len(y.shape) == 1:
+            y = y.reshape(-1, 1)
+        # _end_if_
 
         # Get the number of different vectors.
         _, dim_m = y.shape
@@ -67,41 +74,48 @@ class RichardsPDE(object):
         # Preallocate for efficiency.
         dydt = np.zeros((self.nx, dim_m))
 
+        # Evaluate the PDE at the top.
+        y0, dy0 = self.pde_mid(self.x_mesh[0], y[0, :], self.x_mesh[1], y[1, :])
+
     # _end_def_
 
     @staticmethod
     def pde_mid(x_left, u_left, x_right, u_right):
         """
 
-        :param x_left:
+        :param x_left: [dim_d x 1]
 
-        :param u_left:
+        :param u_left: [dim_d x dim_m]
 
-        :param x_right:
+        :param x_right: [dim_d x 1]
 
-        :param u_right:
+        :param u_right: [dim_d x dim_m]
 
         :return:
         """
 
         # Use a simple (arithmetic) average to approximate
         # the mid-points between 'u_left' and 'u_right'.
-        u_mid = 0.5*(u_left + u_right)
+        u_mid = 0.5 * (u_left + u_right)
 
         # Spacing between the two input points.
         dx = x_right - x_left
 
-        # Get the number of columns.
-        _, m = u_left.shape
+        # Vectorization code.
+        if len(u_mid.shape) > 1:
 
-        # Repeat if necessary (for vectorization).
-        if m > 1:
-            # These will be (d, m) arrays.
-            dx = np.repeat(dx, m, 1)
+            # Get the number of columns.
+            _, dim_m = u_mid.shape
+
+            # Repeat if necessary (for vectorization).
+            if dim_m > 1:
+                # These will be (d, m) arrays.
+                dx = np.repeat(dx, dim_m, 1)
+            # _end_if_
+
         # _end_if_
 
         # Central Difference Formula:
-        # u(i+0.5*h) - u(i-0.5*h):
         du_mid = (u_right - u_left)/dx
 
         # Return the derivative and the mid-points.
