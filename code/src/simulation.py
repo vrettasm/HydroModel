@@ -94,6 +94,9 @@ class Simulation(object):
         # Create a vertical grid (increasing downwards)
         z_grid = np.arange(well["soil"], well["max_depth"] + dz, dz)
 
+        # Add the spatial domain to the structure.
+        self.mData["z_grid"] = z_grid
+
         # Create a soil properties object.
         try:
             soil = SoilProperties(params["Soil_Properties"]["n"],
