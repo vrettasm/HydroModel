@@ -75,8 +75,8 @@ class RichardsPDE(object):
         dydt = np.zeros((self.nx, dim_m))
 
         # Evaluate the PDE at the top.
-        y0, dy0 = self.pde_mid(self.x_mesh[0], y[0, :], self.x_mesh[1], y[1, :])
-
+        y0, dy0 = self.pde_mid(self.x_mesh[0], y[0, :],
+                               self.x_mesh[1], y[1, :])
     # _end_def_
 
     @staticmethod
