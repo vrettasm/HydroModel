@@ -107,7 +107,7 @@ class RootDensity(object):
         self.profile = root_pdf/total_area
 
         # Interpolate the profile on the n_cells and store the functions.
-        self.f_interp = interp1d(n_cells, self.profile)
+        self.f_interp = interp1d(n_cells * dz, self.profile)
     # _end_def_
 
     def __call__(self, z_new=None):
