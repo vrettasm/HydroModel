@@ -23,6 +23,9 @@ class RootDensity(object):
 
         """
 
+        # Store the root density model.
+        self.r_model = r_model
+
         # Store the maximum root depth [L: m].
         self.max_depth_m = (ln * dz)/100.0
 
@@ -106,8 +109,8 @@ class RootDensity(object):
         # Assign the normalized root profile.
         self.profile = root_pdf/total_area
 
-        # Interpolate the profile on the n_cells and store the functions.
-        self.f_interp = interp1d(n_cells * dz, self.profile)
+        # Interpolate the profile on the total root depth [L: cm].
+        self.f_interp = interp1d(np.linspace(0.0, ln * dz, ln), self.profile)
     # _end_def_
 
     def __call__(self, z_new=None):
@@ -141,6 +144,24 @@ class RootDensity(object):
         """
         return " Root density Id({0}): Type={1},"\
                " Max-Depth={2} [m]".format(id(self), self.r_model, self.max_depth_m)
+    # _end_def_
+
+    @property
+    def max_root_depth(self):
+        """
+        Accessor of the maximum root depth [L: m].
+        :return: the depth in meters.
+        """
+        return self.max_depth_m
+    # _end_def_
+
+    @property
+    def root_type(self):
+        """
+        Accessor of the root density model type.
+        :return: the modelled pdf type (string).
+        """
+        return self.r_model
     # _end_def_
 
 # _end_class_
