@@ -7,7 +7,6 @@ class TestRootDensity(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         print(" >> TestRootDensity - START -")
-
     # _end_def_
 
     @classmethod
@@ -17,8 +16,8 @@ class TestRootDensity(unittest.TestCase):
 
     def setUp(self) -> None:
         """
-        Creates test objects with default input parameters.
-        These will be used to create different porosity profiles.
+        Add fields to the main object. These will be used to create
+        different root density profiles with identical input values.
 
         :return: None.
         """
