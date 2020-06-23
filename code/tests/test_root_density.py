@@ -57,7 +57,7 @@ class TestRootDensity(unittest.TestCase):
             self.assertTrue(isclose(np.sum(root_pdf_1) * self.dz, 1.0, rel_tol=1.0e-5))
 
             # Make sure the max root depths match.
-            self.assertEqual(test_obj.max_depth_m, (self.ln * self.dz)/100.0)
+            self.assertEqual(test_obj.max_root_depth, (self.ln * self.dz))
 
             # Get the root profile on the test grid.
             root_pdf_2 = test_obj(self.z_grid)
