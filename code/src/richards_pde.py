@@ -75,51 +75,10 @@ class RichardsPDE(object):
         dydt = np.zeros((self.nx, dim_m))
 
         # Evaluate the PDE at the top.
-        y0, dy0 = self.pde_mid(self.x_mesh[0], y[0, :],
-                               self.x_mesh[1], y[1, :])
+        y0, dy0 = midpoints(self.x_mesh[0], y[0, :],
+                            self.x_mesh[1], y[1, :])
     # _end_def_
 
-    @staticmethod
-    def pde_mid(x_left, u_left, x_right, u_right):
-        """
-
-        :param x_left: [dim_d x 1]
-
-        :param u_left: [dim_d x dim_m]
-
-        :param x_right: [dim_d x 1]
-
-        :param u_right: [dim_d x dim_m]
-
-        :return:
-        """
-
-        # Use a simple (arithmetic) average to approximate
-        # the mid-points between 'u_left' and 'u_right'.
-        u_mid = 0.5 * (u_left + u_right)
-
-        # Spacing between the two input points.
-        dx = x_right - x_left
-
-        # Vectorization code.
-        if len(u_mid.shape) > 1:
-
-            # Get the number of columns.
-            _, dim_m = u_mid.shape
-
-            # Repeat if necessary (for vectorization).
-            if dim_m > 1:
-                # These will be (d, m) arrays.
-                dx = np.repeat(dx, dim_m, 1)
-            # _end_if_
-
-        # _end_if_
-
-        # Central Difference Formula:
-        du_mid = (u_right - u_left)/dx
-
-        # Return the derivative and the mid-points.
-        return u_mid, du_mid
     # _end_def_
 
     def pde_fun(self):
@@ -187,3 +146,71 @@ class RichardsPDE(object):
     # _end_def_
 
 # _end_class_
+
+# Helper module method.
+def midpoints(x_left, u_left, x_right, u_right):
+    """
+    Interpolation (helper) function that is used
+    in the discretization of the Richards' PDE.
+
+    :param x_left: [dim_d x 1]
+
+    :param u_left: [dim_d x dim_m]
+
+    :param x_right: [dim_d x 1]
+
+    :param u_right: [dim_d x dim_m]
+
+    :return: derivatives and the mid-points.
+    """
+
+    # Check for input mis-match.
+    if u_left.shape != u_right.shape:
+        raise RuntimeError(" midpoints: Input 'u' dimensions do not match."
+                           " {0} not equal to {1}".format(u_left.shape, u_right.shape))
+    # _end_if_
+
+    # Check for input mis-match.
+    if x_left.shape != x_right.shape:
+        raise RuntimeError(" midpoints: Input 'x' dimensions do not match."
+                           " {0} not equal to {1}".format(x_left.shape, x_right.shape))
+    # _end_if_
+
+    # Use a simple (arithmetic) average to approximate
+    # the 'mid-points' between 'u_left' and 'u_right'.
+    u_mid = 0.5 * (u_left + u_right)
+
+    # Spacings between the two input points.
+    # This will be either scalar, or vector.
+    dx = x_right - x_left
+
+    # Vectorization code.
+    if len(u_mid.shape) > 1:
+
+        # Get the number of columns.
+        _, m = u_mid.shape
+
+        # If the x-input is vector.
+        # !! Otherwise is scalar !!
+        if len(dx.shape) == 1:
+
+            # Convert it to 1d array.
+            dx = dx.reshape(-1, 1)
+
+            # Repeat if necessary.
+            if m > 1:
+                # These will be (d, m) arrays.
+                dx = np.repeat(dx, m, 1)
+            # _end_if_
+
+        # _end_if_
+
+    # _end_if_
+
+    # Central Difference Formula:
+    du_mid = (u_right - u_left)/dx
+
+    # Return the derivative and the mid-points.
+    return u_mid, du_mid
+
+# _end_def_
