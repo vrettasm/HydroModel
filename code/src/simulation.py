@@ -4,9 +4,13 @@ import pandas as pd
 from pathlib import Path
 
 from code.src.porosity import Porosity
+from code.src.root_density import RootDensity
 from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
 from code.src.hydraulic_conductivity import HydraulicConductivity
+
+from code.src.models.vrettas_fung import VrettasFung
+from code.src.models.vanGenuchten import vanGenuchten
 
 class Simulation(object):
     """
@@ -85,7 +89,7 @@ class Simulation(object):
         # Add the underground layers to the structure.
         self.mData["layers"] = layers
 
-        # The spacing here defines a Uniform-Grid [L:cm].
+        # The spacing here defines a Uniform-Grid [L: cm].
         dz = 5.0
 
         # Add the spatial discretization to the structure.
@@ -156,15 +160,25 @@ class Simulation(object):
         # Add the environmental parameters.
         self.mData["env_param"] = params["Environmental"]
 
-        # Add the selected hydrological model.
-        self.mData["hydro_model"] = params["Hydrological_Model"]
-
         # Add the simulation (execution) flags.
         self.mData["sim_flags"] = params["Simulation_Flags"]
 
         # Create and add the porosity object.
         self.mData["porosity"] = Porosity(z_grid, layers, theta, soil,
                                           params["Hydrological_Model"]["Porosity_Profile"])
+
+        # Create and add the root density object.
+        self.mData["root_pdf"] = RootDensity(np.ceil(params["Environmental"]["Max_Root_Depth_cm"]/dz),
+                                             dz, params["Environmental"]["Root_Pdf_Profile"])
+
+        # Add the selected hydrological model.
+        if params["Hydrological_Model"]["Name"] == "vrettas_fung":
+            self.mData["hydro_model"] = VrettasFung(soil, self.mData["porosity"],
+                                                    K, theta.res, dz)
+        else:
+            self.mData["hydro_model"] = vanGenuchten(soil, self.mData["porosity"],
+                                                     K, theta.res, dz)
+        # _end_if_
 
         # Extract the observational data from the pandas.Dataframe:
         r_datenum = data.loc[:, "Datenum"]
@@ -173,9 +187,6 @@ class Simulation(object):
         # NOTE: The value 719529 is MATLAB's datenum value of the "Unix epoch"
         # start (1970-01-01), which is the default origin for pd.to_datetime().
         timestamps = pd.to_datetime(r_datenum-719529, unit='D')
-
-        # Get the number of time-points.
-        dim_t = timestamps.size
 
         # Store timestamps in the dictionary.
         self.mData["time"] = [t.round(freq="s") for t in timestamps]
@@ -236,6 +247,9 @@ class Simulation(object):
                 n_dry += 1
             # _end_if_
         # _end_for_
+
+        # Get the number of time-points.
+        dim_t = timestamps.size
 
         # Wet counter (complementary to the Dry counter)
         n_wet = dim_t-n_dry
