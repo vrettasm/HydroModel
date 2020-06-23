@@ -34,7 +34,7 @@ class TestRootDensity(unittest.TestCase):
 
     def test_call(self):
         """
-        Test the 'Uniform' root pdf profile.
+        Test the __call__() method with all the known root pdf models.
         :return: None
         """
 
