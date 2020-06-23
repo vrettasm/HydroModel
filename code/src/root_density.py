@@ -9,7 +9,7 @@ class RootDensity(object):
     of a pre defined range of 1 to 100.
     """
 
-    __slots__ = ("profile", "r_model", "max_depth_m", "f_interp")
+    __slots__ = ("profile", "r_model", "max_depth_cm", "f_interp")
 
     def __init__(self, ln, dz, r_model):
         """
@@ -27,7 +27,7 @@ class RootDensity(object):
         self.r_model = r_model
 
         # Store the maximum root depth [L: m].
-        self.max_depth_m = (ln * dz)/100.0
+        self.max_depth_cm = (ln * dz)
 
         # Discrete cells with uniform 'dz' spacing.
         n_cells = np.linspace(1, 100, ln)
@@ -143,16 +143,16 @@ class RootDensity(object):
         :return: a string representation of a Root density object.
         """
         return " Root density Id({0}): Type={1},"\
-               " Max-Depth={2} [m]".format(id(self), self.r_model, self.max_depth_m)
+               " Max-Depth={2} [cm]".format(id(self), self.r_model, self.max_depth_cm)
     # _end_def_
 
     @property
     def max_root_depth(self):
         """
-        Accessor of the maximum root depth [L: m].
-        :return: the depth in meters.
+        Accessor of the maximum root depth [L: cm].
+        :return: the depth in centimeters.
         """
-        return self.max_depth_m
+        return self.max_depth_cm
     # _end_def_
 
     @property
