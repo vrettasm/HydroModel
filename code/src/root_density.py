@@ -94,7 +94,7 @@ class RootDensity(object):
             w2 = 0.85
 
             # Apply mixture model.
-            root_pdf = w1 * root_a + w2 * root_b
+            root_pdf = (w1 * root_a) + (w2 * root_b)
 
         else:
             raise ValueError(" Wrong root density profile type: {0}".format(r_model))
