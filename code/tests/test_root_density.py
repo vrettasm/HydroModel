@@ -70,7 +70,6 @@ class TestRootDensity(unittest.TestCase):
 
     # _end_def_
 
-    # _end_def_
     def test_wrong_init_params(self):
         """
         Test an object initialization with wrong input parameters.
