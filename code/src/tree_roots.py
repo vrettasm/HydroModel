@@ -22,9 +22,9 @@ class TreeRoots(object):
 
     """
 
-    __slots__ = ("profile", "r_model", "max_depth_cm", "f_interp")
+    __slots__ = ("profile", "r_model", "max_depth_cm", "f_interp", "dz", "porous")
 
-    def __init__(self, ln, dz, r_model):
+    def __init__(self, ln, dz, r_model, porous):
         """
         Default constructor of the root density object class.
 
@@ -33,16 +33,22 @@ class TreeRoots(object):
         :param dz: space discretization [L: cm].
 
         :param r_model: root density model (type).
-
         """
+
+        # Store the space discretization.
+        self.dz = dz
 
         # Store the root density model.
         self.r_model = r_model
 
-        # Store the maximum root depth [L: m].
+        # Store the porosity object.
+        self.porous = porous
+
+        # Store the maximum root depth [L: cm].
         self.max_depth_cm = (ln * dz)
 
         # Discrete cells with uniform 'dz' spacing.
+        # This maps the depth in: [1-100].
         n_cells = np.linspace(1, 100, ln)
 
         # Create the profile according to the selected type.
@@ -128,8 +134,8 @@ class TreeRoots(object):
 
     def __call__(self, z_new=None):
         """
-        A call of the root density object will return the root pdf profile for a
-        specific input 'z_new'.  If no new depth values are given, the call will
+        A call of the tree roots object will return the root pdf profile for a
+        specific input 'z_new'. If no new depth values are given, the call will
         return the full profile.
 
         :param z_new: the depth(s) at which we want the new profile [L: cm].
@@ -147,8 +153,135 @@ class TreeRoots(object):
         # _end_if_
     # _end_def_
 
-    def efficiency(self):
-        pass
+    def efficiency(self, theta_z, z_roots):
+        """
+        This method computes the root efficiency as the product of two terms:
+
+        ( i) alpha01 -> maximum efficiency, when the water is not limiting,
+        (ii) alpha02 -> root shutdown.
+
+        The method is vectorized for faster execution, when the input matrix
+        "theta" has multiple columns [dim_d x dim_m].
+
+        :param theta_z: soil moisture values at depth(s) 'z'. [dim_d x dim_m]
+
+        :param z_roots: depth values at which we want to return the root efficiency. [dim_d x 1]
+
+        :return: (1) root efficiency (alpha01 * alpha02) [dim_d x dim_m]
+                 (2) available water in the root zone    [1 x 1]
+        """
+
+        # Make sure the theta input is at least (dim_d x 1)
+        if len(theta_z.shape) == 1:
+            theta_z = theta_z.reshape(-1, 1)
+        # _end_if_
+
+        # Get the input dimensions.
+        dim_d, dim_m = theta_z.shape
+
+        # Make sure the dimensions match.
+        if dim_d != z_roots.size:
+            raise RuntimeError(" Input dimensions do not match:"
+                               " {0} not equal to {1}".format(dim_d, z_roots.size))
+        # _end_if_
+
+        # Compute porosity, field capacity and wilting points at 'z'.
+        porous_z, f_cap_z, wlt_z = self.porous(z_roots)
+
+        # Make sure the porosity is at least (dim_d x 1)
+        if len(porous_z.shape) == 1:
+            porous_z = porous_z.reshape(-1, 1)
+        # _end_if_
+
+        # Make sure the field capacity is at least (dim_d x 1)
+        if len(f_cap_z.shape) == 1:
+            f_cap_z = f_cap_z.reshape(-1, 1)
+        # _end_if_
+
+        # Make sure the wilting point is at least (dim_d x 1)
+        if len(wlt_z.shape) == 1:
+            wlt_z = wlt_z.reshape(-1, 1)
+        # _end_if_
+
+        # Replicate for vectorization.
+        if dim_m > 1:
+            porous_z = porous_z.repeat(dim_m, 1)
+            f_cap_z = f_cap_z.repeat(dim_m, 1)
+            wlt_z = wlt_z.repeat(dim_m, 1)
+        # _end_if_
+
+        # Compute the available water (for extraction) in the root-zone.
+        water_k = np.sum(theta_z - wlt_z, axis=0) * self.dz
+
+        # Check if there is water that can be extracted.
+        if np.all(water_k > 0.0):
+            # Compute the cumulative sum of - $\Sum_{z=0}^{zb} \theta(z)$, from the
+            # top of the surface (z = 0), until the depth of the root zone (z = zb).
+            local_z = np.cumsum(theta_z, axis=0) * self.dz
+
+            # Extract the last row (corresponds to the total integral).
+            total_z = local_z[-1, :]
+
+            # Safeguard: Avoid division by zero.
+            total_z[total_z == 0.0] = 1.0
+
+            # Replicate the vector: [dim_d x dim_m]
+            total_z = np.ones((dim_d, dim_m)) * total_z
+
+            # Compute the denominator of the first term in alpha_01.
+            # [dim_d x 1]
+            denom_01 = porous_z - wlt_z
+
+            # Safeguard: Avoid division by zero.
+            denom_01[denom_01 == 0.0] = 1.0
+
+            # Maximum efficiency when water is not limiting.
+            alpha_01 = np.maximum(theta_z/denom_01, local_z/total_z)
+
+            # Preallocate root shutdown (default is zero).
+            # Satisfies the cases where: $\theta <= \theta_{wlt}$
+            alpha_02 = np.zeros((dim_d, dim_m))
+
+            # Find the indexes (in the soil moisture),
+            # where $\theta_{wlt} < \theta <= \theta_{flc}$
+            cond_01 = (wlt_z < theta_z) & (theta_z <= f_cap_z)
+
+            # Compute the denominator in alpha_02.
+            denom_02 = f_cap_z[cond_01] - wlt_z[cond_01]
+
+            # Safeguard: (this should never happen).
+            denom_02[denom_02 == 0.0] = 1.0
+
+            # Compute the root extraction for each layer.
+            alpha_02[cond_01] = (theta_z[cond_01] - f_cap_z[cond_01])/denom_02
+
+            # The final condition checks whether $theta(z) > theta_{flc}$,
+            # and sets the values of 'alpha_02' to one.
+            alpha_02[theta_z > f_cap_z] = 1.0
+
+            # Safeguard: Make sure [0.0 <= alpha_02 <= 1.0].
+            alpha_02 = np.minimum(np.maximum(alpha_02, 0.0), 1.0)
+
+            # Here we make sure that if all the root zone is flooded with water at
+            # full capacity  (theta(z) > theta_{flc}), then we artificially reduce
+            # the ET demand to prevent the roots from drowning.
+            alpha_02[:, np.all(alpha_02 == 1.0)] = 0.01
+
+            # Root efficiency for each layer: $\rho(\theta(z))$
+            rho_theta = np.abs(alpha_01 * alpha_02)
+
+            # Compute the integral of the root efficiency term.
+            tot_theta = np.sum(rho_theta, axis=0) * self.dz
+
+            # Constraint No.1: normalize it so the integral is equal to one.
+            rho_theta = rho_theta / tot_theta
+        else:
+            # Here we set everything to zero.
+            water_k = 0.0
+            rho_theta = np.zeros((dim_d, dim_m))
+        # _end_if_
+
+        return rho_theta, water_k
     # _end_def_
 
     def __str__(self):
@@ -158,7 +291,7 @@ class TreeRoots(object):
 
         :return: a string representation of a Root density object.
         """
-        return " Tree Roots Id({0}): Type={1},"\
+        return " Tree-Roots Id({0}): Type={1},"\
                " Max-Depth={2} [cm]".format(id(self), self.r_model, self.max_depth_cm)
     # _end_def_
 
