@@ -106,7 +106,7 @@ class HydrologicalModel(object):
             psi_z[~j, i] = -((s_eff[~j, i] ** (-1.0 / self.m) - 1.0) ** (1.0 / self.n)) / self.alpha
 
             # Compute the pressure head (psi) on the saturated soil.
-            psi_z[j, i] = np.arange(0, np.sum(j)) * self.dz
+            psi_z[j, i] = np.arange(0, np.sum(j, axis=0)) * self.dz
         # _end_if_
 
         # SAFEGUARD:
