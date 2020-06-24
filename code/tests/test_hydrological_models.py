@@ -145,7 +145,7 @@ class TestHydrologicalModels(unittest.TestCase):
 
         # Get back the theta.
         theta_new, _, _, _ = test_model(psi_1d, self.z_grid,
-                                        {"n_rnd": np.random.randn(self.z_grid.size)})
+                                        n_rnd=np.random.randn(self.z_grid.size))
 
         # The new theta should be the same (within some error).
         self.assertTrue(isclose(np.abs(np.mean(theta_new-theta_1d)),
@@ -159,7 +159,7 @@ class TestHydrologicalModels(unittest.TestCase):
 
         # Get back the theta.
         theta_2d, _, _, _ = test_model(psi_2d, self.z_grid,
-                                       {"n_rnd": np.random.randn(self.z_grid.size)})
+                                       n_rnd=np.random.randn(self.z_grid.size))
         # Check the dimensions.
         self.assertTrue(psi_2d.shape, theta_2d.shape)
     # _end_def_
