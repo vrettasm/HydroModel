@@ -44,7 +44,8 @@ def validateInputParametersFile(filename):
         required_keys = ["IC_Filename", "Data_Filename", "Well_No",
                          "Water_Content", "Hydraulic_Conductivity",
                          "Hydrological_Model",  "Simulation_Flags",
-                         "Environmental", "Soil_Properties", "Site_Information"]
+                         "Environmental", "Soil_Properties", "Trees",
+                         "Site_Information"]
 
         # Check the keywords for membership in the file.
         for k in required_keys:
