@@ -104,7 +104,7 @@ class RootDensity(object):
         root_pdf = np.maximum(root_pdf, 1.0e-10)
 
         # Compute the integral of the root profile term.
-        total_area = np.sum(root_pdf)*dz
+        total_area = np.sum(root_pdf, axis=0)*dz
 
         # Assign the normalized root profile.
         self.profile = root_pdf/total_area
