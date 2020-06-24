@@ -4,7 +4,7 @@ import pandas as pd
 from pathlib import Path
 
 from code.src.porosity import Porosity
-from code.src.root_density import RootDensity
+from code.src.tree_roots import TreeRoots
 from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
 from code.src.hydraulic_conductivity import HydraulicConductivity
@@ -163,21 +163,22 @@ class Simulation(object):
         # Add the simulation (execution) flags.
         self.mData["sim_flags"] = params["Simulation_Flags"]
 
-        # Create and add the porosity object.
-        self.mData["porosity"] = Porosity(z_grid, layers, theta, soil,
-                                          params["Hydrological_Model"]["Porosity_Profile"])
+        # Create a porosity object.
+        porous = Porosity(z_grid, layers, theta, soil,
+                          params["Hydrological_Model"]["Porosity_Profile"])
+
+        # Add it to the dictionary.
+        self.mData["porosity"] = porous
 
         # Create and add the root density object.
-        self.mData["root_pdf"] = RootDensity(np.ceil(params["Environmental"]["Max_Root_Depth_cm"]/dz),
-                                             dz, params["Environmental"]["Root_Pdf_Profile"])
+        self.mData["tree_roots"] = TreeRoots(np.ceil(params["Trees"]["Max_Root_Depth_cm"]/dz),
+                                             dz, params["Trees"]["Root_Pdf_Profile"], porous)
 
         # Add the selected hydrological model.
         if params["Hydrological_Model"]["Name"] == "vrettas_fung":
-            self.mData["hydro_model"] = VrettasFung(soil, self.mData["porosity"],
-                                                    K, theta.res, dz)
+            self.mData["hydro_model"] = VrettasFung(soil, porous, K, theta.res, dz)
         else:
-            self.mData["hydro_model"] = vanGenuchten(soil, self.mData["porosity"],
-                                                     K, theta.res, dz)
+            self.mData["hydro_model"] = vanGenuchten(soil, porous, K, theta.res, dz)
         # _end_if_
 
         # Extract the observational data from the pandas.Dataframe:
