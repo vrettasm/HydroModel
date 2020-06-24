@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from math import isclose
 from numpy.random import default_rng
-from code.src.utilities import logN_rnd
+from code.src.utilities import logN_rnd, find_wtd
 
 class TestUtilities(unittest.TestCase):
 
@@ -22,6 +22,38 @@ class TestUtilities(unittest.TestCase):
 
         # Check if the result is close enough (~ 1.0e-3).
         self.assertTrue(isclose(np.mean(x), mu, rel_tol=1.0e-3))
+    # _end_def_
+
+    def test_find_wtd(self):
+        # Extreme case no.1
+        # There are no saturated cells in the domain vector.
+        x1 = np.array([False, False, False, False, False, False, False, False, False, False])
+
+        # The expected index is at the end of the domain (i_correct = 9).
+        self.assertEqual(9, find_wtd(x1))
+
+        # Extreme case no.2
+        # All the cells are saturated in the domain vector.
+        x2 = np.array([True, True, True, True, True, True, True, True, True, True])
+
+        # The expected index is at the beginning of the domain (i_correct = 0).
+        self.assertEqual(0, find_wtd(x2))
+
+        # Typical case no.3
+        # The saturated cells are all at the bottom of the domain vector.
+        x3 = np.array([False, False, False, False, False, False, True, True, True, True])
+
+        # The expected index is at the first "True",
+        # from the end of the domain (i_correct = 6).
+        self.assertEqual(6, find_wtd(x3))
+
+        # Typical case no.4
+        # Variably saturated cells in the domain vector.
+        x3 = np.array([False, True, False, True, False, False, False, True, True, True])
+
+        # The expected index is at the first "True",
+        # from the end of the domain (i_correct = 7).
+        self.assertEqual(7, find_wtd(x3))
     # _end_def_
 
 
