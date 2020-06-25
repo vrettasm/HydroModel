@@ -92,11 +92,11 @@ class RichardsPDE(object):
                             self.x_mesh[1], y[1, :])
 
         # Evaluate the PDE at the top (2/2).
-        cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, args)
+        cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, *args)
 
         # Evaluate the boundary conditions.
         pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0, :],
-                                     self.x_mesh[-1], y[-1, :], args)
+                                     self.x_mesh[-1], y[-1, :], *args)
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
             dydt[0, :] = pL
@@ -115,7 +115,7 @@ class RichardsPDE(object):
         y_mid, dy_mid = midpoints(self.x_mesh[self.x_mid+0], y[self.x_mid+0, :],
                                   self.x_mesh[self.x_mid+1], y[self.x_mid+1, :])
         # PDE evaluation.
-        cR, sR, fR = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, args)
+        cR, sR, fR = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, *args)
 
         # WARNING: DO NOT EDIT THESE LINES
         cLi = np.append(cL, cR, axis=0)
@@ -183,7 +183,7 @@ class RichardsPDE(object):
         # capacity 'C(.)'.  Additionally return the soil moisture at the same
         # depths and the porosity. These are used for the root efficiency and
         # the hydraulic lift processes.
-        theta, K, C, *_ = self.h_model(y, z, args)
+        theta, K, C, *_ = self.h_model(y, z, *args)
 
         # Compute the flux term.
         flux = K*(np.minimum(dydz, 1.01) - 1.0)
@@ -199,7 +199,7 @@ class RichardsPDE(object):
         args_i = args[0]
 
         # Make sure the length exceeds one cell.
-        if dim_d > 1:
+        if dim_d >= 1:
             # Get the discretization step [L: cm]
             dz = self.m_data["dz"]
 
@@ -412,7 +412,7 @@ class RichardsPDE(object):
         """
 
         # Get the maximum infiltration capacity from the model.
-        theta_left, *_, q_inf_max = self.h_model(y_left, z_left, args)
+        theta_left, *_, q_inf_max = self.h_model(y_left, z_left, *args)
 
         # Initial value assumes 1-D.
         dim_m = 1
