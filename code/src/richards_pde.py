@@ -4,34 +4,38 @@ from code.src.utilities import find_wtd
 
 class RichardsPDE(object):
     """
+    Richards' PDE model equations. It represents the movement of water in unsaturated soils.
 
+        https://en.wikipedia.org/wiki/Richards_equation
+
+    The code here mimics MATLAB's "pdepe" function to solve 1-D parabolic and elliptic PDEs.
     """
-    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp1", "zxmp1",
-                 "nx", "h_model", "ic0")
+
+    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp1",
+                 "zxmp1", "nx", "h_model", "var_arg_out")
 
     def __init__(self, m_data=None):
         """
-        Default constructor of the class.
+        Default constructor of the Richards' PDE class.
 
         :param m_data: dictionary with all the simulation parameters.
         """
+
         # Check if we have been given input.
         if not m_data:
             raise ValueError(" No input is given. Richards' model cannot initialize.")
         # _end_if_
 
+        # Variable output arguments.
+        self.var_arg_out = {"transpiration": [], "lateral_flow": []}
+
         # Make a reference to the input data structure.
         self.m_data = m_data
-
-        # Set the initial conditions array.
-        self.ic0 = m_data["init_cond"]
 
         # Get the hydrological model.
         self.h_model = m_data["hydro_model"]
 
-        # # PREPARE THE MESH-GRIDS AND STORE THEM IN THE OBJECT # #
-
-        # Spatial discretized grid [L x 1].
+        # Spatial grid [dim_d x 1].
         self.x_mesh = self.m_data["z_grid"]
 
         # Get the number of discrete points.
@@ -63,11 +67,11 @@ class RichardsPDE(object):
         It is vectorized for best performance, so the ode solver can
         use this property to speed up the solution.
 
-        :param t:
+        :param t: time variable.
 
-        :param y:
+        :param y: state vector of the PDE [dim_d x dim_m]
 
-        :return: dydt
+        :return: derivative dydt
         """
 
         # Make sure the input 'y' has at least shape (d, 1).
@@ -86,31 +90,30 @@ class RichardsPDE(object):
                             self.x_mesh[1], y[1, :])
 
         # Evaluate the PDE at the top (2/2).
-        cL, sL, fL, *_ = self.pde_fun(self.x_mid[0], y0, dy0, args)
+        cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, args)
 
         # Evaluate the boundary conditions.
         pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0, :],
                                      self.x_mesh[-1], y[-1, :], args)
-
         # TOP BOUNDARY:
-        if qL == 0:
+        if np.all(qL == 0.0):
             dydt[0, :] = pL
         else:
             # Compute the contribution of C(.):
-            denom = qL * self.zxmp1[0, :] * cL
+            denom = qL * self.zxmp1[0] * cL
 
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
             # Compute the derivative at $z = 0$:
-            dydt[0, :] = (pL + qL * (fL + self.zxmp1[0, :] * sL)) / denom
+            dydt[0, :] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
         # _end_if_
 
         # INTERIOR POINTS (vectorized computation):
         y_mid, dy_mid = midpoints(self.x_mesh[self.x_mid+0], y[self.x_mid+0, :],
                                   self.x_mesh[self.x_mid+1], y[self.x_mid+1, :])
         # PDE evaluation.
-        cR, sR, fR, *_ = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, args)
+        cR, sR, fR = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, args)
 
         # WARNING: DO NOT EDIT THESE LINES
         cLi = np.append(cL, cR, axis=0)
@@ -128,7 +131,7 @@ class RichardsPDE(object):
         dydt[self.x_mid, :] = (fR - fLi[0:-2, :] + (self.zxmp1[self.x_mid] * sR +
                                                     self.xzmp1[self.x_mid] * sLi[0:-2, :])) / denom
         # BOTTOM BOUNDARY:
-        if qR == 0.0:
+        if np.all(qR == 0.0):
             dydt[-1, :] = pR
         else:
             # Compute the contribution of C(.):
@@ -145,20 +148,25 @@ class RichardsPDE(object):
         return dydt
     # _end_def_
 
+    @property
+    def arg_out(self):
+        return self.var_arg_out
+    # _end_def_
+
     def pde_fun(self, z, y, dydz, *args):
         """
-
         Richards' Equation (PDE - 1d).
 
-        :param z:
+        :param z: spatial discretization grid, i.e. the depth values at which
+        we want to return the solution of the PDE. [dim_d x 1]
 
-        :param y:
+        :param y: is the state vector of the PDE, y(z,t=t0). [dim_d x 1]
 
-        :param dydz:
+        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_d x 1].
 
-        :param args:
+        :param args: additional input parameters of the PDE.
 
-        :return:
+        :return: C (specific moisture capacity), sink, flux.
         """
 
         # Make sure the 'y' input is at least (dim_d x 1)
@@ -181,8 +189,8 @@ class RichardsPDE(object):
         # Sink term is initialized to zero.
         sink = np.zeros((dim_d, dim_m))
 
-        # Define some output variables.
-        tran_k, latf_k = None, None
+        # Define additional output variables.
+        transpire, lateral_flow = None, None
 
         # We know that the first argument in the 'args' list is a dictionary
         # that contains all the necessary parameters for the i-th iteration.
@@ -190,36 +198,29 @@ class RichardsPDE(object):
 
         # Make sure the length exceeds one cell.
         if dim_d > 1:
-            # Get the Month (Mn) and the Hour (Hr) of the current time.
-            Mn, Hr = args_i["time"].month, args_i["time"].hour
+            # Get the discretization step [L: cm]
+            dz = self.m_data["dz"]
+
+            # Get the root density object.
+            tree_roots = self.m_data["tree_roots"]
+
+            # Find the indexes of the root-zone.
+            r_cells = z <= tree_roots.max_root_depth
+
+            # Get the roots density at depths (z).
+            roots_z = tree_roots(z)
 
             # In Normal Mode: SPINUP == FALSE.
             if not self.m_data["sim_flags"]["SPINUP"]:
 
-                # Get the discretization step [L: cm]
-                dz = self.m_data["dz"]
-
                 # Compute day-light hours. We assume that the daylight is
                 # between [06:00:00] (morning) and [17:59:59] (afternoon).
-                daylight = Hr in np.arange(6, 18)
-
-                # If either of this processes is active than
-                # we need the rooting depth profiles at 'z'.
-                if self.m_data["sim_flags"]["HLIFT"] or self.m_data["sim_flags"]["ET"]:
-                    # Get the root density object.
-                    tree_roots = self.m_data["tree_roots"]
-
-                    # Find the indexes of the root-zone.
-                    r_cells = z <= tree_roots.max_root_depth
-
-                    # Get the roots density at depths (z).
-                    roots_z = tree_roots(z)
-                # _end_if_
+                daylight = args_i["time"].hour in np.arange(6, 18)
 
                 # Hydraulic Redistribution.
                 # This runs ONLY in during the night-time!
                 if self.m_data["sim_flags"]["HLIFT"] and (not daylight):
-                    # Parameter for HR:
+                    # Parameter for hydraulic redistribution:
                     a_star = 1800
 
                     # Inverse of $\psi_{50}$:
@@ -229,7 +230,7 @@ class RichardsPDE(object):
                     c_sat = a_star * self.m_data["Trees"]["Leaf_Area_Index"]
 
                     # Hydraulic conductance parameter:
-                    c_HR = c_sat * ((1.0 - inv_psi_50 * y[r_cells, :]) ** 2) * roots_z
+                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells, :]) ** 2) * roots_z
 
                     # Pressure difference.
                     dy = dydz * dz
@@ -237,14 +238,14 @@ class RichardsPDE(object):
                     # Update the flux 'f' with the new HR term. NB: We need to
                     # scale by '0.5' because the q_{HR} has [cm/h] and we need
                     # per 0.5h.
-                    flux[r_cells, :] += 0.5 * c_HR * dy[r_cells, :]
+                    flux[r_cells, :] += 0.5 * c_hr * dy[r_cells, :]
                 # _end_if_
 
                 # Evapo-transpiration (Tree Roots Water Uptake)
                 # This runs ONLY during day-time!
                 if self.m_data["sim_flags"]["ET"] and daylight:
                     # Compute the root efficiency.
-                    rho_theta, Wk = tree_roots.efficiency(theta[r_cells, :], z[r_cells])
+                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells, :], z[r_cells])
 
                     # Get the product of the two terms.
                     x_out = rho_theta * roots_z
@@ -266,7 +267,7 @@ class RichardsPDE(object):
                     # is not root shutdown! Otherwise don't remove water.
                     if np.all(tot_x > 0.0):
                         # Total transpiration demand.
-                        tot_tr = np.minimum(args_i["atm"], Wk)
+                        tot_tr = np.minimum(args_i["atm"], water_k)
 
                         # Compute the rate of potential transpiration
                         # by dividing the total atmospheric demand,at
@@ -281,7 +282,7 @@ class RichardsPDE(object):
                         sink[r_cells, :] = -uptake
 
                         # Store the transpiration as function of depth.
-                        tran_k = uptake
+                        transpire = uptake
                     # _end_if_
                 # _end_transpiration_if_
 
@@ -294,7 +295,7 @@ class RichardsPDE(object):
                     if self.m_data["sim_flags"]["PREDICT"]:
                         # Predictive (running) mode.
                         # Set the sink coefficient accordingly:
-                        if Mn in [10, 11, 12, 1, 2, 3]:
+                        if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
                             # Wet season coefficient.
                             alpha_low = -2.5e-3
                         else:
@@ -302,14 +303,11 @@ class RichardsPDE(object):
                             alpha_low = -1.5e-3
                         # _end_if_
 
-                        # Number of cells, from the bottom of the well, that stay
+                        # Number of cells, from the bottom  of the well, that stay
                         # always saturated. That number can vary from well to well
-                        # and from year to year. This is to prevent the spatial
+                        # and from  year to year.  This is to  prevent the spatial
                         # domain from draining completely during extended droughts.
-                        sat_cells = args_i["sat_cells"] - 1
-
-                        # Auxiliary variable.
-                        low_lim = dim_d - sat_cells
+                        low_lim = dim_d - (self.m_data["sat_cells"] - 1)
 
                         # Exponent range.
                         nu = np.linspace(1.5, 0.0, low_lim)
@@ -334,7 +332,7 @@ class RichardsPDE(object):
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                latf_k = (j, np.abs(sink[j, 1]))
+                                lateral_flow = (j, np.abs(sink[j, 1]))
                             # _end_if_
                         # _end_for_
                     else:
@@ -361,7 +359,7 @@ class RichardsPDE(object):
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                latf_k = (j, np.abs(sink[j, 1]))
+                                lateral_flow = (j, np.abs(sink[j, 1]))
                             # _end_if_
                         # _end_for_
                     # _end_if_
@@ -369,8 +367,12 @@ class RichardsPDE(object):
             # _end_if_
         # _end_if_
 
+        # Store the additional output.
+        self.var_arg_out["transpiration"].append(transpire)
+        self.var_arg_out["lateral_flow"].append(lateral_flow)
+
         # Exit:
-        return C, sink, flux, tran_k, latf_k
+        return C, sink, flux
     # _end_def_
 
     def ic_fun(self, y0, *args):
@@ -385,27 +387,26 @@ class RichardsPDE(object):
 
         :return: initial conditions vector.
         """
-        # Update the object status
-        self.ic0 = y0
 
         # Return the vector.
-        return self.ic0
+        return y0
     # _end_def_
 
     def bc_fun(self, z_left, y_left, z_right, y_right, *args):
         """
+        Boundary Conditions (top and bottom).
 
-        :param z_left:
+        :param z_left: location(s) 1
 
-        :param y_left:
+        :param y_left: y(z_left, t)
 
-        :param z_right:
+        :param z_right: location(s) 2
 
-        :param y_right:
+        :param y_right: y(z_right, t)
 
-        :param args:
+        :param args: additional arguments.
 
-        :return:
+        :return: p_left, q_left, p_right, q_right
         """
 
         # Get the maximum infiltration capacity from the model.
@@ -467,7 +468,7 @@ class RichardsPDE(object):
 
         :param t: time window to integrate the ode (t0, tf).
 
-        :param y0: initial conditions array [L x 1].
+        :param y0: initial conditions array [dim_d x 1].
 
         :param r_tol: absolute tolerance.
 
@@ -475,7 +476,7 @@ class RichardsPDE(object):
 
         :param args: additional model parameters.
 
-        :return: dydt [L x n]
+        :return: dydt [dim_d x 1]
         """
 
         # Trials counter
@@ -503,7 +504,6 @@ class RichardsPDE(object):
                     print(" The solver failed with message: {0}".format(sol_t.message))
                 # _end_if_
             # _end_if_
-
         # _end_while_
 
         # Return the (integrated) time derivative: dydt.
