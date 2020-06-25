@@ -479,14 +479,14 @@ class RichardsPDE(object):
         n_trials = 5
 
         # Hard code tolerance values.
-        r_tol, a_tol = 1.0e-4, 1.0e-4
+        rel_tol, abs_tol = 1.0e-4, 1.0e-4
 
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
 
             # Current solution
             sol_t = solve_ivp(self, t_span=t, y0=y0.flatten(), method='LSODA',
-                              atol=a_tol, rtol=r_tol, args=args)
+                              atol=abs_tol, rtol=rel_tol, args=args)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
