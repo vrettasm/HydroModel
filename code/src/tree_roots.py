@@ -35,6 +35,9 @@ class TreeRoots(object):
         :param r_model: root density model (type).
         """
 
+        # Make sure ln is integer.
+        ln = int(ln)
+
         # Store the space discretization.
         self.dz = dz
 
