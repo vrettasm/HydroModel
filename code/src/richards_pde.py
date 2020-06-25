@@ -461,7 +461,7 @@ class RichardsPDE(object):
         return p_left, q_left, p_right, q_right
     # _end_def_
 
-    def solve(self, t, y0, r_tol=1.0e-4, a_tol=1.0e-4, *args):
+    def solve(self, t, y0, *args):
         """
         This function numerically integrates a system of ordinary differential
         equations (self), within the time span "t", given an initial value y0.
@@ -469,10 +469,6 @@ class RichardsPDE(object):
         :param t: time window to integrate the ode (t0, tf).
 
         :param y0: initial conditions array [dim_d x 1].
-
-        :param r_tol: absolute tolerance.
-
-        :param a_tol: absolute tolerance.
 
         :param args: additional model parameters.
 
@@ -482,10 +478,14 @@ class RichardsPDE(object):
         # Trials counter
         n_trials = 5
 
+        # Hard code tolerance values.
+        r_tol, a_tol = 1.0e-4, 1.0e-4
+
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
+
             # Current solution
-            sol_t = solve_ivp(self, t_span=t, y0=y0, method='LSODA',
+            sol_t = solve_ivp(self, t_span=t, y0=y0.flatten(), method='LSODA',
                               atol=a_tol, rtol=r_tol, args=args)
 
             # Check if the solver terminated successfully.
