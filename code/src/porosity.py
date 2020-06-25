@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.interpolate import interp1d
+
 from .utilities import logN_rnd
+
 
 class Porosity(object):
     """

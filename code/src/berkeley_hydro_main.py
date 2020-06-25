@@ -8,8 +8,13 @@ TBD
 
 # Load the required packages.
 import sys
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
+# Add the current path to the search-path.
+sys.path.append(".")
+
 from .simulation import Simulation
 
 # INFO:

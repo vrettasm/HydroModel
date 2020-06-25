@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from ..utilities import logN_rnd
+
 from .hydrological_model import HydrologicalModel
+from ..utilities import logN_rnd
+
 
 class VrettasFung(HydrologicalModel):
     """

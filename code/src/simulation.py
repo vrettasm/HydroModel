@@ -1,19 +1,19 @@
 import json
 import time
-import numpy as np
-import pandas as pd
 from pathlib import Path
 
-from .utilities import find_wtd
-from .porosity import Porosity
-from .tree_roots import TreeRoots
-from .richards_pde import RichardsPDE
-from .water_content import WaterContent
-from .soil_properties import SoilProperties
-from .hydraulic_conductivity import HydraulicConductivity
+import numpy as np
+import pandas as pd
 
-from .models.vrettas_fung import VrettasFung
+from .hydraulic_conductivity import HydraulicConductivity
 from .models.vanGenuchten import vanGenuchten
+from .models.vrettas_fung import VrettasFung
+from .porosity import Porosity
+from .richards_pde import RichardsPDE
+from .soil_properties import SoilProperties
+from .tree_roots import TreeRoots
+from .utilities import find_wtd
+from .water_content import WaterContent
 
 
 class Simulation(object):

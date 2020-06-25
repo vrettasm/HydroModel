@@ -1,5 +1,6 @@
-from numpy import minimum as np_min
 from numpy import maximum as np_max
+from numpy import minimum as np_min
+
 
 class WaterContent(object):
     """
