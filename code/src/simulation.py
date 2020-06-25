@@ -42,7 +42,7 @@ class Simulation(object):
         self.pde_model = None
     # _end_def_
 
-    def setupModel(self, params=None, data=None):
+    def setupModel(self, params, data):
         """
         This method is called BEFORE the run() and sets up all the variables for the simulation.
         It is also responsible for checking the validity of the input parameters before use.
@@ -57,16 +57,6 @@ class Simulation(object):
 
         :return: None.
         """
-
-        # make sure we have input parameters.
-        if not params:
-            raise RuntimeError(" Can't setup the model parameters.")
-        # _end_if_
-
-        # Make sure we have water data.
-        if not data:
-            raise RuntimeError(" Can't setup the model data.")
-        # _end_if_
 
         # The spacing here defines a Uniform-Grid [L: cm].
         dz = 5.0
@@ -335,7 +325,7 @@ class Simulation(object):
         wtd_i = np.where(z == self.mData["zWtd_cm"][0])
 
         # Start by assuming the whole domain is full of water.
-        q_0 = self.mData["porosity"]()
+        q_0, *_ = self.mData["porosity"]()
 
         # Compute the pressure head values.
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
