@@ -32,7 +32,8 @@ class vanGenuchten(HydrologicalModel):
         :param kwargs: (for compatibility) to keep a uniform interface.
 
         :return: q (water content), K (unsaturated hydraulic conductivity),
-        C (specific moisture capacity) and q_inf_max (max infiltration capacity.
+        C (specific moisture capacity), Ksat (saturated hydraulic conductivity),
+        and q_inf_max (max infiltration capacity.
         """
 
         # Make sure the input 'psi' has at least shape (d, 1).
@@ -127,8 +128,8 @@ class vanGenuchten(HydrologicalModel):
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
         q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
 
-        # Tuple with all the related variable.
-        return q, K, C, q_inf_max
+        # Tuple with all the related variables.
+        return q, K, C, k_sat, q_inf_max
     # _end_def_
 
 # _end_class_
