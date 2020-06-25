@@ -1,5 +1,5 @@
 import numpy as np
-from code.src.models.hydrological_model import HydrologicalModel
+from .hydrological_model import HydrologicalModel
 
 
 class vanGenuchten(HydrologicalModel):

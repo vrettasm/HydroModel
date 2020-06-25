@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.integrate import solve_ivp
-from code.src.utilities import find_wtd
+from .utilities import find_wtd
 
 class RichardsPDE(object):
     """

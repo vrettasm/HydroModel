@@ -10,7 +10,7 @@ TBD
 import sys
 import pandas as pd
 from pathlib import Path
-from code.src.simulation import Simulation
+from .simulation import Simulation
 
 # INFO:
 __author__ = "Michail Vrettas, PhD"

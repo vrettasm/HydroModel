@@ -4,16 +4,16 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
-from code.src.utilities import find_wtd
-from code.src.porosity import Porosity
-from code.src.tree_roots import TreeRoots
-from code.src.richards_pde import RichardsPDE
-from code.src.water_content import WaterContent
-from code.src.soil_properties import SoilProperties
-from code.src.hydraulic_conductivity import HydraulicConductivity
+from .utilities import find_wtd
+from .porosity import Porosity
+from .tree_roots import TreeRoots
+from .richards_pde import RichardsPDE
+from .water_content import WaterContent
+from .soil_properties import SoilProperties
+from .hydraulic_conductivity import HydraulicConductivity
 
-from code.src.models.vrettas_fung import VrettasFung
-from code.src.models.vanGenuchten import vanGenuchten
+from .models.vrettas_fung import VrettasFung
+from .models.vanGenuchten import vanGenuchten
 
 
 class Simulation(object):
