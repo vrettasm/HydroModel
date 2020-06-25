@@ -37,6 +37,9 @@ class Simulation(object):
 
         # This dictionary will carry all the simulation data.
         self.mData = {}
+
+        # Place holder for the pde model.
+        self.pde_model = None
     # _end_def_
 
     def setupModel(self, params=None, data=None):
@@ -65,6 +68,9 @@ class Simulation(object):
             raise RuntimeError(" Can't setup the model data.")
         # _end_if_
 
+        # The spacing here defines a Uniform-Grid [L: cm].
+        dz = 5.0
+
         # Copy the well number that is being simulated.
         self.mData["Well_No"] = params["Well_No"]
 
@@ -87,14 +93,14 @@ class Simulation(object):
             raise ValueError(" The well seems fully saturated.")
         # _end_if_
 
+        # Compute the number of continuously saturated cell (from the bottom).
+        self.mData["sat_cells"] = np.ceil(well["sat_depth"]/dz)
+
         # Spatial domain parameters for the underground layers [L:cm]:
         layers = (well["soil"], well["saprolite"], well["weathered"], well["max_depth"])
 
         # Add the underground layers to the structure.
         self.mData["layers"] = layers
-
-        # The spacing here defines a Uniform-Grid [L: cm].
-        dz = 5.0
 
         # Add the spatial discretization to the structure.
         self.mData["dz"] = dz
@@ -304,7 +310,104 @@ class Simulation(object):
         # Set the evaporation uniformly.
         self.mData["surface_evap"] = 2.0 * np.sum(params["Environmental"]["Evaporation_pct"] * precip_cm) / dim_t
 
+        # Create a Richards' equation object.
+        self.pde_model = RichardsPDE(self.mData)
+
+        # Check if there is an initial conditions file.
+        if not params["IC_Filename"]:
+            # Create an initial conditions vector.
+            self.mData["initial_cond"] = self.initial_conditions()
+        # _end_if_
+
     # _end_def_
+
+    def initial_conditions(self):
+        # [WARNING] Set the flag to TRUE!
+        self.mData["sim_flags"]["SPINUP"] = True
+
+        # Display info.
+        print(" [IC: {0}] Burn in period started ...\n".format(self.mData["Well_No"]))
+
+        # Spatial domain.
+        z = self.mData["z_grid"]
+
+        # Update the wtd parameter in the structure.
+        wtd_i = np.where(z == self.mData["zWtd_cm"][0])
+
+        # Start by assuming the whole domain is full of water.
+        q_0 = self.mData["porosity"]()
+
+        # Compute the pressure head values.
+        y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
+
+        # Set a maximum number of iterations.
+        burn_in = 500
+
+        # Early stop flag.
+        early_stop = False
+
+        # Initial random vector.
+        n_rnd = np.random.randn(z.size, 1)
+
+        # Create a local dictionary with parameters for the specific iteration.
+        args_0 = {"wtd": wtd_i, "n_rnd": n_rnd,
+                  "atm": self.mData["atm"][0],
+                  "time": self.mData["time"][0],
+                  "interception": self.mData["interception"],
+                  "precipitation": self.mData["precipitation_cm"][0]}
+
+        # Burn-in loop.
+        for j in range(burn_in):
+
+            # Update the random field daily (~24hr):
+            if np.mod(j, 40):
+                args_0["n_rnd"] = np.random.randn(z.size, 1)
+            # end_if_
+
+            # Time span
+            t_span = (j, j+1)
+
+            # Solve the PDE and return the solution at the final time point.
+            y_j = self.pde_model.solve(t_span, y0, args_0)
+
+            # Find 'wtd_est' at the j-th iteration.
+            wtd_est = find_wtd(y_j >= self.mData["soil"].psi_sat)
+
+            # Compute the absolute error: |wtd_obs - wtd_est|
+            abs_error = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est])
+
+            # Find the MSE.
+            mse_0 = np.mean((y_j - y0) ** 2)
+
+            # Set the value for the next iteration.
+            y0 = y_j
+
+            # Repeat the burn-in integration as long as the distance
+            # between the two solutions is above a threshold value.
+            if abs_error <= 2.0*self.mData["dz"] and mse_0 <= 0.01:
+                # Change the flag.
+                early_stop = True
+
+                # Display final message.
+                print(" [IC: {0}] finished at [itr: {1}] with"
+                      " [abs(error): {2}] and [MSE: {3}]\n".format(self.mData["Well_No"], j, abs_error, mse_0))
+
+                # Exit the loop.
+                break
+            # _end_if_
+        # _end_for_
+
+        # At this point the algorithm has reached maximum number of iterations.
+        if not early_stop:
+            print(" [IC: {0}] finished at maximum number of iterations.".format(self.mData["Well_No"]))
+        # _end_of_
+
+        # [WARNING] Set the flag to TRUE!
+        self.mData["sim_flags"]["SPINUP"] = False
+
+        # Return the state vector.
+        return y0
+    # _end_if_
 
     def run(self):
         # Check if the model parameters have been initialized.
@@ -313,7 +416,7 @@ class Simulation(object):
         # _end_if_
 
         # Get the initial conditions vector.
-        y0 = self.mData["init_cond"].copy()
+        y0 = self.mData["initial_cond"].copy()
 
         # Extract pressure head at saturation.
         psi_sat = self.mData["soil"].psi_sat
@@ -360,7 +463,7 @@ class Simulation(object):
         psi[0, :] = y0
 
         # Create a random vector.
-        n_rnd = np.random.randn(dim_d)
+        n_rnd = np.random.randn(dim_d, 1)
 
         # Run the hydrological model to get the initial water content.
         theta_vol[:, 0], k_hrc[:, 0], _, k_bkg[:, 0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
@@ -369,7 +472,8 @@ class Simulation(object):
         tk = np.arange(0, dim_t)
 
         # Create a Richards' equation object.
-        pde_model = RichardsPDE(self.mData)
+        # pde_model = RichardsPDE(self.mData)
+        pde_model = self.pde_model
 
         # Start the timer.
         time_t0 = time.time()
@@ -385,7 +489,6 @@ class Simulation(object):
                 # Print a warning message.
                 print(" Warning: Observation {0} cannot be found in the spatial domain."
                       " Skipping iteration {1} ...".format(self.mData["zWtd_cm"][i], i))
-
                 # SKip.
                 continue
             # _end_if_
@@ -429,11 +532,21 @@ class Simulation(object):
             # Update the initial condition vector for the next iteration.
             y0 = y_i.copy()
 
-            # Store additional output from the PDE here.
-            # Store additional output from the PDE here.
-            # Store additional output from the PDE here.
-            # Store additional output from the PDE here.
+            # Display summary statistics (every ~100 iterations).
+            if np.mod(i, 100) == 0:
+                # Below the water table.
+                w_side = '+'
 
+                # Above the water table.
+                if self.mData["zWtd_cm"][i] < z[wtd_est[i]]:
+                    w_side = '-'
+                # _end_if_
+
+                # Compute the current Mean Absolute Error.
+                mae = np.sum(abs_error[0:i], axis=0)/i
+
+                # Display message.
+                print(" [No. {0}] {1}: MAE = {2:.2f}, [{3}]".format(self.mData["Well_No"], i, mae, w_side))
         # _end_for_
 
         # Stop the timer.
@@ -441,10 +554,18 @@ class Simulation(object):
 
         # Print duration.
         print(" Elapsed time: {0:.2f} seconds.".format(time_tf - time_t0))
+
+        # Get the additional output from the pde model.
+        # transpiration = self.var_arg_out["transpiration"]
+        # lateral_flow = self.var_arg_out["lateral_flow"]
     # _end_def_
 
     def saveResults(self):
-        pass
+        """
+        Saves the simulation results to a file.
+        :return: None
+        """
+        print(" Saving the results to {0}.".format(self.name))
     # _end_def_
 
 # _end_class_
