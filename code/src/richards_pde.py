@@ -51,13 +51,13 @@ class RichardsPDE(object):
         # Mid-point indexes.
         self.mid_i = np.arange(1, self.nx)
 
-        # % Interior grid (mid)-points.
+        # Interior grid (mid)-points.
         self.xzmp1 = np.zeros(self.nx)
-        self.xzmp1[1:] = self.x_mesh[1:self.nx] - self.x_mid
+        self.xzmp1[1:] = self.x_mesh[1:] - self.x_mid
         self.zxmp1 = self.x_mid - self.x_mesh[0:-1]
     # _end_def_
 
-    def __call__(self, t, y):
+    def __call__(self, t, y, *args):
         """
         This function implements the space discretization of the PDE.
         It is vectorized for best performance, so the ode solver can
@@ -86,10 +86,11 @@ class RichardsPDE(object):
                             self.x_mesh[1], y[1, :])
 
         # Evaluate the PDE at the top (2/2).
-        cL, sL, fL, *_ = self.pde_fun(self.x_mid[0], y0, dy0)
+        cL, sL, fL, *_ = self.pde_fun(self.x_mid[0], y0, dy0, args)
 
         # Evaluate the boundary conditions.
-        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0, :], self.x_mesh[-1], y[-1, :])
+        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0, :],
+                                     self.x_mesh[-1], y[-1, :], args)
 
         # TOP BOUNDARY:
         if qL == 0:
@@ -109,7 +110,7 @@ class RichardsPDE(object):
         y_mid, dy_mid = midpoints(self.x_mesh[self.x_mid+0], y[self.x_mid+0, :],
                                   self.x_mesh[self.x_mid+1], y[self.x_mid+1, :])
         # PDE evaluation.
-        cR, sR, fR, *_ = self.pde_fun(self.x_mid(self.x_mid), y_mid, dy_mid)
+        cR, sR, fR, *_ = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, args)
 
         # WARNING: DO NOT EDIT THESE LINES
         cLi = np.append(cL, cR, axis=0)
@@ -144,7 +145,7 @@ class RichardsPDE(object):
         return dydt
     # _end_def_
 
-    def pde_fun(self, z, y, dydz, **kwargs):
+    def pde_fun(self, z, y, dydz, *args):
         """
 
         Richards' Equation (PDE - 1d).
@@ -155,7 +156,7 @@ class RichardsPDE(object):
 
         :param dydz:
 
-        :param kwargs:
+        :param args:
 
         :return:
         """
@@ -172,7 +173,7 @@ class RichardsPDE(object):
         # capacity 'C(.)'.  Additionally return the soil moisture at the same
         # depths and the porosity. These are used for the root efficiency and
         # the hydraulic lift processes.
-        theta, K, C, _ = self.h_model(y, z, **kwargs)
+        theta, K, C, *_ = self.h_model(y, z, args)
 
         # Compute the flux term.
         flux = K*(np.minimum(dydz, 1.01) - 1.0)
@@ -183,10 +184,14 @@ class RichardsPDE(object):
         # Define some output variables.
         tran_k, latf_k = None, None
 
+        # We know that the first argument in the 'args' list is a dictionary
+        # that contains all the necessary parameters for the i-th iteration.
+        args_i = args[0]
+
         # Make sure the length exceeds one cell.
         if dim_d > 1:
             # Get the Month (Mn) and the Hour (Hr) of the current time.
-            Mn, Hr = kwargs["time_k"].month, kwargs["time_k"].hour
+            Mn, Hr = args_i["time"].month, args_i["time"].hour
 
             # In Normal Mode: SPINUP == FALSE.
             if not self.m_data["sim_flags"]["SPINUP"]:
@@ -239,7 +244,7 @@ class RichardsPDE(object):
                 # This runs ONLY during day-time!
                 if self.m_data["sim_flags"]["ET"] and daylight:
                     # Compute the root efficiency.
-                    rho_theta, Wk = tree_roots.root_efficiency(theta[r_cells, :], z[r_cells])
+                    rho_theta, Wk = tree_roots.efficiency(theta[r_cells, :], z[r_cells])
 
                     # Get the product of the two terms.
                     x_out = rho_theta * roots_z
@@ -261,7 +266,7 @@ class RichardsPDE(object):
                     # is not root shutdown! Otherwise don't remove water.
                     if np.all(tot_x > 0.0):
                         # Total transpiration demand.
-                        tot_tr = np.minimum(kwargs["atm"], Wk)
+                        tot_tr = np.minimum(args_i["atm"], Wk)
 
                         # Compute the rate of potential transpiration
                         # by dividing the total atmospheric demand,at
@@ -301,7 +306,7 @@ class RichardsPDE(object):
                         # always saturated. That number can vary from well to well
                         # and from year to year. This is to prevent the spatial
                         # domain from draining completely during extended droughts.
-                        sat_cells = kwargs["sat_cells"] - 1
+                        sat_cells = args_i["sat_cells"] - 1
 
                         # Auxiliary variable.
                         low_lim = dim_d - sat_cells
@@ -335,7 +340,7 @@ class RichardsPDE(object):
                     else:
                         # Monitoring (running) mode.
                         # Current water table observation.
-                        wtd_obs = np.minimum(kwargs["WTDi"], dim_d-1)
+                        wtd_obs = np.minimum(args_i["wtd"], dim_d-1)
 
                         # Sink (scale) coefficient:
                         alpha_lat = -2.5e-4
@@ -352,7 +357,7 @@ class RichardsPDE(object):
                                 j = np.arange(wtd_est, wtd_obs)
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[j, i] = np.minimum(alpha_lat * y[j,i], sink[j, i])
+                                sink[j, i] = np.minimum(alpha_lat * y[j, i], sink[j, i])
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
@@ -368,7 +373,7 @@ class RichardsPDE(object):
         return C, sink, flux, tran_k, latf_k
     # _end_def_
 
-    def ic_fun(self, y0, **kwargs):
+    def ic_fun(self, y0, *args):
         """
         This function can model the initial conditions vector.
         In this case is a simple assignment, but it can handle
@@ -376,7 +381,7 @@ class RichardsPDE(object):
 
         :param y0: initial conditions vector y(z,t=0) [dim_d x 1].
 
-        :param kwargs: to pass additional parameters if requested.
+        :param args: to pass additional parameters if requested.
 
         :return: initial conditions vector.
         """
@@ -387,7 +392,7 @@ class RichardsPDE(object):
         return self.ic0
     # _end_def_
 
-    def bc_fun(self, z_left, y_left, z_right, y_right, **kwargs):
+    def bc_fun(self, z_left, y_left, z_right, y_right, *args):
         """
 
         :param z_left:
@@ -398,13 +403,13 @@ class RichardsPDE(object):
 
         :param y_right:
 
-        :param kwargs:
+        :param args:
 
         :return:
         """
 
         # Get the maximum infiltration capacity from the model.
-        theta_left, _, _, q_inf_max = self.h_model(y_left, z_left, **kwargs)
+        theta_left, *_, q_inf_max = self.h_model(y_left, z_left, args)
 
         # Initial value assumes 1-D.
         dim_m = 1
@@ -422,14 +427,30 @@ class RichardsPDE(object):
 
         # Extract the value of the forcing (rainfall).
         # (NB. Make sure is non-negative .... >= 0.0)
-        q_rain_flux = np.abs(kwargs["precip_k"])
+        q_rain_flux = np.abs(args[0]["precipitation"])
 
         # Net rain flux that enters the domain is given by:
         # >> netInputFlux = Precipitation - Interception.
-        net_input_flux = (1.0 - kwargs["intercept_k"]) * q_rain_flux
+        net_input_flux = (1.0 - args[0]["interception"]) * q_rain_flux
 
         # If the top cells are not saturated set an upper bound.
         p_left[y_left < self.m_data["soil"].psi_sat] = np.minimum(net_input_flux, q_inf_max)
+
+        # Avoid this process during Spin-Up:
+        if not self.m_data["sim_flags"]["SPINUP"]:
+            # Daylight hours: [06:00:00] (morning) and [17:59:59] (afternoon).
+            daylight = args[0]["time"].hour in np.arange(6, 18)
+
+            # If the soil moisture drops at $\theta_{res}$,
+            # then we stop the evaporation process.
+            allow_evaporation = theta_left > self.m_data["theta"].res
+
+            # If there is enough water to evaporate and it is daylight.
+            if np.all(allow_evaporation) and daylight:
+                # Apply the evaporation process to the upper bound.
+                p_left = p_left - self.m_data["surface_evap"]
+            # _end_if_
+        # _end_if_
 
         # [BOTTOM]: Neumann condition is set to zero flux.
         p_right = np.zeros(dim_m)
@@ -439,7 +460,7 @@ class RichardsPDE(object):
         return p_left, q_left, p_right, q_right
     # _end_def_
 
-    def solve(self, t, y0, r_tol=1.0e-4, a_tol=1.0e-4):
+    def solve(self, t, y0, r_tol=1.0e-4, a_tol=1.0e-4, *args):
         """
         This function numerically integrates a system of ordinary differential
         equations (self), within the time span "t", given an initial value y0.
@@ -448,11 +469,11 @@ class RichardsPDE(object):
 
         :param y0: initial conditions array [L x 1].
 
-        :param z: spatial domain at which we want to solve the equation. [L x 1].
-
         :param r_tol: absolute tolerance.
 
         :param a_tol: absolute tolerance.
+
+        :param args: additional model parameters.
 
         :return: dydt [L x n]
         """
@@ -463,8 +484,8 @@ class RichardsPDE(object):
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
             # Current solution
-            sol_t = solve_ivp(self, t_span=t, y0=y0,
-                              method='LSODA', atol=a_tol, rtol=r_tol)
+            sol_t = solve_ivp(self, t_span=t, y0=y0, method='LSODA',
+                              atol=a_tol, rtol=r_tol, args=args)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
@@ -472,7 +493,7 @@ class RichardsPDE(object):
                 break
             else:
                 # Reduce the noise in the model.
-                self.m_data["n_rnd"] *= 0.8
+                args[0]["n_rnd"] *= 0.8
 
                 # Decrease counter by one.
                 n_trials -= 1

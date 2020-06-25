@@ -1,16 +1,20 @@
 import json
+import time
 import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from code.src.utilities import find_wtd
 from code.src.porosity import Porosity
 from code.src.tree_roots import TreeRoots
+from code.src.richards_pde import RichardsPDE
 from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
 from code.src.hydraulic_conductivity import HydraulicConductivity
 
 from code.src.models.vrettas_fung import VrettasFung
 from code.src.models.vanGenuchten import vanGenuchten
+
 
 class Simulation(object):
     """
@@ -187,7 +191,7 @@ class Simulation(object):
         # We need to convert the dates (from MATLAB to Python).
         # NOTE: The value 719529 is MATLAB's datenum value of the "Unix epoch"
         # start (1970-01-01), which is the default origin for pd.to_datetime().
-        timestamps = pd.to_datetime(r_datenum-719529, unit='D')
+        timestamps = pd.to_datetime(r_datenum - 719529, unit='D')
 
         # Store timestamps in the dictionary.
         self.mData["time"] = [t.round(freq="s") for t in timestamps]
@@ -213,7 +217,7 @@ class Simulation(object):
         # _end_if_
 
         # Store to dictionary.
-        self.mData["precip_cm"] = precip_cm
+        self.mData["precipitation_cm"] = precip_cm
 
         # TRANSPIRATION AND HYDRAULIC LIFT PARAMETERS:
 
@@ -252,8 +256,11 @@ class Simulation(object):
         # Get the number of time-points.
         dim_t = timestamps.size
 
+        # Add it to the dictionary.
+        self.mData["dim_t"] = dim_t
+
         # Wet counter (complementary to the Dry counter)
-        n_wet = dim_t-n_dry
+        n_wet = dim_t - n_dry
 
         # Preallocate the (plant) transpiration array.
         plant_tp = np.zeros(dim_t)
@@ -304,6 +311,136 @@ class Simulation(object):
         if not self.mData:
             print(" Simulation data structure ('mData') is empty.")
         # _end_if_
+
+        # Get the initial conditions vector.
+        y0 = self.mData["init_cond"].copy()
+
+        # Extract pressure head at saturation.
+        psi_sat = self.mData["soil"].psi_sat
+
+        # Extract hydrological model.
+        h_model = self.mData["hydro_model"]
+
+        # Spatial domain.
+        z = self.mData["z_grid"]
+
+        # Space discretization size.
+        dim_d = z.size
+
+        # Time domain size.
+        dim_t = self.mData["dim_t"]
+
+        # Volumetric water content.
+        theta_vol = np.zeros((dim_d, dim_t))
+
+        # Pressure head (suction).
+        psi = np.zeros((dim_d, dim_t))
+
+        # Background hydraulic conductivity.
+        # Note: This is the equivalent of the
+        # saturated in the vanGenuchten model.
+        k_bkg = np.zeros((dim_d, dim_t))
+
+        # Unsaturated hydraulic conductivity.
+        k_hrc = np.zeros((dim_d, dim_t))
+
+        # Water table depths (estimated).
+        wtd_est = np.zeros(dim_t)
+
+        # Error (absolute) of water table depth.
+        abs_error = np.zeros(dim_t)
+
+        # Initial wtd value.
+        wtd_est[0] = find_wtd(y0 >= psi_sat)
+
+        # Update the error (at t=t0).
+        abs_error[0] = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est[0]])
+
+        # Save the initial conditions at time $t = 0$.
+        psi[0, :] = y0
+
+        # Create a random vector.
+        n_rnd = np.random.randn(dim_d)
+
+        # Run the hydrological model to get the initial water content.
+        theta_vol[:, 0], k_hrc[:, 0], _, k_bkg[:, 0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
+
+        # Virtual time array.
+        tk = np.arange(0, dim_t)
+
+        # Create a Richards' equation object.
+        pde_model = RichardsPDE(self.mData)
+
+        # Start the timer.
+        time_t0 = time.time()
+
+        # Integrate the 'PDE' in tk. Each iteration corresponds to 0.5hr interval.
+        for i in range(1, tk.size):
+
+            # Find the index (location) of the target water table depth.
+            wtd_i = np.where(z == self.mData["zWtd_cm"][i])
+
+            # Check if the index has been found.
+            if wtd_i[0].size == 0:
+                # Print a warning message.
+                print(" Warning: Observation {0} cannot be found in the spatial domain."
+                      " Skipping iteration {1} ...".format(self.mData["zWtd_cm"][i], i))
+
+                # SKip.
+                continue
+            # _end_if_
+
+            # Create a local dictionary with parameters for the specific iteration.
+            args_i = {"wtd": wtd_i[0][0],
+                      "n_rnd": n_rnd,
+                      "atm": self.mData["atm"][i],
+                      "time": self.mData["time"][i],
+                      "interception": self.mData["interception"],
+                      "precipitation": self.mData["precipitation_cm"][i]}
+
+            # Update the random field (at least) daily (~24hr):
+            if (args_i["precipitation"] > 0.25) or (np.mod(i, 48) == 0):
+
+                # Standard normal random variables ~ N(0,1):
+                args_i["n_rnd"] = np.random.randn(dim_d, 1)
+            # _end_if_
+
+            # This time-window corresponds to '30' minutes time intervals
+            # between observations.
+            t_span = (tk[i-1], tk[i])
+
+            # Solve the PDE and return the solution at the final time point.
+            y_i = pde_model.solve(t_span, y0, args_i)
+
+            # Find $wtd$ at the k-th iteration.
+            wtd_est[i] = find_wtd(y_i >= psi_sat)
+
+            # Compute the absolute error: |wtd_{obs} - wtd_{est}|
+            abs_error[i] = np.abs(self.mData["zWtd_cm"][i] - z[wtd_est[i]])
+
+            # Store the pressure head to the array.
+            psi[:, i] = y_i
+
+            # Recover the values of the volumetric water content $\theta$
+            # and the hydraulic conductivities $K(\theta)$ and 'Kbkg' for
+            # the values of the final solution of the PDE.
+            theta_vol[:, i], k_hrc[:, i], _, k_bkg[:, i], *_ = h_model(y_i, z, args_i)
+
+            # Update the initial condition vector for the next iteration.
+            y0 = y_i.copy()
+
+            # Store additional output from the PDE here.
+            # Store additional output from the PDE here.
+            # Store additional output from the PDE here.
+            # Store additional output from the PDE here.
+
+        # _end_for_
+
+        # Stop the timer.
+        time_tf = time.time()
+
+        # Print duration.
+        print(" Elapsed time: {0:.2f} seconds.".format(time_tf - time_t0))
     # _end_def_
 
     def saveResults(self):
