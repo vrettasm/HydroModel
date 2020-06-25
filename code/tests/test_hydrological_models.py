@@ -143,9 +143,11 @@ class TestHydrologicalModels(unittest.TestCase):
         # Get the equivalent pressure head and effective saturation.
         psi_1d, s_eff_1d = test_model.pressure_head(theta_1d, self.z_grid)
 
+        # Create a random vector.
+        n_rnd = np.random.randn(self.z_grid.size)
+
         # Get back the theta.
-        theta_new, *_ = test_model(psi_1d, self.z_grid,
-                                   n_rnd=np.random.randn(self.z_grid.size))
+        theta_new, *_ = test_model(psi_1d, self.z_grid, {"n_rnd": n_rnd})
 
         # The new theta should be the same (within some error).
         self.assertTrue(isclose(np.abs(np.mean(theta_new-theta_1d)),
@@ -158,8 +160,7 @@ class TestHydrologicalModels(unittest.TestCase):
         psi_2d = np.repeat(psi_1d, 5, 1)
 
         # Get back the theta.
-        theta_2d, *_ = test_model(psi_2d, self.z_grid,
-                                  n_rnd=np.random.randn(self.z_grid.size))
+        theta_2d, *_ = test_model(psi_2d, self.z_grid, {"n_rnd": n_rnd})
         # Check the dimensions.
         self.assertTrue(psi_2d.shape, theta_2d.shape)
     # _end_def_
