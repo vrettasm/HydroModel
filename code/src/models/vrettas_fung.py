@@ -24,7 +24,7 @@ class VrettasFung(HydrologicalModel):
         super().__init__(soil, porous, k_hc, theta_res, dz)
     # _end_def_
 
-    def __call__(self, psi, z, **kwargs):
+    def __call__(self, psi, z, *args):
         """
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
@@ -33,7 +33,7 @@ class VrettasFung(HydrologicalModel):
 
         :param z: depth values (increasing downwards) [dim_d x 1]
 
-        :param kwargs: in here we pass additional parameters for the noise model.
+        :param args: in here we pass additional parameters for the noise model.
 
         :return: q (water content), K (unsaturated hydraulic conductivity),
         C (specific moisture capacity), Kbkg (background hydraulic conductivity),
@@ -70,8 +70,8 @@ class VrettasFung(HydrologicalModel):
         n_rnd = None
 
         # Extract additional parameters.
-        if "n_rnd" in kwargs:
-            n_rnd = kwargs["n_rnd"]
+        if "n_rnd" in args[0]:
+            n_rnd = args[0]["n_rnd"]
         # _end_if_
 
         # Make sure the input 'z' has shape (d, 1).
