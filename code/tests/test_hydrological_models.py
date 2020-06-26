@@ -1,15 +1,15 @@
 import unittest
-import numpy as np
 from math import isclose
 
-from code.src.porosity import Porosity
-from code.src.water_content import WaterContent
-from code.src.soil_properties import SoilProperties
-from code.src.hydraulic_conductivity import HydraulicConductivity
+import numpy as np
 
-from code.src.models.vrettas_fung import VrettasFung
-from code.src.models.vanGenuchten import vanGenuchten
+from code.src.hydraulic_conductivity import HydraulicConductivity
 from code.src.models.hydrological_model import HydrologicalModel
+from code.src.models.vanGenuchten import vanGenuchten
+from code.src.models.vrettas_fung import VrettasFung
+from code.src.porosity import Porosity
+from code.src.soil_properties import SoilProperties
+from code.src.water_content import WaterContent
 
 
 class TestHydrologicalModels(unittest.TestCase):
@@ -67,11 +67,6 @@ class TestHydrologicalModels(unittest.TestCase):
         # Create a 'hypothetical' vol. water content.
         theta_z = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
 
-        # Add a singleton dimension to the input array:
-        if len(theta_z.shape) == 1:
-            theta_z = theta_z.reshape(-1, 1)
-        # _end_if_
-
         # Get the equivalent pressure head and effective saturation.
         psi_z, s_eff_z = test_model.pressure_head(theta_z, self.z_grid)
 
@@ -93,11 +88,6 @@ class TestHydrologicalModels(unittest.TestCase):
         # Create a 'hypothetical' vol. water content.
         theta_1d = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
 
-        # Add a singleton dimension to the input array:
-        if len(theta_1d.shape) == 1:
-            theta_1d = theta_1d.reshape(-1, 1)
-        # _end_if_
-
         # Get the equivalent pressure head and effective saturation.
         psi_1d, s_eff_1d = test_model.pressure_head(theta_1d, self.z_grid)
 
@@ -112,7 +102,7 @@ class TestHydrologicalModels(unittest.TestCase):
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
 
         # Vectorised version (multiple input).
-        psi_2d = np.repeat(psi_1d, 5, 1)
+        psi_2d = np.array([psi_1d] * 4)
 
         # Get back the vol. water content (theta).
         theta_2d, *_ = test_model(psi_2d, self.z_grid)
@@ -135,11 +125,6 @@ class TestHydrologicalModels(unittest.TestCase):
         # Create a 'hypothetical' vol. water content.
         theta_1d = np.linspace(self.theta.max, self.theta.min, self.z_grid.size)
 
-        # Add a singleton dimension to the input array:
-        if len(theta_1d.shape) == 1:
-            theta_1d = theta_1d.reshape(-1, 1)
-        # _end_if_
-
         # Get the equivalent pressure head and effective saturation.
         psi_1d, s_eff_1d = test_model.pressure_head(theta_1d, self.z_grid)
 
@@ -157,10 +142,11 @@ class TestHydrologicalModels(unittest.TestCase):
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
 
         # Vectorised version (multiple input).
-        psi_2d = np.repeat(psi_1d, 5, 1)
+        psi_2d = np.array([psi_1d] * 4)
 
         # Get back the theta.
         theta_2d, *_ = test_model(psi_2d, self.z_grid, {"n_rnd": n_rnd})
+
         # Check the dimensions.
         self.assertTrue(psi_2d.shape, theta_2d.shape)
     # _end_def_
