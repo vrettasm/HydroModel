@@ -199,7 +199,7 @@ class RichardsPDE(object):
         args_i = args[0]
 
         # Make sure the length exceeds one cell.
-        if dim_d >= 1:
+        if dim_d > 1:
             # Get the discretization step [L: cm]
             dz = self.m_data["dz"]
 
