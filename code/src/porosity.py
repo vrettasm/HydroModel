@@ -35,6 +35,8 @@ class Porosity(object):
                         4) Stratified (for modeling high depths)
                         5) Noisy (assumes random "fractures" in the underground)
         """
+        # Ensure the input is 1-D.
+        z_grid = np.atleast_1d(z_grid)
 
         # Make sure the z-grid domain is not empty.
         if not z_grid.size:
@@ -60,8 +62,8 @@ class Porosity(object):
         self.p_layers = layers
 
         # Find the indices of each underground layer.
-        sap_layer_idx = np.squeeze(np.array((z_grid >= l_sapr) & (z_grid <= l_wbed), dtype=bool))
-        web_layer_idx = np.squeeze(np.array((z_grid >= l_wbed) & (z_grid <= l_fbed), dtype=bool))
+        sap_layer_idx = (z_grid >= l_sapr) & (z_grid <= l_wbed)
+        web_layer_idx = (z_grid >= l_wbed) & (z_grid <= l_fbed)
 
         # Create the profile according to the selected type.
         if str.upper(p_model) == "CONSTANT":
