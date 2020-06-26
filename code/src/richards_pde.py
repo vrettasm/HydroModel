@@ -171,13 +171,19 @@ class RichardsPDE(object):
         :return: C (specific moisture capacity), sink, flux.
         """
 
-        # Make sure the 'y' input is at least (dim_d x 1)
-        if len(y.shape) == 1:
-            y = y.reshape(-1, 1)
+        # Ensure the input is 1-D.
+        z = np.atleast_1d(z)
+        y = np.atleast_1d(y)
+
+        # Now check if we have multiple entries of theta.
+        if len(y.shape) > 1:
+            dim_m, dim_d = y.shape
+        else:
+            dim_m, dim_d = 1, y.size
         # _end_if_
 
-        # Get the input dimensions.
-        dim_d, dim_m = y.shape
+        # Set the axis.
+        axis_n = 1 if dim_m > 1 else None
 
         # Compute the hydraulic conductivity 'K(.)' and the specific moisture
         # capacity 'C(.)'.  Additionally return the soil moisture at the same
@@ -189,7 +195,7 @@ class RichardsPDE(object):
         flux = K*(np.minimum(dydz, 1.01) - 1.0)
 
         # Sink term is initialized to zero.
-        sink = np.zeros((dim_d, dim_m))
+        sink = np.zeros(flux.shape)
 
         # Define additional output variables.
         transpire, lateral_flow = None, None
@@ -232,7 +238,7 @@ class RichardsPDE(object):
                     c_sat = a_star * self.m_data["Trees"]["Leaf_Area_Index"]
 
                     # Hydraulic conductance parameter:
-                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells, :]) ** 2) * roots_z
+                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
 
                     # Pressure difference.
                     dy = dydz * dz
@@ -240,21 +246,21 @@ class RichardsPDE(object):
                     # Update the flux 'f' with the new HR term. NB: We need to
                     # scale by '0.5' because the q_{HR} has [cm/h] and we need
                     # per 0.5h.
-                    flux[r_cells, :] += 0.5 * c_hr * dy[r_cells, :]
+                    flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
                 # _end_if_
 
                 # Evapo-transpiration (Tree Roots Water Uptake)
                 # This runs ONLY during day-time!
                 if self.m_data["sim_flags"]["ET"] and daylight:
                     # Compute the root efficiency.
-                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells, :], z[r_cells])
+                    rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
 
                     # Get the product of the two terms.
                     x_out = rho_theta * roots_z
 
                     # Compute the integral of:
                     # $\int_{z} (root_efficiency x root_fraction) dz$
-                    tot_x = np.sum(x_out, axis=0) * dz
+                    tot_x = np.sum(x_out, axis=axis_n) * dz
 
                     #  Constraint No.2:
                     if np.all(tot_x > 1.0):
@@ -262,7 +268,7 @@ class RichardsPDE(object):
                         x_out = x_out / tot_x
 
                         # Recompute the integral.
-                        tot_x = np.sum(x_out, axis=0) * dz
+                        tot_x = np.sum(x_out, axis=axis_n) * dz
                     # _end_if_
 
                     # Compute  the transpiration parameter only if there
@@ -281,7 +287,7 @@ class RichardsPDE(object):
                         uptake = tr_pot * x_out
 
                         # Remove the root uptake from the sink term.
-                        sink[r_cells, :] = -uptake
+                        sink[:, r_cells] = -uptake
 
                         # Store the transpiration as function of depth.
                         transpire = uptake
@@ -317,7 +323,7 @@ class RichardsPDE(object):
                         # Repeat for all multiple entries of 'y'.
                         for i in np.range(dim_m):
                             # Find "wtd_est" (index).
-                            wtd_est = find_wtd(id_sat[:, i])
+                            wtd_est = find_wtd(id_sat[i])
 
                             # If the "wtd_est" is above a pre-defined depth value.
                             if wtd_est < low_lim:
@@ -330,11 +336,11 @@ class RichardsPDE(object):
                                 alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[j, i] = np.minimum(alpha_lat * y[j, i], sink[j, i])
+                                sink[i, j] = np.minimum(alpha_lat * y[i, j], sink[i, j])
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[j, 1]))
+                                lateral_flow = (j, np.abs(sink[0, j]))
                             # _end_if_
                         # _end_for_
                     else:
@@ -348,7 +354,7 @@ class RichardsPDE(object):
                         # Repeat for all multiple entries of 'y'.
                         for i in range(dim_m):
                             # Find "wtd_est" (index).
-                            wtd_est = find_wtd(id_sat[:, i])
+                            wtd_est = find_wtd(id_sat[i])
 
                             # If the "wtd_est" is inside the space domain.
                             if (wtd_est < dim_d) & (wtd_est < wtd_obs):
@@ -357,11 +363,11 @@ class RichardsPDE(object):
                                 j = np.arange(wtd_est, wtd_obs)
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[j, i] = np.minimum(alpha_lat * y[j, i], sink[j, i])
+                                sink[i, j] = np.minimum(alpha_lat * y[i, j], sink[i, j])
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[j, 1]))
+                                lateral_flow = (j, np.abs(sink[0, j]))
                             # _end_if_
                         # _end_for_
                     # _end_if_
@@ -411,22 +417,27 @@ class RichardsPDE(object):
         :return: p_left, q_left, p_right, q_right
         """
 
+        # Make sure input is 1-D.
+        z_left = np.atleast_1d(z_left)
+        y_left = np.atleast_1d(y_left)
+        z_right = np.atleast_1d(z_right)
+        y_right = np.atleast_1d(y_right)
+
         # Get the maximum infiltration capacity from the model.
         theta_left, *_, q_inf_max = self.h_model(y_left, z_left, *args)
 
-        # Initial value assumes 1-D.
-        dim_m = 1
-
-        # Number of different columns.
+        # Now check if we have multiple entries of theta.
         if len(y_left.shape) > 1:
-            _, dim_m = y_left.shape
+            dim_m, dim_d = y_left.shape
+        else:
+            dim_m, dim_d = 1, y_left.size
         # _end_if_
 
         # [TOP]: Neumann boundary condition.
-        q_left = np.ones(dim_m)
+        q_left = np.ones(y_left.shape)
 
         # Initialize to zero flux.
-        p_left = np.zeros(dim_m)
+        p_left = np.zeros(y_left.shape)
 
         # Extract the value of the forcing (rainfall).
         # (NB. Make sure is non-negative .... >= 0.0)
@@ -456,8 +467,8 @@ class RichardsPDE(object):
         # _end_if_
 
         # [BOTTOM]: Neumann condition is set to zero flux.
-        p_right = np.zeros(dim_m)
-        q_right = np.ones(dim_m)
+        p_right = np.zeros(p_left.shape)
+        q_right = np.ones(q_left.shape)
 
         # Return the boundary values.
         return p_left, q_left, p_right, q_right
