@@ -1,8 +1,10 @@
 import unittest
+
 import numpy as np
+
 from code.src.porosity import Porosity
-from code.src.water_content import WaterContent
 from code.src.soil_properties import SoilProperties
+from code.src.water_content import WaterContent
 
 
 class TestPorosity(unittest.TestCase):
