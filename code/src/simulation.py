@@ -337,7 +337,7 @@ class Simulation(object):
         early_stop = False
 
         # Initial random vector.
-        n_rnd = np.random.randn(z.size, 1)
+        n_rnd = np.random.randn(z.size)
 
         # Create a local dictionary with parameters for the specific iteration.
         args_0 = {"wtd": wtd_i, "n_rnd": n_rnd,
@@ -351,7 +351,7 @@ class Simulation(object):
 
             # Update the random field daily (~24hr):
             if np.mod(j, 40):
-                args_0["n_rnd"] = np.random.randn(z.size, 1)
+                args_0["n_rnd"] = np.random.randn(z.size)
             # end_if_
 
             # Time span
@@ -453,7 +453,7 @@ class Simulation(object):
         psi[0, :] = y0
 
         # Create a random vector.
-        n_rnd = np.random.randn(dim_d, 1)
+        n_rnd = np.random.randn(dim_d)
 
         # Run the hydrological model to get the initial water content.
         theta_vol[:, 0], k_hrc[:, 0], _, k_bkg[:, 0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
