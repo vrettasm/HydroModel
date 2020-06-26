@@ -20,10 +20,13 @@ def logN_rnd(mx, vx, en):
     :return: a random variable drawn from LogNormal(mu, sigma)
     """
 
+    # Ensure the input is at least 1-D.
+    mx = np.atleast_1d(mx)
+    vx = np.atleast_1d(vx)
+    en = np.atleast_1d(en)
+
     # Avoid division by zero error.
-    if np.any(mx == 0.0):
-        mx[mx == 0.0] = 1.0e-7
-    # _end_if_
+    mx[mx == 0.0] = 1.0e-7
 
     # Parameter 'mu' for the LogNormal distribution.
     mu0 = np.log((mx ** 2) / np.sqrt(vx + mx ** 2))
@@ -43,7 +46,7 @@ def find_wtd(y=None):
     is not saturated. It assumes that the "wtd" exists right below the first
     non-saturated cell.
 
-    :param y: bool vector with the saturated cells. [dim_d x 1].
+    :param y: bool vector with the saturated cells. (dim_d,).
 
     :return: the index at the first "True", from the end of the vector.
     """
@@ -52,6 +55,9 @@ def find_wtd(y=None):
     if y is None:
         return None
     # _end_if_
+
+    # We want the input vector to be 1-D.
+    y = np.atleast_1d(y)
 
     # Get the length of the input vector.
     dim_d = y.size

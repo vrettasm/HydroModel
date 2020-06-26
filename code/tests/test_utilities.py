@@ -1,8 +1,11 @@
 import unittest
-import numpy as np
 from math import isclose
+
+import numpy as np
 from numpy.random import default_rng
+
 from code.src.utilities import logN_rnd, find_wtd
+
 
 class TestUtilities(unittest.TestCase):
 
@@ -22,6 +25,28 @@ class TestUtilities(unittest.TestCase):
 
         # Check if the result is close enough (~ 1.0e-3).
         self.assertTrue(isclose(np.mean(x), mu, rel_tol=1.0e-3))
+
+        # Check the vector version (1D).
+        num = 100
+        mu_vec = np.linspace(10, 1, num)
+        sigma_ = np.ones(mu_vec.shape)
+
+        # Sample n_samples parameters.
+        x_out = logN_rnd(mu_vec, sigma_, rng.standard_normal(num))
+
+        # Check if the shapes match.
+        self.assertEqual(mu_vec.shape, x_out.shape)
+
+        # Check the vector version (2D).
+        dim_d, dim_m = 100, 4
+        mu_mat = np.random.rand(dim_m, dim_d)
+        sigma_ = np.ones(mu_mat.shape)
+
+        # Sample n_samples parameters.
+        x_out = logN_rnd(mu_mat, sigma_, rng.standard_normal(dim_d))
+
+        # Check if the shapes match.
+        self.assertEqual(mu_mat.shape, x_out.shape)
     # _end_def_
 
     def test_find_wtd(self):
