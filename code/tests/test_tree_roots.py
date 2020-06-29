@@ -112,20 +112,6 @@ class TestTreeRoots(unittest.TestCase):
 
         # Check if the integrated water efficiency sums to one.
         self.assertTrue(isclose(np.sum(rho_theta1) * self.dz, 1.0, rel_tol=1.0e-5))
-
-        # Vectorized version.
-        theta_2d = np.random.rand(4, self.ln)
-        rho_theta2, _ = test_obj.efficiency(theta_2d, self.z_roots)
-
-        # Check the input/output dimensions.
-        self.assertEqual(theta_2d.shape, rho_theta2.shape)
-
-        # Check if the integrated water efficiency sums to one.
-        total_sum = np.sum(rho_theta2, axis=1) * self.dz
-        for sum_i in total_sum:
-            # Check each dimension in the vector.
-            self.assertTrue(isclose(sum_i, 1.0, rel_tol=1.0e-5))
-        # _end_if_
     # _end_def_
 
     def test_wrong_init_params(self):

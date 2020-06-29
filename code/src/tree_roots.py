@@ -178,12 +178,8 @@ class TreeRoots(object):
         theta_z = np.atleast_1d(theta_z)
         z_roots = np.atleast_1d(z_roots)
 
-        # Now check if we have multiple entries of theta.
-        if len(theta_z.shape) > 1:
-            dim_m, dim_d = theta_z.shape
-        else:
-            dim_m, dim_d = 1, theta_z.size
-        # _end_if_
+        # Get the size of the state vector.
+        dim_d = theta_z.size
 
         # Make sure the dimensions match.
         if dim_d != z_roots.size:
@@ -194,27 +190,17 @@ class TreeRoots(object):
         # Compute porosity, field capacity and wilting points at 'z'.
         porous_z, f_cap_z, wlt_z = self.porous(z_roots)
 
-        # Replicate for vectorization.
-        if dim_m > 1:
-            porous_z = np.array([porous_z] * dim_m)
-            f_cap_z = np.array([f_cap_z] * dim_m)
-            wlt_z = np.array([wlt_z] * dim_m)
-        # _end_if_
-
-        # Set the axis of computations.
-        axis_n = 1 if dim_m > 1 else None
-
         # Compute the available water (for extraction) in the root-zone.
-        water_k = np.sum(theta_z - wlt_z, axis=axis_n) * self.dz
+        water_k = np.sum(theta_z - wlt_z, axis=0) * self.dz
 
         # Check if there is water that can be extracted.
         if np.all(water_k > 0.0):
             # Compute the cumulative sum of - $\Sum_{z=0}^{zb} \theta(z)$, from the
             # top of the surface (z = 0), until the depth of the root zone (z = zb).
-            local_z = np.cumsum(theta_z, axis=axis_n) * self.dz
+            local_z = np.cumsum(theta_z, axis=0) * self.dz
 
             # Extract the last column (corresponds to the total integral).
-            total_z = local_z[:, -1] if dim_m > 1 else local_z[-1]
+            total_z = local_z[-1]
 
             # Make sure the variable is 1-D.
             total_z = np.atleast_1d(total_z)
@@ -227,11 +213,6 @@ class TreeRoots(object):
 
             # Safeguard: Avoid division by zero.
             denom_01[denom_01 == 0.0] = 1.0
-
-            # Replicate the vector.
-            if dim_m > 1:
-                total_z = np.array([total_z] * dim_d).T
-            # _end_if_
 
             # Maximum efficiency when water is not limiting.
             alpha_01 = np.maximum(theta_z/denom_01, local_z/total_z)
@@ -271,15 +252,10 @@ class TreeRoots(object):
             rho_theta = np.abs(alpha_01 * alpha_02)
 
             # Compute the integral of the root efficiency term.
-            tot_theta = np.atleast_1d(np.sum(rho_theta, axis=axis_n) * self.dz)
+            tot_theta = np.atleast_1d(np.sum(rho_theta, axis=0) * self.dz)
 
             # Avoid division by zero.
             tot_theta[tot_theta == 0.0] = 1.0
-
-            # Replicate the vector.
-            if dim_m > 1:
-                tot_theta = np.array([tot_theta] * dim_d).T
-            # _end_if_
 
             # Constraint No.1: normalize it so the integral is equal to one.
             rho_theta = rho_theta / tot_theta
