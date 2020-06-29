@@ -317,7 +317,7 @@ class Simulation(object):
         self.mData["sim_flags"]["SPINUP"] = True
 
         # Display info.
-        print(" [IC: {0}] Burn in period started ...\n".format(self.mData["Well_No"]))
+        print(" [IC: {0}] Burn in period started ...".format(self.mData["Well_No"]))
 
         # Spatial domain.
         z = self.mData["z_grid"]
@@ -332,7 +332,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 10
+        burn_in = 350
 
         # Early stop flag.
         early_stop = False
@@ -351,9 +351,9 @@ class Simulation(object):
         for j in range(burn_in):
 
             # Update the random field daily (~24hr):
-            if np.mod(j, 40):
+            if np.mod(j, 48):
                 args_0["n_rnd"] = np.random.randn(z.size)
-            # end_if_
+            # _end_if_
 
             # Time span
             t_span = (j, j+1)
@@ -390,7 +390,7 @@ class Simulation(object):
 
         # At this point the algorithm has reached maximum number of iterations.
         if not early_stop:
-            print(" [IC: {0}] finished at maximum number of iterations.".format(self.mData["Well_No"]))
+            print(" [IC: {0}] finished at maximum number of iterations.\n".format(self.mData["Well_No"]))
         # _end_of_
 
         # [WARNING] Set the flag to TRUE!
@@ -533,10 +533,11 @@ class Simulation(object):
                 # _end_if_
 
                 # Compute the current Mean Absolute Error.
-                mae = np.sum(abs_error[0:i])/i
+                mae = np.mean(abs_error[0:i])
 
                 # Display message.
-                print(" [No. {0}] {1}: MAE = {2:.2f}, [{3}]".format(self.mData["Well_No"], i, mae, w_side))
+                print(" [No. {0}] {1}: MAE = {2:.2f} cm,"
+                      " [{3}]".format(self.mData["Well_No"], i, mae, w_side))
         # _end_for_
 
         # Stop the timer.
