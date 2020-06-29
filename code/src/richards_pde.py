@@ -100,7 +100,11 @@ class RichardsPDE(object):
                                      self.x_mesh[-1], y[-1], *args)
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
-            dydt[0] = pL
+            if dim_m > 1:
+                dydt[:, 0] = pL
+            else:
+                dydt[0] = pL
+            # _end_if_
         else:
             # Compute the contribution of C(.):
             denom = qL * self.zxmp1[0] * cL
@@ -108,13 +112,27 @@ class RichardsPDE(object):
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
-            # Compute the derivative at $z = 0$:
-            dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
+            # Split for vectorized version.
+            if dim_m > 1:
+                # Compute the derivative at $z = 0$:
+                dydt[:, 0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
+            else:
+                # Compute the derivative at $z = 0$:
+                dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
+            # _end_if_
         # _end_if_
 
-        # INTERIOR POINTS (vectorized computation):
-        y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
-                                  self.x_mesh[self.mid_i+1], y[self.mid_i+1])
+        # INTERIOR POINTS:
+        if dim_m > 1:
+            # (vectorized computation).
+            y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[:, self.mid_i],
+                                      self.x_mesh[self.mid_i + 1], y[:, self.mid_i + 1])
+        else:
+            # (1D vectors).
+            y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
+                                      self.x_mesh[self.mid_i+1], y[self.mid_i+1])
+        # _end_if_
+
         # PDE evaluation.
         cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
 
@@ -128,26 +146,52 @@ class RichardsPDE(object):
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
+        if dim_m > 1:
+            denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[:, 0:-1]
+        else:
+            denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
+        # _end_if_
 
         # Avoid division by zero.
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
-        dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
-                                              self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
+        if dim_m > 1:
+            dydt[:, self.mid_i] = (fR - fLi[:, 0:-1] + (self.zxmp1[self.mid_i] * sR +
+                                                        self.xzmp1[self.mid_i] * sLi[:, 0:-1])) / denom
+        else:
+            dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
+                                                  self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
+        # _end_if_
+
         # BOTTOM BOUNDARY:
         if np.all(qR == 0.0):
-            dydt[-1] = pR
+            if dim_m > 1:
+                dydt[:, -1] = pR
+            else:
+                dydt[-1] = pR
+            # _end_if_
         else:
-            # Compute the contribution of C(.):
-            denom = -qR * self.xzmp1[-1] * cLi[-1]
+            if dim_m > 1:
+                # Compute the contribution of C(.):
+                denom = -qR * self.xzmp1[-1] * cLi[:, -1]
 
-            # Avoid division by zero.
-            denom[denom == 0.0] = 1.0
+                # Avoid division by zero.
+                denom[denom == 0.0] = 1.0
 
-            # Compute the derivative at $z = end$:
-            dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
+                # Compute the derivative at $z = end$:
+                dydt[:, -1] = (pR + qR * (fLi[:, -1] - self.xzmp1[-1] * sLi[:, -1])) / denom
+            else:
+                # Compute the contribution of C(.):
+                denom = -qR * self.xzmp1[-1] * cLi[-1]
+
+                # Avoid division by zero.
+                denom[denom == 0.0] = 1.0
+
+                # Compute the derivative at $z = end$:
+                dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
+            # _end_if_
+
         # _end_if_
 
         # Return the derivative.
@@ -164,11 +208,11 @@ class RichardsPDE(object):
         Richards' Equation (PDE - 1d).
 
         :param z: spatial discretization grid, i.e. the depth values at which
-        we want to return the solution of the PDE. [dim_d x 1]
+        we want to return the solution of the PDE. [dim_d]
 
-        :param y: is the state vector of the PDE, y(z,t=t0). [dim_d x 1]
+        :param y: is the state vector of the PDE, y(z,t=t0). [dim_m x dim_d]
 
-        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_d x 1].
+        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_m x dim_d].
 
         :param args: additional input parameters of the PDE.
 
@@ -178,6 +222,9 @@ class RichardsPDE(object):
         # Ensure the input is 1-D.
         z = np.atleast_1d(z)
         y = np.atleast_1d(y)
+
+        # Ensure the input is 1-D.
+        dydz = np.atleast_1d(dydz)
 
         # Now check if we have multiple entries of theta.
         if len(y.shape) > 1:
@@ -491,13 +538,13 @@ class RichardsPDE(object):
         n_trials = 5
 
         # Hard code tolerance values.
-        rel_tol, abs_tol = 1.0e-4, 1.0e-4
+        rel_tol, abs_tol = 1.0E-3, 1.0E-3
 
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
 
             # Current solution.
-            sol_t = solve_ivp(self, t_span=t, y0=y0, method='LSODA',
+            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF',
                               atol=abs_tol, rtol=rel_tol, args=args)
 
             # Check if the solver terminated successfully.
