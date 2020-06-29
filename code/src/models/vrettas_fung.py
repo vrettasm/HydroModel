@@ -124,9 +124,9 @@ class VrettasFung(HydrologicalModel):
         # Find the indexes of each underground layer.
         # NB: To ensure continuity in the interpolating values
         # we keep the equality symbol (>=) on all three layers.
-        soil_layer_idx = (z >= l0) & (z <= l1)
-        sapr_layer_idx = (z >= l1) & (z <= l2)
-        wbed_layer_idx = (z >= l2) & (z <= l3)
+        soil_layer_idx = np.where((z >= l0) & (z <= l1))
+        sapr_layer_idx = np.where((z >= l1) & (z <= l2))
+        wbed_layer_idx = np.where((z >= l2) & (z <= l3))
 
         # Create an 1_[d x m] array.
         ones_dm = np.ones(psi.shape)
@@ -137,10 +137,10 @@ class VrettasFung(HydrologicalModel):
         # Initialize the Background Hydraulic Conductivity.
         k_bkg = self.k_hc.sat_soil * ones_dm
 
-        # SOIL LAYER:
-        if np.any(soil_layer_idx):
+        # SOIL LAYER
+        if soil_layer_idx:
             # Number of cells in the soil layer.
-            n_soil = soil_layer_idx.sum()
+            n_soil = soil_layer_idx[0].size
 
             # Set the mean values of $Kbkg_soil$.
             mean_soil = self.k_hc.sat_soil * np.ones(n_soil)
@@ -178,7 +178,7 @@ class VrettasFung(HydrologicalModel):
         # _end_if_
 
         # SAPROLITE LAYER:
-        if np.any(sapr_layer_idx):
+        if sapr_layer_idx:
             # Test domain for the interpolation function.
             z_test = np.arange(l1, l2+1)
 
@@ -222,7 +222,7 @@ class VrettasFung(HydrologicalModel):
         # _end_if_
 
         # WEATHERED BEDROCK LAYER:
-        if np.any(wbed_layer_idx):
+        if wbed_layer_idx:
             # Compute the mean values of $Kbkg_wbed$.
             z_test = np.arange(l2, l3+1)
 
