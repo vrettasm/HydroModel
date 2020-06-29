@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import sparse
 from scipy.integrate import solve_ivp
 
 from .utilities import find_wtd
@@ -115,7 +116,7 @@ class RichardsPDE(object):
             # _end_if_
         else:
             # Compute the contribution of C(.):
-            denom = qL * self.zxmp1[0] * cL
+            denom = np.atleast_1d(qL * self.zxmp1[0] * cL)
 
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
@@ -161,6 +162,7 @@ class RichardsPDE(object):
         # _end_if_
 
         # Avoid division by zero.
+        denom = np.atleast_1d(denom)
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
@@ -182,7 +184,7 @@ class RichardsPDE(object):
         else:
             if dim_m > 1:
                 # Compute the contribution of C(.):
-                denom = -qR * self.xzmp1[-1] * cLi[:, -1]
+                denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[:, -1])
 
                 # Avoid division by zero.
                 denom[denom == 0.0] = 1.0
@@ -191,7 +193,7 @@ class RichardsPDE(object):
                 dydt[:, -1] = (pR + qR * (fLi[:, -1] - self.xzmp1[-1] * sLi[:, -1])) / denom
             else:
                 # Compute the contribution of C(.):
-                denom = -qR * self.xzmp1[-1] * cLi[-1]
+                denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[-1])
 
                 # Avoid division by zero.
                 denom[denom == 0.0] = 1.0
@@ -263,197 +265,200 @@ class RichardsPDE(object):
         # that contains all the necessary parameters for the i-th iteration.
         args_i = args[0]
 
-        # Make sure the length exceeds one cell.
-        if dim_d > 1:
-            # Get the discretization step [L: cm]
-            dz = self.m_data["dz"]
+        # # Make sure the length exceeds one cell.
+        # # if dim_d >= 1:
 
-            # Get the root density object.
-            tree_roots = self.m_data["tree_roots"]
+        # Get the discretization step [L: cm]
+        dz = self.m_data["dz"]
 
-            # Find the indexes of the root-zone.
-            r_cells = np.where(z <= tree_roots.max_root_depth)
+        # Get the root density object.
+        tree_roots = self.m_data["tree_roots"]
 
-            # Get the roots density at depths (z).
-            roots_z = tree_roots(z[r_cells])
+        # Find the indexes of the root-zone.
+        r_cells = np.where(z <= tree_roots.max_root_depth)
 
-            # In Normal Mode: SPINUP == FALSE.
-            if not self.m_data["sim_flags"]["SPINUP"]:
+        # Get the roots density at depths (z).
+        roots_z = tree_roots(z[r_cells])
 
-                # Compute day-light hours. We assume that the daylight is
-                # between [06:00:00] (morning) and [17:59:59] (afternoon).
-                daylight = args_i["time"].hour in np.arange(6, 18)
+        # In Normal Mode: SPINUP == FALSE.
+        if not self.m_data["sim_flags"]["SPINUP"]:
 
-                # Hydraulic Redistribution.
-                # This runs ONLY in during the night-time!
-                if self.m_data["sim_flags"]["HLIFT"] and (not daylight):
-                    # Parameter for hydraulic redistribution:
-                    a_star = 1800
+            # Compute day-light hours. We assume that the daylight is
+            # between [06:00:00] (morning) and [17:59:59] (afternoon).
+            daylight = args_i["time"].hour in np.arange(6, 18)
 
-                    # Inverse of $\psi_{50}$:
-                    inv_psi_50 = self.m_data["iPsi_50"]
+            # Hydraulic Redistribution.
+            # This runs ONLY in during the night-time!
+            if self.m_data["sim_flags"]["HLIFT"] and (not daylight):
+                # Parameter for hydraulic redistribution:
+                a_star = 1800
 
-                    # Saturated hydraulic conductance:
-                    c_sat = a_star * self.m_data["LAI"]
+                # Inverse of $\psi_{50}$:
+                inv_psi_50 = self.m_data["iPsi_50"]
 
-                    # Hydraulic conductance parameter:
-                    if dim_m > 1:
-                        c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
-                    else:
-                        c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
-                    # _end_if_
+                # Saturated hydraulic conductance:
+                c_sat = a_star * self.m_data["LAI"]
 
-                    # Pressure difference.
-                    dy = dydz * dz
-
-                    # Update the flux 'f' with the new HR term. NB: We need to
-                    # scale by '0.5' because the q_{HR} has [cm/h] and we need
-                    # per 0.5h.
-                    if dim_m > 1:
-                        flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
-                    else:
-                        flux[r_cells] += 0.5 * c_hr * dy[r_cells]
-                    # _end_if_
+                # Hydraulic conductance parameter:
+                if dim_m > 1:
+                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
+                else:
+                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
                 # _end_if_
 
-                # Evapo-transpiration (Tree Roots Water Uptake)
-                # This runs ONLY during day-time!
-                if self.m_data["sim_flags"]["ET"] and daylight:
-                    # Compute the root efficiency.
-                    if dim_m > 1:
-                        rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
-                    else:
-                        rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
-                    # _end_if_
+                # Pressure difference.
+                dy = dydz * dz
 
-                    # Get the product of the two terms.
-                    x_out = rho_theta * roots_z
+                # Update the flux 'f' with the new HR term. NB: We need to
+                # scale by '0.5' because the q_{HR} has [cm/h] and we need
+                # per 0.5h.
+                if dim_m > 1:
+                    flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
+                else:
+                    flux[r_cells] += 0.5 * c_hr * dy[r_cells]
+                # _end_if_
+            # _end_if_
 
-                    # Compute the integral of:
-                    # $\int_{z} (root_efficiency x root_fraction) dz$
+            # Evapo-transpiration (Tree Roots Water Uptake)
+            # This runs ONLY during day-time!
+            if self.m_data["sim_flags"]["ET"] and daylight:
+                # Compute the root efficiency.
+                if dim_m > 1:
+                    rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
+                else:
+                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
+                # _end_if_
+
+                # Get the product of the two terms.
+                x_out = rho_theta * roots_z
+
+                # Compute the integral of:
+                # $\int_{z} (root_efficiency x root_fraction) dz$
+                tot_x = np.atleast_1d(np.sum(x_out, axis=axis_n) * dz)
+
+                #  Constraint No.2:
+                if np.any(tot_x > 1.0):
+                    # Normalize it so it's equal to one.
+                    x_out = x_out / tot_x
+
+                    # Recompute the integral.
                     tot_x = np.sum(x_out, axis=axis_n) * dz
+                # _end_if_
 
-                    #  Constraint No.2:
-                    if np.all(tot_x > 1.0):
-                        # Normalize it so it's equal to one.
-                        x_out = x_out / tot_x
+                # Compute  the transpiration parameter only if there
+                # is not root shutdown! Otherwise don't remove water.
+                if np.any(tot_x > 0.0):
+                    # Total transpiration demand.
+                    tot_tr = np.minimum(args_i["atm"], water_k)
 
-                        # Recompute the integral.
-                        tot_x = np.sum(x_out, axis=axis_n) * dz
-                    # _end_if_
+                    # Avoid division by zero.
+                    tot_x[tot_x == 0] = 1.0
 
-                    # Compute  the transpiration parameter only if there
-                    # is not root shutdown! Otherwise don't remove water.
-                    if np.all(tot_x > 0.0):
-                        # Total transpiration demand.
-                        tot_tr = np.minimum(args_i["atm"], water_k)
+                    # Compute the rate of potential transpiration
+                    # by dividing the total atmospheric demand,at
+                    # the current time, with the integrated value
+                    # of the (root_efficiency x root_fraction).
+                    tr_pot = tot_tr / tot_x
 
-                        # Compute the rate of potential transpiration
-                        # by dividing the total atmospheric demand,at
-                        # the current time, with the integrated value
-                        # of the (root_efficiency x root_fraction).
-                        tr_pot = tot_tr / tot_x
+                    # Compute the uptake distribution.
+                    uptake = tr_pot * x_out
 
-                        # Compute the uptake distribution.
-                        uptake = tr_pot * x_out
+                    # Remove the root uptake from the sink term.
+                    sink[r_cells] = -uptake
 
-                        # Remove the root uptake from the sink term.
-                        sink[r_cells] = -uptake
+                    # Store the transpiration as function of depth.
+                    transpire = uptake
+                # _end_if_
+            # _end_transpiration_if_
 
-                        # Store the transpiration as function of depth.
-                        transpire = uptake
-                    # _end_if_
-                # _end_transpiration_if_
+            # Lateral (subsurface) Runoff:
+            if self.m_data["sim_flags"]["LF"]:
+                # Find saturated cell indexes.
+                id_sat = (y >= self.m_data["soil"].psi_sat)
 
-                # Lateral (subsurface) Runoff:
-                if self.m_data["sim_flags"]["LF"]:
-                    # Find saturated cell indexes.
-                    id_sat = (y >= self.m_data["soil"].psi_sat)
-
-                    # Switch according to the running mode.
-                    if self.m_data["sim_flags"]["PREDICT"]:
-                        # Predictive (running) mode.
-                        # Set the sink coefficient accordingly:
-                        if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
-                            # Wet season coefficient.
-                            alpha_low = -2.5e-3
-                        else:
-                            # Dry season coefficient.
-                            alpha_low = -1.5e-3
-                        # _end_if_
-
-                        # Number of cells, from the bottom  of the well, that stay
-                        # always saturated. That number can vary from well to well
-                        # and from  year to year.  This is to  prevent the spatial
-                        # domain from draining completely during extended droughts.
-                        low_lim = dim_d - (self.m_data["sat_cells"] - 1)
-
-                        # Exponent range.
-                        nu = np.linspace(1.5, 0.0, low_lim)
-
-                        # Repeat for all multiple entries of 'y'.
-                        for i in np.range(dim_m):
-                            # Find "wtd_est" (index).
-                            wtd_est = find_wtd(id_sat[i])
-
-                            # If the "wtd_est" is above a pre-defined depth value.
-                            if wtd_est < low_lim:
-                                # Set the cell indexes that we remove water from.
-                                j = np.arange(wtd_est, wtd_est + 1)
-
-                                # Update scale with current estimate of the wtd.
-                                # The higher the exponent the faster it drains!!
-                                # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
-                                alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
-
-                                # Compute the sink term proportional to y(z,t).
-                                if dim_m > 1:
-                                    sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
-                                    store_it = (j, np.abs(sink[:, j]))
-                                else:
-                                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-                                    store_it = (j, np.abs(sink[j]))
-                                # _end_if_
-
-                                # Store the lateral flow (runoff), along with
-                                # the locations (indexes) in the space domain.
-                                lateral_flow = store_it
-                            # _end_if_
-                        # _end_for_
+                # Switch according to the running mode.
+                if self.m_data["sim_flags"]["PREDICT"]:
+                    # Predictive (running) mode.
+                    # Set the sink coefficient accordingly:
+                    if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
+                        # Wet season coefficient.
+                        alpha_low = -2.5e-3
                     else:
-                        # Monitoring (running) mode.
-                        # Current water table observation.
-                        wtd_obs = int(np.minimum(args_i["wtd"], dim_d-1))
-
-                        # Sink (scale) coefficient:
-                        alpha_lat = -2.5e-4
-
-                        # Repeat for all multiple entries of 'y'.
-                        for i in range(dim_m):
-                            # Find "wtd_est" (index).
-                            wtd_est = find_wtd(id_sat[i])
-
-                            # If the "wtd_est" is inside the space domain.
-                            if (wtd_est < dim_d) & (wtd_est < wtd_obs):
-                                # Find  the locations between the estimated
-                                # $wtdEst$ and the actual value of $wtdObs$.
-                                j = np.arange(wtd_est, wtd_obs)
-
-                                # Compute the sink term proportional to y(z,t).
-                                if dim_m > 1:
-                                    sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
-                                    store_it = (j, np.abs(sink[:, j]))
-                                else:
-                                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-                                    store_it = (j, np.abs(sink[j]))
-                                # _end_if_
-
-                                # Store the lateral flow (runoff), along with
-                                # the locations (indexes) in the space domain.
-                                lateral_flow = store_it
-                            # _end_if_
-                        # _end_for_
+                        # Dry season coefficient.
+                        alpha_low = -1.5e-3
                     # _end_if_
+
+                    # Number of cells, from the bottom  of the well, that stay
+                    # always saturated. That number can vary from well to well
+                    # and from  year to year.  This is to  prevent the spatial
+                    # domain from draining completely during extended droughts.
+                    low_lim = dim_d - (self.m_data["sat_cells"] - 1)
+
+                    # Exponent range.
+                    nu = np.linspace(1.5, 0.0, low_lim)
+
+                    # Repeat for all multiple entries of 'y'.
+                    for i in np.range(dim_m):
+                        # Find "wtd_est" (index).
+                        wtd_est = find_wtd(id_sat[i])
+
+                        # If the "wtd_est" is above a pre-defined depth value.
+                        if wtd_est < low_lim:
+                            # Set the cell indexes that we remove water from.
+                            j = np.arange(wtd_est, wtd_est + 1)
+
+                            # Update scale with current estimate of the wtd.
+                            # The higher the exponent the faster it drains!!
+                            # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
+                            alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
+
+                            # Compute the sink term proportional to y(z,t).
+                            if dim_m > 1:
+                                sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
+                                store_it = (j, np.abs(sink[:, j]))
+                            else:
+                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                store_it = (j, np.abs(sink[j]))
+                            # _end_if_
+
+                            # Store the lateral flow (runoff), along with
+                            # the locations (indexes) in the space domain.
+                            lateral_flow = store_it
+                        # _end_if_
+                    # _end_for_
+                else:
+                    # Monitoring (running) mode.
+                    # Current water table observation.
+                    wtd_obs = int(np.minimum(args_i["wtd"], dim_d-1))
+
+                    # Sink (scale) coefficient:
+                    alpha_lat = -2.5e-4
+
+                    # Repeat for all multiple entries of 'y'.
+                    for i in range(dim_m):
+                        # Find "wtd_est" (index).
+                        wtd_est = find_wtd(id_sat[i])
+
+                        # If the "wtd_est" is inside the space domain.
+                        if (wtd_est < dim_d) & (wtd_est < wtd_obs):
+                            # Find  the locations between the estimated
+                            # $wtdEst$ and the actual value of $wtdObs$.
+                            j = np.arange(wtd_est, wtd_obs)
+
+                            # Compute the sink term proportional to y(z,t).
+                            if dim_m > 1:
+                                sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
+                                store_it = (j, np.abs(sink[:, j]))
+                            else:
+                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                store_it = (j, np.abs(sink[j]))
+                            # _end_if_
+
+                            # Store the lateral flow (runoff), along with
+                            # the locations (indexes) in the space domain.
+                            lateral_flow = store_it
+                        # _end_if_
+                    # _end_for_
                 # _end_if_
             # _end_if_
         # _end_if_
@@ -572,12 +577,24 @@ class RichardsPDE(object):
         # Hard code tolerance values.
         rel_tol, abs_tol = 1.0E-3, 1.0E-3
 
+        # Auxiliary vector of ones.
+        ones_n = np.ones(y0.size)
+        diag_n = np.ones(y0.size - 1)
+
+        # Define three sparse matrices.
+        spm1 = sparse.diags(ones_n, offsets=0)
+        spm2 = sparse.diags(diag_n, offsets=+1)
+        spm3 = sparse.diags(diag_n, offsets=-1)
+
+        # Jacobian structure is tri-diagonal.
+        jac_n = spm1 + spm2 + spm3
+
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
 
             # Current solution.
             sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF', atol=abs_tol,
-                              rtol=rel_tol, args=args, vectorized=False)
+                              rtol=rel_tol, args=args, vectorized=False, jac_sparsity=jac_n)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
