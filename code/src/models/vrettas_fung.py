@@ -31,9 +31,9 @@ class VrettasFung(HydrologicalModel):
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi: pressure head (suction) [dim_d x dim_m]
+        :param psi: pressure head (suction) [dim_m x dim_d]
 
-        :param z: depth values (increasing downwards) [dim_d x 1]
+        :param z: depth values (increasing downwards) [dim_d]
 
         :param args: in here we pass additional parameters for the noise model.
 
@@ -65,9 +65,6 @@ class VrettasFung(HydrologicalModel):
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
 
-        # Initialize 'q' (volumetric water content) variable.
-        q = np.zeros(psi.shape)
-
         # Initialise at None. This will cause an error
         # if the n_rnd is not given as input. (revisit)
         n_rnd = None
@@ -88,23 +85,11 @@ class VrettasFung(HydrologicalModel):
         # Check if there are saturated cells.
         id_sat = np.where(psi >= self.psi_sat)
 
-        # Split code for vectorization
-        if dim_m > 1:
-            # Loop for each input vector.
-            for i in range(dim_m):
-                # Compute the volumetric moisture content in unsaturated cells.
-                q[i] = self.theta_res + delta_s[i] * (1.0 + (self.alpha * np.abs(psi[i])) ** self.n) ** (-self.m)
+        # Compute the volumetric moisture content in unsaturated cells.
+        q = self.theta_res + delta_s * (1.0 + (self.alpha * np.abs(psi)) ** self.n) ** (-self.m)
 
-                # Volumetric water content in saturated cells.
-                q[i, id_sat[i]] = porous_z[i, id_sat[i]]
-            # _end_for_
-        else:
-            # Compute the volumetric moisture content in unsaturated cells.
-            q = self.theta_res + delta_s * (1.0 + (self.alpha * np.abs(psi)) ** self.n) ** (-self.m)
-
-            # Volumetric water content in saturated cells.
-            q[id_sat] = porous_z[id_sat]
-        # _end_if_
+        # Volumetric water content in saturated cells.
+        q[id_sat] = porous_z[id_sat]
 
         # Compute the effective saturation (Se \in [0,1]).
         # (i.e. the "normalized" water content)
