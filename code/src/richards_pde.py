@@ -172,7 +172,8 @@ class RichardsPDE(object):
         y = np.atleast_1d(y)
 
         # Ensure the input is 1-D.
-        dydz = np.atleast_1d(dydz)
+        # Note: For stability do not let the dydz drop less than 1.0.
+        dydz = np.atleast_1d(np.minimum(dydz, 1.001))
 
         # Get the dimensions of the state vector.
         dim_d = y.size
@@ -184,7 +185,7 @@ class RichardsPDE(object):
         theta, K, C, *_ = self.h_model(y, z, *args)
 
         # Compute the flux term.
-        flux = K*(np.minimum(dydz, 1.01) - 1.0)
+        flux = K * (dydz - 1.0)
 
         # Sink term is initialized to zero.
         sink = np.zeros(flux.shape)
@@ -195,9 +196,6 @@ class RichardsPDE(object):
         # We know that the first argument in the 'args' list is a dictionary
         # that contains all the necessary parameters for the i-th iteration.
         args_i = args[0]
-
-        # # Make sure the length exceeds one cell.
-        # # if dim_d >= 1:
 
         # Get the discretization step [L: cm]
         dz = self.m_data["dz"]
@@ -293,6 +291,7 @@ class RichardsPDE(object):
             # Lateral (subsurface) Runoff:
             if self.m_data["sim_flags"]["LF"]:
                 # Find saturated cell indexes.
+                # Note: Here we use boolean indexing.
                 id_sat = (y >= self.m_data["soil"].psi_sat)
 
                 # Switch according to the running mode.
@@ -331,11 +330,10 @@ class RichardsPDE(object):
 
                         # Compute the sink term proportional to y(z,t).
                         sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-                        store_it = (j, np.abs(sink[j]))
 
                         # Store the lateral flow (runoff), along with
                         # the locations (indexes) in the space domain.
-                        lateral_flow = store_it
+                        lateral_flow = (j, np.abs(sink[j]))
                     # _end_if_
                 else:
                     # Monitoring (running) mode.
@@ -371,7 +369,7 @@ class RichardsPDE(object):
         self.var_arg_out["lateral_flow"].append(lateral_flow)
 
         # Exit:
-        return C, sink, flux
+        return np.atleast_1d(C, sink, flux)
     # _end_def_
 
     def ic_fun(self, y0, *args):
@@ -388,7 +386,7 @@ class RichardsPDE(object):
         """
 
         # Return the vector.
-        return y0
+        return np.atleast_1d(y0)
     # _end_def_
 
     def bc_fun(self, z_left, y_left, z_right, y_right, *args):
@@ -457,7 +455,7 @@ class RichardsPDE(object):
         q_right = np.ones(q_left.shape)
 
         # Return the boundary values.
-        return p_left, q_left, p_right, q_right
+        return np.atleast_1d(p_left, q_left, p_right, q_right)
     # _end_def_
 
     def solve(self, t, y0, *args):
@@ -480,17 +478,12 @@ class RichardsPDE(object):
         # Hard code tolerance values.
         rel_tol, abs_tol = 1.0E-3, 1.0E-3
 
-        # Auxiliary vector of ones.
+        # Auxiliary vectors of "ones".
         ones_n = np.ones(y0.size)
         diag_n = np.ones(y0.size - 1)
 
-        # Define three sparse matrices.
-        spm1 = sparse.diags(ones_n, offsets=0)
-        spm2 = sparse.diags(diag_n, offsets=+1)
-        spm3 = sparse.diags(diag_n, offsets=-1)
-
         # Jacobian structure is tri-diagonal.
-        jac_n = spm1 + spm2 + spm3
+        jac_n = sparse.diags((ones_n, diag_n, diag_n), offsets=(0, 1, -1))
 
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
@@ -572,6 +565,6 @@ def midpoints(x_left, u_left, x_right, u_right):
     du_mid = (u_right - u_left)/dx
 
     # Return the derivative and the mid-points.
-    return u_mid, du_mid
+    return np.atleast_1d(u_mid, du_mid)
 
 # _end_def_
