@@ -46,12 +46,8 @@ class VrettasFung(HydrologicalModel):
         z = np.atleast_1d(z)
         psi = np.atleast_1d(psi)
 
-        # Now check if we have multiple entries of theta.
-        if len(psi.shape) > 1:
-            dim_m, dim_d = psi.shape
-        else:
-            dim_m, dim_d = 1, psi.size
-        # _end_if_
+        # Get the vector size.
+        dim_d = psi.size
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -72,11 +68,6 @@ class VrettasFung(HydrologicalModel):
         # Extract additional parameters.
         if "n_rnd" in args[0]:
             n_rnd = np.atleast_1d(args[0]["n_rnd"])
-        # _end_if_
-
-        # Repeat if necessary (for vectorization).
-        if dim_m > 1:
-            porous_z = np.array([porous_z] * dim_m)
         # _end_if_
 
         # Pre-compute constant parameters.
@@ -129,32 +120,15 @@ class VrettasFung(HydrologicalModel):
             rnd_soil = 0.05 * n_rnd[soil_layer_idx]
 
             # Weight function:
-            if dim_m > 1:
-                s_eff_soil = s_eff[:, soil_layer_idx]
-            else:
-                s_eff_soil = s_eff[soil_layer_idx]
-            # _end_if_
+            s_eff_soil = s_eff[soil_layer_idx]
 
             sigma_soil = self.k_hc.sigma_noise * (1.0 - s_eff_soil)
 
-            # Split code for vectorization.
-            if dim_m > 1:
-                # Replicate 'mean' and 'n_rnd' parameters.
-                mean_soil = np.array([mean_soil] * dim_m)
-                rnd_soil = np.array([rnd_soil] * dim_m)
+            # Update the value of $Kbkg_soil$.
+            k_bkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
 
-                # Update the value of $Kbkg_soil$.
-                k_bkg[:, soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
-
-                # Hydraulic conductivity for Soil layer.
-                K[:, soil_layer_idx] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[:, soil_layer_idx]
-            else:
-                # Update the value of $Kbkg_soil$.
-                k_bkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
-
-                # Hydraulic conductivity for Soil layer.
-                K[soil_layer_idx] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[soil_layer_idx]
-            # _end_if_
+            # Hydraulic conductivity for Soil layer.
+            K[soil_layer_idx] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[soil_layer_idx]
         # _end_if_
 
         # SAPROLITE LAYER:
@@ -173,32 +147,15 @@ class VrettasFung(HydrologicalModel):
             rnd_sapr = 0.10 * n_rnd[sapr_layer_idx]
 
             # Weight function:
-            if dim_m > 1:
-                s_eff_sapr = s_eff[:, sapr_layer_idx]
-            else:
-                s_eff_sapr = s_eff[sapr_layer_idx]
-            # _end_if_
+            s_eff_sapr = s_eff[sapr_layer_idx]
 
             sigma_sapr = self.k_hc.sigma_noise * (1.0 - s_eff_sapr)
 
-            # Split code for vectorization.
-            if dim_m > 1:
-                # Replicate 'mean' and 'n_rnd' parameters
-                mean_sapr = np.array([mean_sapr] * dim_m)
-                rnd_sapr = np.array([rnd_sapr] * dim_m)
+            # Update the value of $Kbkg_sapr$.
+            k_bkg[sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
 
-                # Update the value of $Kbkg_sapr$.
-                k_bkg[:, sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
-
-                # Hydraulic conductivity for Saprolite layer.
-                K[:, sapr_layer_idx] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[:, sapr_layer_idx]
-            else:
-                # Update the value of $Kbkg_sapr$.
-                k_bkg[sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
-
-                # Hydraulic conductivity for Saprolite layer.
-                K[sapr_layer_idx] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[sapr_layer_idx]
-            # _end_if_
+            # Hydraulic conductivity for Saprolite layer.
+            K[sapr_layer_idx] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[sapr_layer_idx]
         # _end_if_
 
         # WEATHERED BEDROCK LAYER:
@@ -220,33 +177,15 @@ class VrettasFung(HydrologicalModel):
             rnd_wbed = n_rnd[wbed_layer_idx]
 
             # Weight function:
-            if dim_m > 1:
-                s_eff_wbed = s_eff[:, wbed_layer_idx]
-            else:
-                s_eff_wbed = s_eff[wbed_layer_idx]
-            # _end_if_
+            s_eff_wbed = s_eff[wbed_layer_idx]
 
             sigma_wbed = self.k_hc.sigma_noise * (1.0 - s_eff_wbed)
 
-            # Split code for vectorization.
-            if dim_m > 1:
-                # Replicate 'mean' and 'n_rnd' parameters
-                mean_wbed = np.array([mean_wbed] * dim_m)
-                rnd_wbed = np.array([rnd_wbed] * dim_m)
+            # Update the value of $Kbkg_wbed$.
+            k_bkg[wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
 
-                # Update the value of $Kbkg_wbed$.
-                k_bkg[:, wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
-
-                # Hydraulic conductivity for Saprolite layer.
-                K[:, wbed_layer_idx] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[:, wbed_layer_idx]
-            else:
-                # Update the value of $Kbkg_wbed$.
-                k_bkg[wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
-
-                # Hydraulic conductivity for Saprolite layer.
-                K[wbed_layer_idx] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[wbed_layer_idx]
-            # _end_if_
-
+            # Hydraulic conductivity for Saprolite layer.
+            K[wbed_layer_idx] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[wbed_layer_idx]
         # _end_if_
 
         # SAFEGUARD:
@@ -272,11 +211,7 @@ class VrettasFung(HydrologicalModel):
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        if dim_m > 1:
-            q_inf_max = np.minimum(2.0*(porous_z[:, 0] - q[:, 0])*dz, k_bkg[:, 0])
-        else:
-            q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_bkg[0])
-        # _end_if_
+        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_bkg[0])
 
         # Tuple with all the related variables.
         return np.atleast_1d(q, K, C, k_bkg, q_inf_max)
