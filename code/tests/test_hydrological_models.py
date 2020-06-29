@@ -100,15 +100,6 @@ class TestHydrologicalModels(unittest.TestCase):
         # Check the dimensions.
         self.assertEqual(theta_1d.shape, psi_1d.shape)
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
-
-        # Vectorised version (multiple input).
-        psi_2d = np.array([psi_1d] * 4)
-
-        # Get back the vol. water content (theta).
-        theta_2d, *_ = test_model(psi_2d, self.z_grid)
-
-        # Check the dimensions.
-        self.assertEqual(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
     def test_VrettasFung_model(self):
@@ -140,15 +131,6 @@ class TestHydrologicalModels(unittest.TestCase):
         # Check the dimensions.
         self.assertEqual(theta_1d.shape, psi_1d.shape)
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
-
-        # Vectorised version (multiple input).
-        psi_2d = np.array([psi_1d] * 4)
-
-        # Get back the theta.
-        theta_2d, *_ = test_model(psi_2d, self.z_grid, {"n_rnd": n_rnd})
-
-        # Check the dimensions.
-        self.assertTrue(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
 
