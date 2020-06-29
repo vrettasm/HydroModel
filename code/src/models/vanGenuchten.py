@@ -119,7 +119,11 @@ class vanGenuchten(HydrologicalModel):
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
+        if dim_m > 1:
+            q_inf_max = np.minimum(2.0*(porous_z[:, 0] - q[:, 0])*dz, k_sat[:, 0])
+        else:
+            q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
+        # _end_if_
 
         # Tuple with all the related variables.
         return q, K, C, k_sat, q_inf_max
