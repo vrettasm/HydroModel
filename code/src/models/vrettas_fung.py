@@ -86,29 +86,24 @@ class VrettasFung(HydrologicalModel):
         delta_s = porous_z - self.theta_res
 
         # Check if there are saturated cells.
-        id_sat = psi >= self.psi_sat
+        id_sat = np.where(psi >= self.psi_sat)
 
         # Split code for vectorization
         if dim_m > 1:
             # Loop for each input vector.
             for i in range(dim_m):
-                # Check if there are saturated cells.
-                j = id_sat[i]
+                # Compute the volumetric moisture content in unsaturated cells.
+                q[i] = self.theta_res + delta_s[i] * (1.0 + (self.alpha * np.abs(psi[i])) ** self.n) ** (-self.m)
 
                 # Volumetric water content in saturated cells.
-                q[i, j] = porous_z[i, j]
-
-                # Compute the volumetric moisture content in unsaturated cells.
-                q[i, ~j] = self.theta_res + \
-                           delta_s[i, ~j] * (1.0 + (self.alpha * np.abs(psi[i, ~j])) ** self.n) ** (-self.m)
+                q[i, id_sat[i]] = porous_z[i, id_sat[i]]
             # _end_for_
         else:
+            # Compute the volumetric moisture content in unsaturated cells.
+            q = self.theta_res + delta_s * (1.0 + (self.alpha * np.abs(psi)) ** self.n) ** (-self.m)
+
             # Volumetric water content in saturated cells.
             q[id_sat] = porous_z[id_sat]
-
-            # Compute the volumetric moisture content in unsaturated cells.
-            q[~id_sat] = self.theta_res + \
-                         delta_s[~id_sat] * (1.0 + (self.alpha * np.abs(psi[~id_sat])) ** self.n) ** (-self.m)
         # _end_if_
 
         # Compute the effective saturation (Se \in [0,1]).
