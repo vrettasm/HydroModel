@@ -54,12 +54,8 @@ class HydrologicalModel(object):
         z = np.atleast_1d(z)
         theta = np.atleast_1d(theta)
 
-        # Now check if we have multiple entries of theta.
-        if len(theta.shape) > 1:
-            dim_m, dim_d = theta.shape
-        else:
-            dim_m, dim_d = 1, theta.size
-        # _end_if_
+        # Get the vector size.
+        dim_d = theta.size
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -72,11 +68,6 @@ class HydrologicalModel(object):
 
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
-
-        # Repeat if necessary (for vectorization).
-        if dim_m > 1:
-            porous_z = np.array([porous_z] * dim_m)
-        # _end_if_
 
         # Pre-compute constant parameters.
         delta_s = porous_z - self.theta_res
@@ -100,32 +91,17 @@ class HydrologicalModel(object):
         # % Initialize return array.
         psi_z = np.zeros(theta.shape)
 
-        # Not easily vectorized (because of the index "id_sat").
-        if dim_m > 1:
-            # Iterate through all dimensions.
-            for i in range(dim_m):
-                # Extract the saturated locations of the i-th vector.
-                j = id_sat[i]
+        # Compute the pressure head (psi) on the unsaturated soil.
+        psi_z[~id_sat] = -((s_eff[~id_sat] ** (-1.0 / self.m) - 1.0) ** (1.0 / self.n)) / self.alpha
 
-                # Compute the pressure head (psi) on the unsaturated soil.
-                psi_z[i, ~j] = -((s_eff[i, ~j] ** (-1.0 / self.m) - 1.0) ** (1.0 / self.n)) / self.alpha
-
-                # Compute the pressure head (psi) on the saturated soil.
-                psi_z[i, j] = np.arange(0, np.sum(j)) * self.dz
-            # _end_for_
-        else:
-            # Compute the pressure head (psi) on the unsaturated soil.
-            psi_z[~id_sat] = -((s_eff[~id_sat] ** (-1.0 / self.m) - 1.0) ** (1.0 / self.n)) / self.alpha
-
-            # Compute the pressure head (psi) on the saturated soil.
-            psi_z[id_sat] = np.arange(0, np.sum(id_sat)) * self.dz
-        # _end_if_
+        # Compute the pressure head (psi) on the saturated soil.
+        psi_z[id_sat] = np.arange(0, np.sum(id_sat)) * self.dz
 
         # SAFEGUARD:
         psi_z[~np.isfinite(psi_z)] = -1.0e+5
 
         # Pressure head (suction), Effective Saturation.
-        return psi_z, s_eff
+        return np.atleast_1d(psi_z, s_eff)
     # _end_def_
 
 # _end_class_
