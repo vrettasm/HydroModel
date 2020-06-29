@@ -273,6 +273,9 @@ class TreeRoots(object):
             # Compute the integral of the root efficiency term.
             tot_theta = np.sum(rho_theta, axis=axis_n) * self.dz
 
+            # Avoid division by zero.
+            tot_theta[tot_theta == 0.0] = 1.0
+
             # Replicate the vector.
             if dim_m > 1:
                 tot_theta = np.array([tot_theta] * dim_d).T
