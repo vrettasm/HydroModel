@@ -123,13 +123,13 @@ class TreeRoots(object):
         # _end_if_
 
         # Cut-off very small values before the normalization.
-        root_pdf = np.maximum(root_pdf, 1.0e-10)
+        root_pdf = np.maximum(root_pdf, 1.0e-8)
 
         # Compute the integral of the root profile term.
         total_area = np.sum(root_pdf)*dz
 
         # Assign the normalized root profile.
-        self.profile = root_pdf/total_area
+        self.profile = np.atleast_1d(root_pdf/total_area)
 
         # Interpolate the profile on the total root depth [L: cm].
         self.f_interp = interp1d(np.linspace(0.0, ln * dz, ln), self.profile)
@@ -271,7 +271,7 @@ class TreeRoots(object):
             rho_theta = np.abs(alpha_01 * alpha_02)
 
             # Compute the integral of the root efficiency term.
-            tot_theta = np.sum(rho_theta, axis=axis_n) * self.dz
+            tot_theta = np.atleast_1d(np.sum(rho_theta, axis=axis_n) * self.dz)
 
             # Avoid division by zero.
             tot_theta[tot_theta == 0.0] = 1.0
@@ -289,7 +289,7 @@ class TreeRoots(object):
             rho_theta = np.zeros(theta_z.shape)
         # _end_if_
 
-        return rho_theta, water_k
+        return np.atleast_1d(rho_theta, water_k)
     # _end_def_
 
     def __str__(self):
