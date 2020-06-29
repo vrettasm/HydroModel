@@ -1,5 +1,6 @@
 import json
 import time
+import h5py
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +41,9 @@ class Simulation(object):
 
         # Place holder for the pde model.
         self.pde_model = None
+
+        # Place holder for the output storage.
+        self.output = {}
     # _end_def_
 
     def setupModel(self, params, data):
@@ -537,6 +541,7 @@ class Simulation(object):
                 # Display message.
                 print(" [No. {0}] {1}: MAE = {2:.2f} cm,"
                       " [{3}]".format(self.mData["Well_No"], i, mae, w_side))
+            # _end_if_
         # _end_for_
 
         # Stop the timer.
@@ -545,9 +550,16 @@ class Simulation(object):
         # Print duration.
         print(" Elapsed time: {0:.2f} seconds.".format(time_tf - time_t0))
 
-        # Get the additional output from the pde model.
-        # transpiration = self.var_arg_out["transpiration"]
-        # lateral_flow = self.var_arg_out["lateral_flow"]
+        # Prepare the output.
+        self.output["y0"] = y0
+        self.output["psi"] = psi
+        self.output["K_hrc"] = k_hrc
+        self.output["K_bkg"] = k_bkg
+        self.output["theta_vol"] = theta_vol
+        self.output["abs_error"] = abs_error
+        self.output["wtd_est_cm"] = z[wtd_est]
+        self.output["lateral_flow"] = self.pde_model.var_arg_out["lateral_flow"]
+        self.output["transpiration"] = self.pde_model.var_arg_out["transpiration"]
     # _end_def_
 
     def saveResults(self):
@@ -556,6 +568,22 @@ class Simulation(object):
         :return: None
         """
         print(" Saving the results to {0}.".format(self.name))
+
+        # Create the output filename.
+        file_out = Path(self.name + ".h5")
+
+        # Save the data to an HDF5 file format.
+        # NOTE: Create file truncate if exists.
+        with h5py.File(file_out, 'w') as hf_out:
+            # Local reference.
+            data = self.output
+
+            # Extract all the data.
+            for key in data:
+                hf_out.create_dataset(key, data=data[key])
+            # _end_for_
+        # _end_with_
+
     # _end_def_
 
 # _end_class_
