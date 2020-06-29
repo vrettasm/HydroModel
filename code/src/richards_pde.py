@@ -90,14 +90,22 @@ class RichardsPDE(object):
         dydt = np.zeros(y.shape)
 
         # Evaluate the PDE at the top (1/2).
-        y0, dy0 = midpoints(self.x_mesh[0], y[0], self.x_mesh[1], y[1])
+        if dim_m > 1:
+            y0, dy0 = midpoints(self.x_mesh[0], y[:, 0], self.x_mesh[1], y[:, 1])
+        else:
+            y0, dy0 = midpoints(self.x_mesh[0], y[0], self.x_mesh[1], y[1])
+        # _end_if_
 
         # Evaluate the PDE at the top (2/2).
         cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, *args)
 
         # Evaluate the boundary conditions.
-        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0],
-                                     self.x_mesh[-1], y[-1], *args)
+        if dim_m > 1:
+            pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[:, 0], self.x_mesh[-1], y[:, -1], *args)
+        else:
+            pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0], self.x_mesh[-1], y[-1], *args)
+        # _end_if_
+
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
             if dim_m > 1:
@@ -289,7 +297,11 @@ class RichardsPDE(object):
                     c_sat = a_star * self.m_data["Trees"]["Leaf_Area_Index"]
 
                     # Hydraulic conductance parameter:
-                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
+                    if dim_m > 1:
+                        c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
+                    else:
+                        c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
+                    # _end_if_
 
                     # Pressure difference.
                     dy = dydz * dz
@@ -297,14 +309,22 @@ class RichardsPDE(object):
                     # Update the flux 'f' with the new HR term. NB: We need to
                     # scale by '0.5' because the q_{HR} has [cm/h] and we need
                     # per 0.5h.
-                    flux[r_cells] += 0.5 * c_hr * dy[r_cells]
+                    if dim_m > 1:
+                        flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
+                    else:
+                        flux[r_cells] += 0.5 * c_hr * dy[r_cells]
+                    # _end_if_
                 # _end_if_
 
                 # Evapo-transpiration (Tree Roots Water Uptake)
                 # This runs ONLY during day-time!
                 if self.m_data["sim_flags"]["ET"] and daylight:
                     # Compute the root efficiency.
-                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
+                    if dim_m > 1:
+                        rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
+                    else:
+                        rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
+                    # _end_if_
 
                     # Get the product of the two terms.
                     x_out = rho_theta * roots_z
@@ -348,7 +368,7 @@ class RichardsPDE(object):
                 # Lateral (subsurface) Runoff:
                 if self.m_data["sim_flags"]["LF"]:
                     # Find saturated cell indexes.
-                    id_sat = np.where(y >= self.m_data["soil"].psi_sat)
+                    id_sat = (y >= self.m_data["soil"].psi_sat)
 
                     # Switch according to the running mode.
                     if self.m_data["sim_flags"]["PREDICT"]:
@@ -387,11 +407,17 @@ class RichardsPDE(object):
                                 alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                if dim_m > 1:
+                                    sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
+                                    store_it = (j, np.abs(sink[:, j]))
+                                else:
+                                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                    store_it = (j, np.abs(sink[j]))
+                                # _end_if_
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[j]))
+                                lateral_flow = store_it
                             # _end_if_
                         # _end_for_
                     else:
@@ -414,11 +440,17 @@ class RichardsPDE(object):
                                 j = np.arange(wtd_est, wtd_obs)
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                if dim_m > 1:
+                                    sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
+                                    store_it = (j, np.abs(sink[:, j]))
+                                else:
+                                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                                    store_it = (j, np.abs(sink[j]))
+                                # _end_if_
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[j]))
+                                lateral_flow = store_it
                             # _end_if_
                         # _end_for_
                     # _end_if_
@@ -544,8 +576,8 @@ class RichardsPDE(object):
         while n_trials > 0:
 
             # Current solution.
-            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF',
-                              atol=abs_tol, rtol=rel_tol, args=args)
+            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF', atol=abs_tol,
+                              rtol=rel_tol, args=args, vectorized=False)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
