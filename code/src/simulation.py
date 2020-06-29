@@ -290,6 +290,7 @@ class Simulation(object):
 
         # Store tree-root related parameters in this structure.
         self.mData["atm"] = plant_tp
+        self.mData["LAI"] = params["Trees"]["Leaf_Area_Index"]
         self.mData["iPsi_50"] = inv_psi_50
 
         # EVAPORATION:
@@ -331,7 +332,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 250
+        burn_in = 10
 
         # Early stop flag.
         early_stop = False

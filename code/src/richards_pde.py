@@ -294,7 +294,7 @@ class RichardsPDE(object):
                     inv_psi_50 = self.m_data["iPsi_50"]
 
                     # Saturated hydraulic conductance:
-                    c_sat = a_star * self.m_data["Trees"]["Leaf_Area_Index"]
+                    c_sat = a_star * self.m_data["LAI"]
 
                     # Hydraulic conductance parameter:
                     if dim_m > 1:
