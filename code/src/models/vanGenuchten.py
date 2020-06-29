@@ -126,7 +126,7 @@ class vanGenuchten(HydrologicalModel):
         # _end_if_
 
         # Tuple with all the related variables.
-        return q, K, C, k_sat, q_inf_max
+        return np.atleast_1d(q, K, C, k_sat, q_inf_max)
     # _end_def_
 
 # _end_class_
