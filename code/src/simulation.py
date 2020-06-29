@@ -219,7 +219,6 @@ class Simulation(object):
 
         # Compute the total atmospheric demand (i.e. root water uptake)
         # as percentage of the total precipitation over the whole year.
-
         atm_demand = params["Environmental"]["Atmospheric_Demand"]
         interception = params["Environmental"]["Interception_pct"]
 
@@ -332,7 +331,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 350
+        burn_in = 500
 
         # Early stop flag.
         early_stop = False
