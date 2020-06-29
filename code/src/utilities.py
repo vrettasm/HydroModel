@@ -79,5 +79,5 @@ def find_wtd(y=None):
     # Make sure the index does not exceed the upper limit: return index "i"
     # should be in [0, dim_d-1].  This is because  we assume that the |wtd|
     # always exists inside the spatial domain.
-    return np.minimum(i, dim_d-1)
+    return int(np.minimum(i, dim_d-1))
 # _end_def_
