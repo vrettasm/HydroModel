@@ -26,9 +26,9 @@ class vanGenuchten(HydrologicalModel):
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi: pressure head (suction) [dim_d x dim_m]
+        :param psi: pressure head (suction) [dim_d]
 
-        :param z: depth values (increasing downwards) [dim_d x 1]
+        :param z: depth values (increasing downwards) [dim_d]
 
         :param args: (for compatibility) to keep a uniform interface.
 
@@ -41,12 +41,8 @@ class vanGenuchten(HydrologicalModel):
         z = np.atleast_1d(z)
         psi = np.atleast_1d(psi)
 
-        # Now check if we have multiple entries of theta.
-        if len(psi.shape) > 1:
-            dim_m, dim_d = psi.shape
-        else:
-            dim_m, dim_d = 1, psi.size
-        # _end_if_
+        # Get the vector size.
+        dim_d = psi.size
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -62,14 +58,6 @@ class vanGenuchten(HydrologicalModel):
 
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
-
-        # Initialize 'q' (volumetric water content) variable.
-        q = np.zeros(psi.shape)
-
-        # Repeat if necessary (for vectorization).
-        if dim_m > 1:
-            porous_z = np.array([porous_z] * dim_m)
-        # _end_if_
 
         # Pre-compute constant parameters.
         delta_s = porous_z - self.theta_res
@@ -119,11 +107,7 @@ class vanGenuchten(HydrologicalModel):
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        if dim_m > 1:
-            q_inf_max = np.minimum(2.0*(porous_z[:, 0] - q[:, 0])*dz, k_sat[:, 0])
-        else:
-            q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
-        # _end_if_
+        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
 
         # Tuple with all the related variables.
         return np.atleast_1d(q, K, C, k_sat, q_inf_max)
