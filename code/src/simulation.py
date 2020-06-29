@@ -331,7 +331,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 500
+        burn_in = 100
 
         # Early stop flag.
         early_stop = False
@@ -424,21 +424,21 @@ class Simulation(object):
         dim_t = self.mData["dim_t"]
 
         # Volumetric water content.
-        theta_vol = np.zeros((dim_d, dim_t))
+        theta_vol = np.zeros((dim_t, dim_d))
 
         # Pressure head (suction).
-        psi = np.zeros((dim_d, dim_t))
+        psi = np.zeros((dim_t, dim_d))
 
         # Background hydraulic conductivity.
         # Note: This is the equivalent of the
         # saturated in the vanGenuchten model.
-        k_bkg = np.zeros((dim_d, dim_t))
+        k_bkg = np.zeros((dim_t, dim_d))
 
         # Unsaturated hydraulic conductivity.
-        k_hrc = np.zeros((dim_d, dim_t))
+        k_hrc = np.zeros((dim_t, dim_d))
 
         # Water table depths (estimated).
-        wtd_est = np.zeros(dim_t)
+        wtd_est = np.zeros(dim_t, dtype=int)
 
         # Error (absolute) of water table depth.
         abs_error = np.zeros(dim_t)
@@ -450,19 +450,18 @@ class Simulation(object):
         abs_error[0] = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est[0]])
 
         # Save the initial conditions at time $t = 0$.
-        psi[0, :] = y0
+        psi[0] = y0
 
         # Create a random vector.
         n_rnd = np.random.randn(dim_d)
 
         # Run the hydrological model to get the initial water content.
-        theta_vol[:, 0], k_hrc[:, 0], _, k_bkg[:, 0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
+        theta_vol[0], k_hrc[0], _, k_bkg[0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
 
         # Virtual time array.
         tk = np.arange(0, dim_t)
 
         # Create a Richards' equation object.
-        # pde_model = RichardsPDE(self.mData)
         pde_model = self.pde_model
 
         # Start the timer.
@@ -495,7 +494,7 @@ class Simulation(object):
             if (args_i["precipitation"] > 0.25) or (np.mod(i, 48) == 0):
 
                 # Standard normal random variables ~ N(0,1):
-                args_i["n_rnd"] = np.random.randn(dim_d, 1)
+                args_i["n_rnd"] = np.random.randn(dim_d)
             # _end_if_
 
             # This time-window corresponds to '30' minutes time intervals
@@ -512,12 +511,12 @@ class Simulation(object):
             abs_error[i] = np.abs(self.mData["zWtd_cm"][i] - z[wtd_est[i]])
 
             # Store the pressure head to the array.
-            psi[:, i] = y_i
+            psi[i] = y_i
 
             # Recover the values of the volumetric water content $\theta$
             # and the hydraulic conductivities $K(\theta)$ and 'Kbkg' for
             # the values of the final solution of the PDE.
-            theta_vol[:, i], k_hrc[:, i], _, k_bkg[:, i], *_ = h_model(y_i, z, args_i)
+            theta_vol[i], k_hrc[i], _, k_bkg[i], *_ = h_model(y_i, z, args_i)
 
             # Update the initial condition vector for the next iteration.
             y0 = y_i.copy()
@@ -533,7 +532,7 @@ class Simulation(object):
                 # _end_if_
 
                 # Compute the current Mean Absolute Error.
-                mae = np.sum(abs_error[0:i], axis=0)/i
+                mae = np.sum(abs_error[0:i])/i
 
                 # Display message.
                 print(" [No. {0}] {1}: MAE = {2:.2f}, [{3}]".format(self.mData["Well_No"], i, mae, w_side))
