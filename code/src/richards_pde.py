@@ -55,7 +55,7 @@ class RichardsPDE(object):
         self.x_mid = self.x_mesh[0:-1] + 0.5 * dx
 
         # Mid-point indexes.
-        self.mid_i = np.arange(1, self.nx)
+        self.mid_i = np.arange(1, self.nx-1)
 
         # Interior grid (mid)-points.
         self.xzmp1 = np.zeros(self.nx)
@@ -71,35 +71,36 @@ class RichardsPDE(object):
 
         :param t: time variable.
 
-        :param y: state vector of the PDE [dim_d x dim_m]
+        :param y: state vector of the PDE.
 
         :return: derivative dydt
         """
 
-        # Make sure the input 'y' has at least shape (d, 1).
-        if len(y.shape) == 1:
-            y = y.reshape(-1, 1)
+        # Make sure input is 1D.
+        y = np.atleast_1d(y)
+
+        # Now check if we have multiple entries of theta.
+        if len(y.shape) > 1:
+            dim_m, dim_d = y.shape
+        else:
+            dim_m, dim_d = 1, y.size
         # _end_if_
 
-        # Get the number of different vectors.
-        _, dim_m = y.shape
-
         # Preallocate for efficiency.
-        dydt = np.zeros((self.nx, dim_m))
+        dydt = np.zeros(y.shape)
 
         # Evaluate the PDE at the top (1/2).
-        y0, dy0 = midpoints(self.x_mesh[0], y[0, :],
-                            self.x_mesh[1], y[1, :])
+        y0, dy0 = midpoints(self.x_mesh[0], y[0], self.x_mesh[1], y[1])
 
         # Evaluate the PDE at the top (2/2).
         cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, *args)
 
         # Evaluate the boundary conditions.
-        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0, :],
-                                     self.x_mesh[-1], y[-1, :], *args)
+        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0],
+                                     self.x_mesh[-1], y[-1], *args)
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
-            dydt[0, :] = pL
+            dydt[0] = pL
         else:
             # Compute the contribution of C(.):
             denom = qL * self.zxmp1[0] * cL
@@ -108,42 +109,45 @@ class RichardsPDE(object):
             denom[denom == 0.0] = 1.0
 
             # Compute the derivative at $z = 0$:
-            dydt[0, :] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
+            dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
         # _end_if_
 
         # INTERIOR POINTS (vectorized computation):
-        y_mid, dy_mid = midpoints(self.x_mesh[self.x_mid+0], y[self.x_mid+0, :],
-                                  self.x_mesh[self.x_mid+1], y[self.x_mid+1, :])
+        y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
+                                  self.x_mesh[self.mid_i+1], y[self.mid_i+1])
         # PDE evaluation.
-        cR, sR, fR = self.pde_fun(self.x_mid[self.x_mid], y_mid, dy_mid, *args)
+        cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
+
+        # Set the axis.
+        axis_n = 1 if dim_m > 1 else None
 
         # WARNING: DO NOT EDIT THESE LINES
-        cLi = np.append(cL, cR, axis=0)
-        fLi = np.append(fL, fR, axis=0)
-        sLi = np.append(sL, sR, axis=0)
+        cLi = np.append(cL, cR, axis=axis_n)
+        fLi = np.append(fL, fR, axis=axis_n)
+        sLi = np.append(sL, sR, axis=axis_n)
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        denom = self.zxmp1[self.x_mid] * cR + self.xzmp1[self.x_mid] * cLi[0:-2]
+        denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
 
         # Avoid division by zero.
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
-        dydt[self.x_mid, :] = (fR - fLi[0:-2, :] + (self.zxmp1[self.x_mid] * sR +
-                                                    self.xzmp1[self.x_mid] * sLi[0:-2, :])) / denom
+        dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
+                                              self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
         # BOTTOM BOUNDARY:
         if np.all(qR == 0.0):
-            dydt[-1, :] = pR
+            dydt[-1] = pR
         else:
             # Compute the contribution of C(.):
-            denom = -qR * self.xzmp1[-1] * cLi[-1, :]
+            denom = -qR * self.xzmp1[-1] * cLi[-1]
 
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
             # Compute the derivative at $z = end$:
-            dydt[-1, :] = (pR + qR * (fLi[-1, :] - self.xzmp1[-1] * sLi[-1, :])) / denom
+            dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
         # _end_if_
 
         # Return the derivative.
@@ -213,10 +217,10 @@ class RichardsPDE(object):
             tree_roots = self.m_data["tree_roots"]
 
             # Find the indexes of the root-zone.
-            r_cells = z <= tree_roots.max_root_depth
+            r_cells = np.where(z <= tree_roots.max_root_depth)
 
             # Get the roots density at depths (z).
-            roots_z = tree_roots(z)
+            roots_z = tree_roots(z[r_cells])
 
             # In Normal Mode: SPINUP == FALSE.
             if not self.m_data["sim_flags"]["SPINUP"]:
@@ -297,7 +301,7 @@ class RichardsPDE(object):
                 # Lateral (subsurface) Runoff:
                 if self.m_data["sim_flags"]["LF"]:
                     # Find saturated cell indexes.
-                    id_sat = (y >= self.m_data["soil"].psi_sat)
+                    id_sat = np.where(y >= self.m_data["soil"].psi_sat)
 
                     # Switch according to the running mode.
                     if self.m_data["sim_flags"]["PREDICT"]:
@@ -420,18 +424,13 @@ class RichardsPDE(object):
         # Make sure input is 1-D.
         z_left = np.atleast_1d(z_left)
         y_left = np.atleast_1d(y_left)
+
+        # Make sure input is 1-D.
         z_right = np.atleast_1d(z_right)
         y_right = np.atleast_1d(y_right)
 
         # Get the maximum infiltration capacity from the model.
         theta_left, *_, q_inf_max = self.h_model(y_left, z_left, *args)
-
-        # Now check if we have multiple entries of theta.
-        if len(y_left.shape) > 1:
-            dim_m, dim_d = y_left.shape
-        else:
-            dim_m, dim_d = 1, y_left.size
-        # _end_if_
 
         # [TOP]: Neumann boundary condition.
         q_left = np.ones(y_left.shape)
@@ -498,7 +497,7 @@ class RichardsPDE(object):
         while n_trials > 0:
 
             # Current solution
-            sol_t = solve_ivp(self, t_span=t, y0=y0.flatten(), method='LSODA',
+            sol_t = solve_ivp(self, t_span=t, y0=y0, method='LSODA',
                               atol=abs_tol, rtol=rel_tol, args=args)
 
             # Check if the solver terminated successfully.
@@ -531,16 +530,24 @@ def midpoints(x_left, u_left, x_right, u_right):
     Interpolation (helper) function that is used
     in the discretization of the Richards' PDE.
 
-    :param x_left: [dim_d x 1]
+    :param x_left: [dim_d]
 
-    :param u_left: [dim_d x dim_m]
+    :param u_left: [dim_m x dim_d]
 
-    :param x_right: [dim_d x 1]
+    :param x_right: [dim_d]
 
-    :param u_right: [dim_d x dim_m]
+    :param u_right: [dim_m x dim_d]
 
     :return: derivatives and the mid-points.
     """
+
+    # Make sure all input are at least 1D.
+    x_left = np.atleast_1d(x_left)
+    u_left = np.atleast_1d(u_left)
+
+    # Make sure all input are at least 1D.
+    x_right = np.atleast_1d(x_right)
+    u_right = np.atleast_1d(u_right)
 
     # Check for input mis-match.
     if u_left.shape != u_right.shape:
@@ -565,24 +572,13 @@ def midpoints(x_left, u_left, x_right, u_right):
     # Vectorization code.
     if len(u_mid.shape) > 1:
 
-        # Get the number of columns.
-        _, m = u_mid.shape
+        # Get the number of rows.
+        dim_m, _ = u_mid.shape
 
-        # If the x-input is vector.
-        # !! Otherwise is scalar !!
-        if len(dx.shape) == 1:
-
-            # Convert it to 1d array.
-            dx = dx.reshape(-1, 1)
-
-            # Repeat if necessary.
-            if m > 1:
-                # These will be (d, m) arrays.
-                dx = np.repeat(dx, m, 1)
-            # _end_if_
-
+        # Replicate if necessary.
+        if dim_m > 1:
+            dx = np.array([dx] * dim_m)
         # _end_if_
-
     # _end_if_
 
     # Central Difference Formula:
