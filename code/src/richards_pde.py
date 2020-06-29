@@ -242,7 +242,7 @@ class RichardsPDE(object):
                     c_sat = a_star * self.m_data["Trees"]["Leaf_Area_Index"]
 
                     # Hydraulic conductance parameter:
-                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
+                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
 
                     # Pressure difference.
                     dy = dydz * dz
@@ -250,14 +250,14 @@ class RichardsPDE(object):
                     # Update the flux 'f' with the new HR term. NB: We need to
                     # scale by '0.5' because the q_{HR} has [cm/h] and we need
                     # per 0.5h.
-                    flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
+                    flux[r_cells] += 0.5 * c_hr * dy[r_cells]
                 # _end_if_
 
                 # Evapo-transpiration (Tree Roots Water Uptake)
                 # This runs ONLY during day-time!
                 if self.m_data["sim_flags"]["ET"] and daylight:
                     # Compute the root efficiency.
-                    rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
+                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
 
                     # Get the product of the two terms.
                     x_out = rho_theta * roots_z
@@ -291,7 +291,7 @@ class RichardsPDE(object):
                         uptake = tr_pot * x_out
 
                         # Remove the root uptake from the sink term.
-                        sink[:, r_cells] = -uptake
+                        sink[r_cells] = -uptake
 
                         # Store the transpiration as function of depth.
                         transpire = uptake
@@ -340,17 +340,17 @@ class RichardsPDE(object):
                                 alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[i, j] = np.minimum(alpha_lat * y[i, j], sink[i, j])
+                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[0, j]))
+                                lateral_flow = (j, np.abs(sink[j]))
                             # _end_if_
                         # _end_for_
                     else:
                         # Monitoring (running) mode.
                         # Current water table observation.
-                        wtd_obs = np.minimum(args_i["wtd"], dim_d-1)
+                        wtd_obs = int(np.minimum(args_i["wtd"], dim_d-1))
 
                         # Sink (scale) coefficient:
                         alpha_lat = -2.5e-4
@@ -367,11 +367,11 @@ class RichardsPDE(object):
                                 j = np.arange(wtd_est, wtd_obs)
 
                                 # Compute the sink term proportional to y(z,t).
-                                sink[i, j] = np.minimum(alpha_lat * y[i, j], sink[i, j])
+                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
 
                                 # Store the lateral flow (runoff), along with
                                 # the locations (indexes) in the space domain.
-                                lateral_flow = (j, np.abs(sink[0, j]))
+                                lateral_flow = (j, np.abs(sink[j]))
                             # _end_if_
                         # _end_for_
                     # _end_if_
@@ -480,11 +480,11 @@ class RichardsPDE(object):
 
         :param t: time window to integrate the ode (t0, tf).
 
-        :param y0: initial conditions array [dim_d x 1].
+        :param y0: initial conditions array [dim_d].
 
         :param args: additional model parameters.
 
-        :return: dydt [dim_d x 1]
+        :return: dydt [dim_d]
         """
 
         # Trials counter
@@ -496,7 +496,7 @@ class RichardsPDE(object):
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
 
-            # Current solution
+            # Current solution.
             sol_t = solve_ivp(self, t_span=t, y0=y0, method='LSODA',
                               atol=abs_tol, rtol=rel_tol, args=args)
 
