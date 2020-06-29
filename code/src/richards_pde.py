@@ -120,10 +120,9 @@ class RichardsPDE(object):
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
+        denom = np.atleast_1d(self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1])
 
         # Avoid division by zero.
-        denom = np.atleast_1d(denom)
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
@@ -159,9 +158,9 @@ class RichardsPDE(object):
         :param z: spatial discretization grid, i.e. the depth values at which
         we want to return the solution of the PDE. [dim_d]
 
-        :param y: is the state vector of the PDE, y(z,t=t0). [dim_m x dim_d]
+        :param y: is the state vector of the PDE, y(z,t=t0). [dim_d]
 
-        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_m x dim_d].
+        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_d].
 
         :param args: additional input parameters of the PDE.
 
