@@ -80,40 +80,21 @@ class RichardsPDE(object):
         # Make sure input is 1D.
         y = np.atleast_1d(y)
 
-        # Now check if we have multiple entries of theta.
-        if len(y.shape) > 1:
-            dim_m, dim_d = y.shape
-        else:
-            dim_m, dim_d = 1, y.size
-        # _end_if_
-
         # Preallocate for efficiency.
         dydt = np.zeros(y.shape)
 
         # Evaluate the PDE at the top (1/2).
-        if dim_m > 1:
-            y0, dy0 = midpoints(self.x_mesh[0], y[:, 0], self.x_mesh[1], y[:, 1])
-        else:
-            y0, dy0 = midpoints(self.x_mesh[0], y[0], self.x_mesh[1], y[1])
-        # _end_if_
+        y0, dy0 = midpoints(self.x_mesh[0], y[0], self.x_mesh[1], y[1])
 
         # Evaluate the PDE at the top (2/2).
         cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, *args)
 
         # Evaluate the boundary conditions.
-        if dim_m > 1:
-            pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[:, 0], self.x_mesh[-1], y[:, -1], *args)
-        else:
-            pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0], self.x_mesh[-1], y[-1], *args)
-        # _end_if_
+        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0], self.x_mesh[-1], y[-1], *args)
 
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
-            if dim_m > 1:
-                dydt[:, 0] = pL
-            else:
-                dydt[0] = pL
-            # _end_if_
+            dydt[0] = pL
         else:
             # Compute the contribution of C(.):
             denom = np.atleast_1d(qL * self.zxmp1[0] * cL)
@@ -121,87 +102,45 @@ class RichardsPDE(object):
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
-            # Split for vectorized version.
-            if dim_m > 1:
-                # Compute the derivative at $z = 0$:
-                dydt[:, 0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
-            else:
-                # Compute the derivative at $z = 0$:
-                dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
-            # _end_if_
+            # Compute the derivative at $z = 0$:
+            dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
         # _end_if_
 
         # INTERIOR POINTS:
-        if dim_m > 1:
-            # (vectorized computation).
-            y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[:, self.mid_i],
-                                      self.x_mesh[self.mid_i + 1], y[:, self.mid_i + 1])
-        else:
-            # (1D vectors).
-            y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
-                                      self.x_mesh[self.mid_i+1], y[self.mid_i+1])
-        # _end_if_
+        y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
+                                  self.x_mesh[self.mid_i+1], y[self.mid_i+1])
 
         # PDE evaluation.
         cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
 
-        # Set the axis.
-        axis_n = 1 if dim_m > 1 else None
-
         # WARNING: DO NOT EDIT THESE LINES
-        cLi = np.append(cL, cR, axis=axis_n)
-        fLi = np.append(fL, fR, axis=axis_n)
-        sLi = np.append(sL, sR, axis=axis_n)
+        cLi = np.append(cL, cR)
+        fLi = np.append(fL, fR)
+        sLi = np.append(sL, sR)
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        if dim_m > 1:
-            denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[:, 0:-1]
-        else:
-            denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
-        # _end_if_
+        denom = self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1]
 
         # Avoid division by zero.
         denom = np.atleast_1d(denom)
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
-        if dim_m > 1:
-            dydt[:, self.mid_i] = (fR - fLi[:, 0:-1] + (self.zxmp1[self.mid_i] * sR +
-                                                        self.xzmp1[self.mid_i] * sLi[:, 0:-1])) / denom
-        else:
-            dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
-                                                  self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
-        # _end_if_
-
+        dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
+                                              self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
         # BOTTOM BOUNDARY:
         if np.all(qR == 0.0):
-            if dim_m > 1:
-                dydt[:, -1] = pR
-            else:
-                dydt[-1] = pR
-            # _end_if_
+            dydt[-1] = pR
         else:
-            if dim_m > 1:
-                # Compute the contribution of C(.):
-                denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[:, -1])
+            # Compute the contribution of C(.):
+            denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[-1])
 
-                # Avoid division by zero.
-                denom[denom == 0.0] = 1.0
+            # Avoid division by zero.
+            denom[denom == 0.0] = 1.0
 
-                # Compute the derivative at $z = end$:
-                dydt[:, -1] = (pR + qR * (fLi[:, -1] - self.xzmp1[-1] * sLi[:, -1])) / denom
-            else:
-                # Compute the contribution of C(.):
-                denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[-1])
-
-                # Avoid division by zero.
-                denom[denom == 0.0] = 1.0
-
-                # Compute the derivative at $z = end$:
-                dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
-            # _end_if_
-
+            # Compute the derivative at $z = end$:
+            dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
         # _end_if_
 
         # Return the derivative.
@@ -236,15 +175,8 @@ class RichardsPDE(object):
         # Ensure the input is 1-D.
         dydz = np.atleast_1d(dydz)
 
-        # Now check if we have multiple entries of theta.
-        if len(y.shape) > 1:
-            dim_m, dim_d = y.shape
-        else:
-            dim_m, dim_d = 1, y.size
-        # _end_if_
-
-        # Set the axis.
-        axis_n = 1 if dim_m > 1 else None
+        # Get the dimensions of the state vector.
+        dim_d = y.size
 
         # Compute the hydraulic conductivity 'K(.)' and the specific moisture
         # capacity 'C(.)'.  Additionally return the soil moisture at the same
@@ -300,11 +232,7 @@ class RichardsPDE(object):
                 c_sat = a_star * self.m_data["LAI"]
 
                 # Hydraulic conductance parameter:
-                if dim_m > 1:
-                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[:, r_cells]) ** 2) * roots_z
-                else:
-                    c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
-                # _end_if_
+                c_hr = c_sat * ((1.0 - inv_psi_50 * y[r_cells]) ** 2) * roots_z
 
                 # Pressure difference.
                 dy = dydz * dz
@@ -312,29 +240,21 @@ class RichardsPDE(object):
                 # Update the flux 'f' with the new HR term. NB: We need to
                 # scale by '0.5' because the q_{HR} has [cm/h] and we need
                 # per 0.5h.
-                if dim_m > 1:
-                    flux[:, r_cells] += 0.5 * c_hr * dy[:, r_cells]
-                else:
-                    flux[r_cells] += 0.5 * c_hr * dy[r_cells]
-                # _end_if_
+                flux[r_cells] += 0.5 * c_hr * dy[r_cells]
             # _end_if_
 
             # Evapo-transpiration (Tree Roots Water Uptake)
             # This runs ONLY during day-time!
             if self.m_data["sim_flags"]["ET"] and daylight:
                 # Compute the root efficiency.
-                if dim_m > 1:
-                    rho_theta, water_k = tree_roots.efficiency(theta[:, r_cells], z[r_cells])
-                else:
-                    rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
-                # _end_if_
+                rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
 
                 # Get the product of the two terms.
                 x_out = rho_theta * roots_z
 
                 # Compute the integral of:
                 # $\int_{z} (root_efficiency x root_fraction) dz$
-                tot_x = np.atleast_1d(np.sum(x_out, axis=axis_n) * dz)
+                tot_x = np.atleast_1d(np.sum(x_out) * dz)
 
                 #  Constraint No.2:
                 if np.any(tot_x > 1.0):
@@ -342,7 +262,7 @@ class RichardsPDE(object):
                     x_out = x_out / tot_x
 
                     # Recompute the integral.
-                    tot_x = np.sum(x_out, axis=axis_n) * dz
+                    tot_x = np.sum(x_out) * dz
                 # _end_if_
 
                 # Compute  the transpiration parameter only if there
@@ -397,35 +317,27 @@ class RichardsPDE(object):
                     # Exponent range.
                     nu = np.linspace(1.5, 0.0, low_lim)
 
-                    # Repeat for all multiple entries of 'y'.
-                    for i in np.range(dim_m):
-                        # Find "wtd_est" (index).
-                        wtd_est = find_wtd(id_sat[i])
+                    # Find "wtd_est" (index).
+                    wtd_est = find_wtd(id_sat)
 
-                        # If the "wtd_est" is above a pre-defined depth value.
-                        if wtd_est < low_lim:
-                            # Set the cell indexes that we remove water from.
-                            j = np.arange(wtd_est, wtd_est + 1)
+                    # If the "wtd_est" is above a pre-defined depth value.
+                    if wtd_est < low_lim:
+                        # Set the cell indexes that we remove water from.
+                        j = np.arange(wtd_est, wtd_est + 1)
 
-                            # Update scale with current estimate of the wtd.
-                            # The higher the exponent the faster it drains!!
-                            # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
-                            alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
+                        # Update scale with current estimate of the wtd.
+                        # The higher the exponent the faster it drains!!
+                        # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
+                        alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
 
-                            # Compute the sink term proportional to y(z,t).
-                            if dim_m > 1:
-                                sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
-                                store_it = (j, np.abs(sink[:, j]))
-                            else:
-                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-                                store_it = (j, np.abs(sink[j]))
-                            # _end_if_
+                        # Compute the sink term proportional to y(z,t).
+                        sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                        store_it = (j, np.abs(sink[j]))
 
-                            # Store the lateral flow (runoff), along with
-                            # the locations (indexes) in the space domain.
-                            lateral_flow = store_it
-                        # _end_if_
-                    # _end_for_
+                        # Store the lateral flow (runoff), along with
+                        # the locations (indexes) in the space domain.
+                        lateral_flow = store_it
+                    # _end_if_
                 else:
                     # Monitoring (running) mode.
                     # Current water table observation.
@@ -434,30 +346,22 @@ class RichardsPDE(object):
                     # Sink (scale) coefficient:
                     alpha_lat = -2.5e-4
 
-                    # Repeat for all multiple entries of 'y'.
-                    for i in range(dim_m):
-                        # Find "wtd_est" (index).
-                        wtd_est = find_wtd(id_sat[i])
+                    # Find "wtd_est" (index).
+                    wtd_est = find_wtd(id_sat)
 
-                        # If the "wtd_est" is inside the space domain.
-                        if (wtd_est < dim_d) & (wtd_est < wtd_obs):
-                            # Find  the locations between the estimated
-                            # $wtdEst$ and the actual value of $wtdObs$.
-                            j = np.arange(wtd_est, wtd_obs)
+                    # If the "wtd_est" is inside the space domain.
+                    if (wtd_est < dim_d) & (wtd_est < wtd_obs):
+                        # Find  the locations between the estimated
+                        # $wtdEst$ and the actual value of $wtdObs$.
+                        j = np.arange(wtd_est, wtd_obs)
 
-                            # Compute the sink term proportional to y(z,t).
-                            if dim_m > 1:
-                                sink[:, j] = np.minimum(alpha_lat * y[:, j], sink[:, j])
-                                store_it = (j, np.abs(sink[:, j]))
-                            else:
-                                sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-                                store_it = (j, np.abs(sink[j]))
-                            # _end_if_
+                        # Compute the sink term proportional to y(z,t).
+                        sink[j] = np.minimum(alpha_lat * y[j], sink[j])
 
-                            # Store the lateral flow (runoff), along with
-                            # the locations (indexes) in the space domain.
-                            lateral_flow = store_it
-                        # _end_if_
+                        # Store the lateral flow (runoff), along with
+                        # the locations (indexes) in the space domain.
+                        lateral_flow = (j, np.abs(sink[j]))
+                    # _end_if_
                     # _end_for_
                 # _end_if_
             # _end_if_
@@ -594,7 +498,7 @@ class RichardsPDE(object):
 
             # Current solution.
             sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF', atol=abs_tol,
-                              rtol=rel_tol, args=args, vectorized=False, jac_sparsity=jac_n)
+                              rtol=rel_tol, args=args, jac_sparsity=jac_n)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
@@ -628,11 +532,11 @@ def midpoints(x_left, u_left, x_right, u_right):
 
     :param x_left: [dim_d]
 
-    :param u_left: [dim_m x dim_d]
+    :param u_left: [dim_d]
 
     :param x_right: [dim_d]
 
-    :param u_right: [dim_m x dim_d]
+    :param u_right: [dim_d]
 
     :return: derivatives and the mid-points.
     """
@@ -664,18 +568,6 @@ def midpoints(x_left, u_left, x_right, u_right):
     # Spacings between the two input points.
     # This will be either scalar, or vector.
     dx = x_right - x_left
-
-    # Vectorization code.
-    if len(u_mid.shape) > 1:
-
-        # Get the number of rows.
-        dim_m, _ = u_mid.shape
-
-        # Replicate if necessary.
-        if dim_m > 1:
-            dx = np.array([dx] * dim_m)
-        # _end_if_
-    # _end_if_
 
     # Central Difference Formula:
     du_mid = (u_right - u_left)/dx
