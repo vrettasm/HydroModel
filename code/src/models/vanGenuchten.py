@@ -38,16 +38,15 @@ class vanGenuchten(HydrologicalModel):
         """
 
         # Ensure the input is 1-D.
-        z = np.atleast_1d(z)
-        psi = np.atleast_1d(psi)
+        z, psi = np.atleast_1d(z, psi)
 
         # Get the vector size.
         dim_d = psi.size
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
-            raise ValueError(" Input size dimensions do not match:"
-                             " {0} not equal to {1}".format(dim_d, z.size))
+            raise ValueError(" {0}: Input size dimensions do not match:"
+                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.size))
         # _end_if_
 
         # Create a vector with the K_{sat} values.
