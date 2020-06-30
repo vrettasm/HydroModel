@@ -333,7 +333,7 @@ class RichardsPDE(object):
 
                         # Store the lateral flow (runoff), along with
                         # the locations (indexes) in the space domain.
-                        lateral_flow = (j, np.abs(sink[j]))
+                        lateral_flow = np.abs(sink[j])
                     # _end_if_
                 else:
                     # Monitoring (running) mode.
@@ -357,16 +357,21 @@ class RichardsPDE(object):
 
                         # Store the lateral flow (runoff), along with
                         # the locations (indexes) in the space domain.
-                        lateral_flow = (j, np.abs(sink[j]))
+                        lateral_flow = np.abs(sink[j])
                     # _end_if_
-                    # _end_for_
                 # _end_if_
             # _end_if_
         # _end_if_
 
-        # Store the additional output.
-        self.var_arg_out["transpiration"].append(transpire)
-        self.var_arg_out["lateral_flow"].append(lateral_flow)
+        # Store the integrated transpiration to the output.
+        if transpire is not None:
+            self.var_arg_out["transpiration"].append(np.sum(transpire) * dz)
+        # _end_if_
+
+        # Store the integrated lateral flow to the output.
+        if lateral_flow is not None:
+            self.var_arg_out["lateral_flow"].append(np.sum(lateral_flow) * dz)
+        # _end_if_
 
         # Exit:
         return np.atleast_1d(C, sink, flux)
