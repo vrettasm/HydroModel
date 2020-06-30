@@ -93,7 +93,8 @@ class Simulation(object):
 
         # Check if the Well number exists in the site info file.
         if not str(self.mData["Well_No"]) in site_info["Well"]:
-            raise ValueError(" The selected well does not exist in the site information file.")
+            raise ValueError(" {0}: The selected well does not exist"
+                             " in the site information file.".format(self.__class__.__name__))
         # _end_if_
 
         # Extract the Well information.
@@ -101,7 +102,7 @@ class Simulation(object):
 
         # Make sure the well is not defined as fully saturated.
         if well["sat_depth"] >= well["max_depth"]:
-            raise ValueError(" The well seems fully saturated.")
+            raise ValueError(" {0}: The well seems fully saturated.".format(self.__class__.__name__))
         # _end_if_
 
         # Compute the number of continuously saturated cell (from the bottom).
@@ -218,7 +219,8 @@ class Simulation(object):
 
         # Check if there are NaN values.
         if np.any(np.isnan(z_wtd_cm)):
-            raise ValueError(" Water table depth observations contain NaN.")
+            raise ValueError(" {0}: Water table depth observations"
+                             " contain NaN values.".format(self.__class__.__name__))
         # _end_if_
 
         # Since the observational data are not "gridded" we put them
@@ -230,7 +232,8 @@ class Simulation(object):
 
         # Check if there are NaN values.
         if np.any(np.isnan(precip_cm)):
-            raise ValueError(" Precipitation observations contain NaN.")
+            raise ValueError(" {0}: Precipitation observations"
+                             " contain NaN values.".format(self.__class__.__name__))
         # _end_if_
 
         # Store to dictionary.
@@ -333,6 +336,13 @@ class Simulation(object):
     # _end_def_
 
     def initial_conditions(self):
+        """
+        Creates an initial conditions vector, by running the PDE
+        model forward in time for 'burn-in' number of iterations.
+
+        :return: y0 state vector [dim_d].
+        """
+
         # [WARNING] Set the flag to TRUE!
         self.mData["sim_flags"]["SPINUP"] = True
 
@@ -349,7 +359,7 @@ class Simulation(object):
         q_0, *_ = self.mData["porosity"]()
 
         # Compute the pressure head values.
-        y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
+        y0, *_ = self.mData["hydro_model"].pressure_head(0.98 * q_0, z)
 
         # Set a maximum number of iterations.
         burn_in = 500
@@ -396,8 +406,6 @@ class Simulation(object):
             # Find the MSE.
             mse_0 = np.mean((y_j - y0) ** 2)
 
-            print(wtd_est, z[wtd_est], abs_error, mse_0)
-
             # Set the vector for the next iteration.
             y0 = y_j.copy()
 
@@ -429,9 +437,17 @@ class Simulation(object):
     # _end_if_
 
     def run(self):
+        """
+        Runs the PDE model forward in time. All the output information is store in
+        self.output dictionary where we can later save it to the disk for further
+        analysis.
+
+        :return: None
+        """
         # Check if the model parameters have been initialized.
         if not self.mData:
-            print(" Simulation data structure 'mData' is empty.")
+            raise RuntimeError(" {0}: Simulation data structure"
+                               " 'mData' is empty.".format(self.__class__.__name__))
         # _end_if_
 
         # Get the initial conditions vector.
@@ -597,29 +613,37 @@ class Simulation(object):
         inside the self.output dictionary and be of type "numpy.ndarray". For
         the moment the file is saved in the same directory as the main program.
 
-        :return: None
+        :return: None.
         """
-        # Initial message.
-        print(" Saving the results to: {0}".format(self.name))
 
-        # Create the output filename.
-        file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
+        # Check if the output dictionary is empty.
+        if not self.output:
+            # Print a message.
+            print(" {0}: Simulation data structure 'output'"
+                  " is empty.".format(self.__class__.__name__))
+        else:
+            # Initial message.
+            print(" Saving the results to: {0}".format(self.name))
 
-        # Save the data to an 'HDF5' file format.
-        # NOTE:  Create file; truncate if exists.
-        with h5py.File(file_out, 'w') as out_file:
-            # Local reference.
-            data = self.output
+            # Create the output filename.
+            file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
 
-            # Extract all the data.
-            for key in data:
-                # Default compressions level is '4'.
-                out_file.create_dataset(key, data=data[key], compression='gzip')
-            # _end_for_
-        # _end_with_
+            # Save the data to an 'HDF5' file format.
+            # NOTE:  Create file; truncate if exists.
+            with h5py.File(file_out, 'w') as out_file:
+                # Local reference.
+                data = self.output
 
-        # Final message.
-        print(" Done!")
+                # Extract all the data.
+                for key in data:
+                    # Default compressions level is '4'.
+                    out_file.create_dataset(key, data=data[key], compression='gzip')
+                # _end_for_
+            # _end_with_
+
+            # Final message.
+            print(" Done!")
+        # _end_if_
     # _end_def_
 
 # _end_class_
