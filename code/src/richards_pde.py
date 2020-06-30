@@ -32,7 +32,7 @@ class RichardsPDE(object):
         # _end_if_
 
         # Variable output arguments.
-        self.var_arg_out = {"transpiration": [], "lateral_flow": []}
+        self.var_arg_out = {"transpiration": 0.0, "lateral_flow": 0.0}
 
         # Make a reference to the input data structure.
         self.m_data = m_data
@@ -366,16 +366,16 @@ class RichardsPDE(object):
 
         # Store the integrated transpiration to the output.
         if transpire is not None:
-            self.var_arg_out["transpiration"].append(np.sum(transpire) * dz)
+            self.var_arg_out["transpiration"] = np.sum(transpire) * dz
         else:
-            self.var_arg_out["transpiration"].append(0.0)
+            self.var_arg_out["transpiration"] = 0.0
         # _end_if_
 
         # Store the integrated lateral flow to the output.
         if lateral_flow is not None:
-            self.var_arg_out["lateral_flow"].append(np.sum(lateral_flow) * dz)
+            self.var_arg_out["lateral_flow"] = np.sum(lateral_flow) * dz
         else:
-            self.var_arg_out["lateral_flow"].append(0.0)
+            self.var_arg_out["lateral_flow"] = 0.0
         # _end_if_
 
         # Exit:
@@ -570,5 +570,4 @@ def midpoints(x_left, u_left, x_right, u_right):
 
     # Return the derivative and the mid-points.
     return np.atleast_1d(u_mid, du_mid)
-
 # _end_def_
