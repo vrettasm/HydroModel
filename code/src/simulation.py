@@ -396,8 +396,8 @@ class Simulation(object):
             # Find the MSE.
             mse_0 = np.mean((y_j - y0) ** 2)
 
-            # Set the value for the next iteration.
-            y0 = y_j
+            # Set the vector for the next iteration.
+            y0 = y_j.copy()
 
             # Repeat the burn-in integration as long as the distance
             # between the two solutions is above a threshold value.
