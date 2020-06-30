@@ -481,7 +481,7 @@ class RichardsPDE(object):
         n_trials = 5
 
         # Hard code tolerance values.
-        rel_tol, abs_tol = 1.0e-4, 1.0e-4
+        rel_tol, abs_tol = 1.0e-3, 1.0e-3
 
         # Auxiliary vectors of "ones".
         ones_n = np.ones(y0.size)
