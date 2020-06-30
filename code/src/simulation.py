@@ -34,7 +34,7 @@ class Simulation(object):
 
         >> sim_01.run()
 
-    4) Finally Save the results in a hdf5 (compressed) file.
+    4) Finally save the results in a hdf5 (compressed) file.
 
         >> sim_01.saveResults()
     """
