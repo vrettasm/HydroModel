@@ -487,11 +487,11 @@ class RichardsPDE(object):
         rel_tol, abs_tol = 1.0e-3, 1.0e-3
 
         # Auxiliary vectors of "ones".
-        ones_n = np.ones(y0.size)
-        diag_n = np.ones(y0.size - 1)
+        diagonal = np.ones(y0.size)
+        diag_off = np.ones(y0.size - 1)
 
         # Jacobian structure is tri-diagonal.
-        jac_n = sparse.diags((ones_n, diag_n, diag_n), offsets=(0, 1, -1))
+        jac_n = sparse.diags((diag_off, diagonal, diag_off), offsets=(-1, 0, 1))
 
         # Initial assignment.
         sol_t = None
