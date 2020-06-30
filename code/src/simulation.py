@@ -548,13 +548,17 @@ class Simulation(object):
         time_tf = time.time()
 
         # Print duration.
-        print(" Elapsed time: {0:.2f} seconds.".format(time_tf - time_t0))
+        print(" Elapsed time: {0:.2f} seconds.\n".format(time_tf - time_t0))
+
+        # Compute the effective saturation (normalized water content).
+        s_eff = theta_vol / self.mData["porosity"]()[0]
 
         # Prepare the output.
         self.output["y0"] = y0
-        self.output["psi"] = psi
         self.output["K_hrc"] = k_hrc
         self.output["K_bkg"] = k_bkg
+        self.output["S_eff"] = s_eff
+        self.output["psi_press"] = psi
         self.output["theta_vol"] = theta_vol
         self.output["abs_error"] = abs_error
         self.output["wtd_est_cm"] = z[wtd_est]
@@ -564,26 +568,33 @@ class Simulation(object):
 
     def saveResults(self):
         """
-        Saves the simulation results to a file.
+        Saves the simulation results to a file. All the data should be stored
+        inside the self.output dictionary and be of type "numpy.ndarray". For
+        the moment the file is saved in the same directory as the main program.
+
         :return: None
         """
-        print(" Saving the results to {0}.".format(self.name))
+        # Initial message.
+        print(" Saving the results to: {0}".format(self.name))
 
         # Create the output filename.
-        file_out = Path(self.name + ".h5")
+        file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
 
-        # Save the data to an HDF5 file format.
-        # NOTE: Create file truncate if exists.
+        # Save the data to an 'HDF5' file format.
+        # NOTE:  Create file; truncate if exists.
         with h5py.File(file_out, 'w') as hf_out:
             # Local reference.
             data = self.output
 
             # Extract all the data.
             for key in data:
-                hf_out.create_dataset(key, data=data[key])
+                # Default compressions level is '4'.
+                hf_out.create_dataset(key, data=data[key], compression='gzip')
             # _end_for_
         # _end_with_
 
+        # Final message.
+        print(" Done!")
     # _end_def_
 
 # _end_class_
