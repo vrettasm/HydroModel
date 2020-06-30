@@ -19,7 +19,24 @@ from .water_content import WaterContent
 
 class Simulation(object):
     """
-    TBD
+    Main simulation class. The normal workflow is as follow:
+
+    1) Create a simulation object. You can also give a name
+    that will be used when saving the data.
+
+        >> sim_01 = Simulation("Sim_01")
+
+    2) Setup its parameters and water data (precipitation, etc.).
+
+        >> sim_01.setupModel(params, water_data)
+
+    3) Run the simulation (this step might take a while).
+
+        >> sim_01.run()
+
+    4) Finally Save the results in a hdf5 (compressed) file.
+
+        >> sim_01.saveResults()
     """
 
     def __init__(self, name=None):
