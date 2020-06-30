@@ -596,7 +596,6 @@ class Simulation(object):
         s_eff = theta_vol / self.mData["porosity"]()[0]
 
         # Prepare the output.
-        self.output["y0"] = self.mData["initial_cond"]
         self.output["K_hrc"] = k_hrc
         self.output["K_bkg"] = k_bkg
         self.output["S_eff"] = s_eff
