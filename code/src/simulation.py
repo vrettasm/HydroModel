@@ -429,7 +429,7 @@ class Simulation(object):
     def run(self):
         # Check if the model parameters have been initialized.
         if not self.mData:
-            print(" Simulation data structure ('mData') is empty.")
+            print(" Simulation data structure 'mData' is empty.")
         # _end_if_
 
         # Get the initial conditions vector.
@@ -605,14 +605,14 @@ class Simulation(object):
 
         # Save the data to an 'HDF5' file format.
         # NOTE:  Create file; truncate if exists.
-        with h5py.File(file_out, 'w') as hf_out:
+        with h5py.File(file_out, 'w') as out_file:
             # Local reference.
             data = self.output
 
             # Extract all the data.
             for key in data:
                 # Default compressions level is '4'.
-                hf_out.create_dataset(key, data=data[key], compression='gzip')
+                out_file.create_dataset(key, data=data[key], compression='gzip')
             # _end_for_
         # _end_with_
 
@@ -621,3 +621,36 @@ class Simulation(object):
     # _end_def_
 
 # _end_class_
+
+# Auxiliary function.
+def loadResults(filename=None):
+    """
+    Loads the simulation data that have been stored in the hdf5 file
+    using the object's method saveResults().
+
+    :param filename: (string) is the '.h5' file that contains the data.
+
+    :return: a dictionary with all the data.
+    """
+
+    # Check if we have given input file.
+    if not filename:
+        raise RuntimeError(" load_data: No input file is given.")
+    # _end_if_
+
+    # Simulation data.
+    sim_data = {}
+
+    # Open the file for read only.
+    with h5py.File(Path(filename), 'r') as input_file:
+
+        # Extract all the data.
+        for key in input_file:
+            sim_data[key] = np.array(input_file[key])
+        # _end_for_
+
+    # _end_with_
+
+    # Return the dictionary.
+    return sim_data
+# _end_def_
