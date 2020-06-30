@@ -381,7 +381,7 @@ class Simulation(object):
                 args_0["n_rnd"] = np.random.randn(z.size)
             # _end_if_
 
-            # Time span
+            # Time span.
             t_span = (j, j+1)
 
             # Solve the PDE and return the solution at the final time point.
