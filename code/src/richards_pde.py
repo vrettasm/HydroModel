@@ -490,6 +490,9 @@ class RichardsPDE(object):
         # Jacobian structure is tri-diagonal.
         jac_n = sparse.diags((ones_n, diag_n, diag_n), offsets=(0, 1, -1))
 
+        # Initial assignment.
+        sol_t = None
+
         # Try to solve the interval "n_trials" times.
         while n_trials > 0:
 
