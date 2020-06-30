@@ -452,8 +452,7 @@ class Simulation(object):
         # _end_if_
 
         # Cumulative transpiration and lateral flow.
-        transpiration = []
-        lateral_flow = []
+        transpiration, lateral_flow = [], []
 
         # Get the initial conditions vector.
         y0 = self.mData["initial_cond"].copy()
