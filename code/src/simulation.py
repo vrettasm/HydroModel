@@ -451,6 +451,10 @@ class Simulation(object):
                                " 'mData' is empty.".format(self.__class__.__name__))
         # _end_if_
 
+        # Cumulative transpiration and lateral flow.
+        transpiration = []
+        lateral_flow = []
+
         # Get the initial conditions vector.
         y0 = self.mData["initial_cond"].copy()
 
@@ -567,6 +571,10 @@ class Simulation(object):
             # Update the initial condition vector for the next iteration.
             y0 = y_i.copy()
 
+            # Store cumulative output from the PDE.
+            lateral_flow.append(pde_model.var_arg_out["lateral_flow"])
+            transpiration.append(pde_model.var_arg_out["transpiration"])
+
             # Display summary statistics (every ~100 iterations).
             if np.mod(i, 100) == 0:
                 # Below the water table.
@@ -603,8 +611,8 @@ class Simulation(object):
         self.output["theta_vol"] = theta_vol
         self.output["abs_error"] = abs_error
         self.output["wtd_est_cm"] = z[wtd_est]
-        self.output["lateral_flow"] = self.pde_model.arg_out["lateral_flow"]
-        self.output["transpiration"] = self.pde_model.arg_out["transpiration"]
+        self.output["lateral_flow"] = lateral_flow
+        self.output["transpiration"] = transpiration
     # _end_def_
 
     def saveResults(self):
