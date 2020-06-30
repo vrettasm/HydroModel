@@ -352,7 +352,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 2500
+        burn_in = 1000
 
         # Early stop flag.
         early_stop = False
@@ -361,7 +361,7 @@ class Simulation(object):
         n_rnd = np.random.randn(z.size)
 
         # Create a local dictionary with parameters for the specific iteration.
-        args_0 = {"wtd": wtd_i, "n_rnd": n_rnd,
+        args_0 = {"wtd": wtd_i[0][0], "n_rnd": n_rnd,
                   "atm": self.mData["atm"][0],
                   "time": self.mData["time"][0],
                   "interception": self.mData["interception"],
