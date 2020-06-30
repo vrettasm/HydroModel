@@ -377,7 +377,7 @@ class Simulation(object):
         for j in range(burn_in):
 
             # Update the random field daily (~24hr):
-            if np.mod(j, 48):
+            if np.mod(j, 48) == 0:
                 args_0["n_rnd"] = np.random.randn(z.size)
             # _end_if_
 
