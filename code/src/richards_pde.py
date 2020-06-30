@@ -170,12 +170,11 @@ class RichardsPDE(object):
         """
 
         # Ensure the input is 1-D.
-        z = np.atleast_1d(z)
-        y = np.atleast_1d(y)
+        z, y, dydz = np.atleast_1d(z, y, dydz)
 
         # Ensure the input is 1-D.
         # Note: For stability do not let the dydz drop less than 1.0.
-        dydz = np.atleast_1d(np.minimum(dydz, 1.001))
+        dydz = np.minimum(dydz, 1.001)
 
         # Get the dimensions of the state vector.
         dim_d = y.size
@@ -418,12 +417,7 @@ class RichardsPDE(object):
         """
 
         # Make sure input is 1-D.
-        z_left = np.atleast_1d(z_left)
-        y_left = np.atleast_1d(y_left)
-
-        # Make sure input is 1-D.
-        z_right = np.atleast_1d(z_right)
-        y_right = np.atleast_1d(y_right)
+        z_left, y_left, z_right, y_right = np.atleast_1d(z_left, y_left, z_right, y_right)
 
         # Get the maximum infiltration capacity from the model.
         theta_left, *_, q_inf_max = self.h_model(y_left, z_left, *args)
@@ -487,7 +481,7 @@ class RichardsPDE(object):
         n_trials = 5
 
         # Hard code tolerance values.
-        rel_tol, abs_tol = 1.0E-3, 1.0E-3
+        rel_tol, abs_tol = 1.0e-4, 1.0e-4
 
         # Auxiliary vectors of "ones".
         ones_n = np.ones(y0.size)
@@ -549,12 +543,7 @@ def midpoints(x_left, u_left, x_right, u_right):
     """
 
     # Make sure all input are at least 1D.
-    x_left = np.atleast_1d(x_left)
-    u_left = np.atleast_1d(u_left)
-
-    # Make sure all input are at least 1D.
-    x_right = np.atleast_1d(x_right)
-    u_right = np.atleast_1d(u_right)
+    x_left, u_left, x_right, u_right = np.atleast_1d(x_left, u_left, x_right, u_right)
 
     # Check for input mis-match.
     if u_left.shape != u_right.shape:

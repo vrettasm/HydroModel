@@ -345,14 +345,14 @@ class Simulation(object):
         # Update the wtd parameter in the structure.
         wtd_i = np.where(z == self.mData["zWtd_cm"][0])
 
-        # Start by assuming the whole domain is full of water.
+        # Get the porosity profile.
         q_0, *_ = self.mData["porosity"]()
 
         # Compute the pressure head values.
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, self.mData["z_grid"])
 
         # Set a maximum number of iterations.
-        burn_in = 1000
+        burn_in = 500
 
         # Early stop flag.
         early_stop = False
@@ -395,6 +395,8 @@ class Simulation(object):
 
             # Find the MSE.
             mse_0 = np.mean((y_j - y0) ** 2)
+
+            print(wtd_est, z[wtd_est], abs_error, mse_0)
 
             # Set the vector for the next iteration.
             y0 = y_j.copy()
@@ -538,7 +540,7 @@ class Simulation(object):
             abs_error[i] = np.abs(self.mData["zWtd_cm"][i] - z[wtd_est[i]])
 
             # Store the pressure head to the array.
-            psi[i] = y_i
+            psi[i] = y_i.copy()
 
             # Recover the values of the volumetric water content $\theta$
             # and the hydraulic conductivities $K(\theta)$ and 'Kbkg' for

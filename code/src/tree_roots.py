@@ -175,8 +175,7 @@ class TreeRoots(object):
         """
 
         # Ensure the input is 1-D.
-        theta_z = np.atleast_1d(theta_z)
-        z_roots = np.atleast_1d(z_roots)
+        theta_z, z_roots = np.atleast_1d(theta_z, z_roots)
 
         # Get the size of the state vector.
         dim_d = theta_z.size
