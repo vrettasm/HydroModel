@@ -359,7 +359,7 @@ class Simulation(object):
         q_0, *_ = self.mData["porosity"]()
 
         # Compute the pressure head values.
-        y0, *_ = self.mData["hydro_model"].pressure_head(0.98 * q_0, z)
+        y0, *_ = self.mData["hydro_model"].pressure_head(q_0, z)
 
         # Set a maximum number of iterations.
         burn_in = 500
