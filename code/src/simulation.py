@@ -401,7 +401,7 @@ class Simulation(object):
 
             # Repeat the burn-in integration as long as the distance
             # between the two solutions is above a threshold value.
-            if abs_error <= 2.0 * dz and mse_0 <= 0.01:
+            if abs_error <= (2.0 * dz) and mse_0 <= 0.01:
                 # Change the flag.
                 early_stop = True
 
