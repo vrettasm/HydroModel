@@ -32,22 +32,25 @@ class HydraulicConductivity(object):
         if sat_soil > 0.0:
             self.param_sat_soil = sat_soil
         else:
-            raise ValueError(" The saturated value of the Soil layer:"
-                             " {}, should be strictly positive.".format(sat_soil))
+            raise ValueError(" {0}: The saturated value of the Soil layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         sat_soil))
         # _end_if_
 
         if sat_saprolite > 0.0:
             self.param_sat_saprolite = sat_saprolite
         else:
-            raise ValueError(" The saturated value of the Saprolite layer:"
-                             " {}, should be strictly positive.".format(sat_saprolite))
+            raise ValueError(" {0}: The saturated value of the Saprolite layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         sat_saprolite))
         # _end_if_
 
         if sat_fresh_bedrock > 0.0:
             self.param_sat_fresh_bedrock = sat_fresh_bedrock
         else:
-            raise ValueError(" The saturated value of the Fresh Bedrock layer:"
-                             " {}, should be strictly positive.".format(sat_fresh_bedrock))
+            raise ValueError(" {0}: The saturated value of the Fresh Bedrock layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         sat_fresh_bedrock))
         # _end_if_
 
         # Noise related variables.
@@ -68,8 +71,8 @@ class HydraulicConductivity(object):
             self.param_sat_soil = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" The saturated value of the Soil layer:"
-                             " {}, should be strictly positive.".format(new_value))
+            raise ValueError(" {0}: The saturated value of the Soil layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -86,8 +89,8 @@ class HydraulicConductivity(object):
             self.param_sat_saprolite = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" The saturated value of the Saprolite layer:"
-                             " {}, should be strictly positive.".format(new_value))
+            raise ValueError(" {0}: The saturated value of the Saprolite layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -104,8 +107,8 @@ class HydraulicConductivity(object):
             self.param_sat_fresh_bedrock = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" The saturated value of the Fresh Bedrock layer:"
-                             " {}, should be strictly positive.".format(new_value))
+            raise ValueError(" {0}: The saturated value of the Fresh Bedrock layer:"
+                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -122,8 +125,8 @@ class HydraulicConductivity(object):
             self.param_sigma_noise = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" The sigma amplitude value of the noise mode:"
-                             " {}, should be non-negative.".format(new_value))
+            raise ValueError(" {0}: The sigma amplitude value of the noise model:"
+                             " {1}, should be non-negative.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -140,8 +143,8 @@ class HydraulicConductivity(object):
             self.param_lambda_exponent = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" The lambda exponent value of the noise mode:"
-                             " {}, should be non-negative.".format(new_value))
+            raise ValueError(" {0}: The lambda exponent value of the noise model:"
+                             " {1}, should be non-negative.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 

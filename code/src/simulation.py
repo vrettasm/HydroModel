@@ -585,8 +585,8 @@ class Simulation(object):
         self.output["theta_vol"] = theta_vol
         self.output["abs_error"] = abs_error
         self.output["wtd_est_cm"] = z[wtd_est]
-        self.output["lateral_flow"] = self.pde_model.var_arg_out["lateral_flow"]
-        self.output["transpiration"] = self.pde_model.var_arg_out["transpiration"]
+        self.output["lateral_flow"] = self.pde_model.arg_out["lateral_flow"]
+        self.output["transpiration"] = self.pde_model.arg_out["transpiration"]
     # _end_def_
 
     def saveResults(self):

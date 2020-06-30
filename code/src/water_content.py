@@ -38,7 +38,8 @@ class WaterContent(object):
 
         # Check if the input values are in the right order.
         if not self._checkValues():
-            raise ValueError(" The volumetric water content input values are incorrect.")
+            raise ValueError(" {0}: The volumetric water content input values"
+                             " are incorrect.".format(self.__class__.__name__))
         # _end_if_
 
         # These are in length units [L:cm] and can have negative values.
@@ -86,8 +87,8 @@ class WaterContent(object):
             self.minimum = old_value
 
             # Raise an error with a message.
-            raise ValueError(" The new minimum: {}, is not consistent with"
-                             " the rest of the values.".format(new_value))
+            raise ValueError(" {0}: The new minimum: {1}, is not consistent with"
+                             " the rest of the values.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -110,8 +111,8 @@ class WaterContent(object):
             self.maximum = old_value
 
             # Raise an error with a message.
-            raise ValueError(" The new maximum: {}, is not consistent with"
-                             " the rest of the values.".format(new_value))
+            raise ValueError(" {0}: The new maximum: {1}, is not consistent with"
+                             " the rest of the values.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 
@@ -143,8 +144,8 @@ class WaterContent(object):
             self.residual = old_value
 
             # Raise an error with a message.
-            raise ValueError(" The new residual: {}, is not consistent with"
-                             " the rest of the values.".format(new_value))
+            raise ValueError(" {0}: The new residual: {1}, is not consistent with"
+                             " the rest of the values.".format(self.__class__.__name__, new_value))
         # _end_if_
     # _end_def_
 

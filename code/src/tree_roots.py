@@ -183,8 +183,8 @@ class TreeRoots(object):
 
         # Make sure the dimensions match.
         if dim_d != z_roots.size:
-            raise RuntimeError(" Input dimensions do not match:"
-                               " {0} not equal to {1}".format(dim_d, z_roots.size))
+            raise RuntimeError(" {0}: Input dimensions do not match:"
+                               " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z_roots.size))
         # _end_if_
 
         # Compute porosity, field capacity and wilting points at 'z'.

@@ -40,12 +40,12 @@ class Porosity(object):
 
         # Make sure the z-grid domain is not empty.
         if not z_grid.size:
-            raise ValueError(" Input array z_grid is empty.")
+            raise ValueError(" {0}: Input array z_grid is empty.".format(self.__class__.__name__))
         # _end_if_
 
         # Make sure the z-grid domain is increasing.
         if np.any(np.diff(z_grid) <= 0.0):
-            raise ValueError(" Space (vertical) domain z_grid is not increasing.")
+            raise ValueError(" {0}: Space domain z_grid is not increasing.".format(self.__class__.__name__))
         # _end_if_
 
         # Store the type of profile.
@@ -144,7 +144,7 @@ class Porosity(object):
             # _end_if_
 
         else:
-            raise ValueError(" Wrong porosity profile type: {0}".format(p_model))
+            raise ValueError(" {0}: Wrong porosity profile type: {1}".format(self.__class__.__name__, p_model))
         # _end_if_
 
         # Safeguard: make sure this profile is [MIN <= q_sat <= MAX]
