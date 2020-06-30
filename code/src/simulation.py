@@ -392,8 +392,10 @@ class Simulation(object):
                 args_0["n_rnd"] = np.random.randn(z.size)
             # _end_if_
 
-            # Time span.
-            t_span = (j, j+1)
+            # Since this is a burn-in period the actual time
+            # does not matter. We are interested only in the
+            # length of the time-span.
+            t_span = (0, 1)
 
             # Solve the PDE and return the solution at the final time point.
             y_j = self.pde_model.solve(t_span, y0, args_0)
@@ -404,7 +406,7 @@ class Simulation(object):
             # Compute the absolute error: |wtd_obs - wtd_est|
             abs_error = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est])
 
-            # Find the MSE.
+            # Find the MSE between the two state vector solutions.
             mse_0 = np.mean((y_j - y0) ** 2)
 
             # Set the vector for the next iteration.
@@ -452,6 +454,7 @@ class Simulation(object):
         # _end_if_
 
         # Cumulative transpiration and lateral flow.
+        # Reset to empty lists before each run.
         transpiration, lateral_flow = [], []
 
         # Get the initial conditions vector.
@@ -499,7 +502,7 @@ class Simulation(object):
         abs_error[0] = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est[0]])
 
         # Save the initial conditions at time $t = 0$.
-        psi[0] = y0
+        psi[0] = y0.copy()
 
         # Create a random vector.
         n_rnd = np.random.randn(dim_d)
@@ -571,8 +574,8 @@ class Simulation(object):
             y0 = y_i.copy()
 
             # Store cumulative output from the PDE.
-            lateral_flow.append(pde_model.var_arg_out["lateral_flow"])
-            transpiration.append(pde_model.var_arg_out["transpiration"])
+            lateral_flow.append(pde_model.arg_out["lateral_flow"])
+            transpiration.append(pde_model.arg_out["transpiration"])
 
             # Display summary statistics (every ~100 iterations).
             if np.mod(i, 100) == 0:
@@ -625,14 +628,14 @@ class Simulation(object):
 
         # Check if the output dictionary is empty.
         if not self.output:
-            # Print a message.
+            # Print a message and do not save anything.
             print(" {0}: Simulation data structure 'output'"
                   " is empty.".format(self.__class__.__name__))
         else:
             # Initial message.
             print(" Saving the results to: {0}".format(self.name))
 
-            # Create the output filename.
+            # Create the output filename. Remove spaces (if any).
             file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
 
             # Save the data to an 'HDF5' file format.
