@@ -371,7 +371,8 @@ class Simulation(object):
         n_rnd = np.random.randn(z.size)
 
         # Create a local dictionary with parameters for the specific iteration.
-        args_0 = {"wtd": wtd_i[0][0], "n_rnd": n_rnd,
+        args_0 = {"wtd": wtd_i[0][0],
+                  "n_rnd": n_rnd,
                   "atm": self.mData["atm"][0],
                   "time": self.mData["time"][0],
                   "interception": self.mData["interception"],
