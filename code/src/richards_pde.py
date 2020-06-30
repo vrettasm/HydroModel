@@ -11,11 +11,12 @@ class RichardsPDE(object):
 
         https://en.wikipedia.org/wiki/Richards_equation
 
-    The code here mimics MATLAB's "pdepe" function to solve 1-D parabolic and elliptic PDEs.
+    The PDE discretization code here mimics MATLAB's "pdepe" function to solve 1-D parabolic
+    and elliptic PDEs.
     """
 
-    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp1",
-                 "zxmp1", "nx", "h_model", "var_arg_out")
+    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp1", "zxmp1", "nx", "h_model",
+                 "var_arg_out")
 
     def __init__(self, m_data=None):
         """
@@ -26,7 +27,8 @@ class RichardsPDE(object):
 
         # Check if we have been given input.
         if not m_data:
-            raise ValueError(" No input is given. Richards' model cannot initialize.")
+            raise ValueError(" {0}: No input is given."
+                             " The model cannot initialize.".format(self.__class__.__name__))
         # _end_if_
 
         # Variable output arguments.
@@ -49,7 +51,7 @@ class RichardsPDE(object):
 
         # Make sure the space domain is increasing (downwards).
         if np.any(dx <= 0.0):
-            raise RuntimeError(" Space domain is not increasing.")
+            raise RuntimeError(" {0}: Space domain is not increasing.".format(self.__class__.__name__))
         # _end_if_
 
         # Initialize the $nx-1$ mid-points where functions will be evaluated.
@@ -366,11 +368,15 @@ class RichardsPDE(object):
         # Store the integrated transpiration to the output.
         if transpire is not None:
             self.var_arg_out["transpiration"].append(np.sum(transpire) * dz)
+        else:
+            self.var_arg_out["transpiration"].append(0.0)
         # _end_if_
 
         # Store the integrated lateral flow to the output.
         if lateral_flow is not None:
             self.var_arg_out["lateral_flow"].append(np.sum(lateral_flow) * dz)
+        else:
+            self.var_arg_out["lateral_flow"].append(0.0)
         # _end_if_
 
         # Exit:
@@ -383,7 +389,7 @@ class RichardsPDE(object):
         In this case is a simple assignment, but it can handle
         mode complex initializations if required.
 
-        :param y0: initial conditions vector y(z,t=0) [dim_d x 1].
+        :param y0: initial conditions vector y(z,t=0) [dim_d].
 
         :param args: to pass additional parameters if requested.
 
@@ -513,7 +519,8 @@ class RichardsPDE(object):
 
                 # If we reach here the solver failed to integrate successfully.
                 if n_trials == 0:
-                    print(" The solver failed with message: {0}".format(sol_t.message))
+                    print(" {0}: The ODE solver failed with message:"
+                          " {1}".format(self.__class__.__name__, sol_t.message))
                 # _end_if_
             # _end_if_
         # _end_while_
@@ -528,7 +535,7 @@ class RichardsPDE(object):
 def midpoints(x_left, u_left, x_right, u_right):
     """
     Interpolation (helper) function that is used
-    in the discretization of the Richards' PDE.
+    in the 'discretization' of the Richards PDE.
 
     :param x_left: [dim_d]
 
