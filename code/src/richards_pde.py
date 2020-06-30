@@ -69,8 +69,6 @@ class RichardsPDE(object):
     def __call__(self, t, y, *args):
         """
         This function implements the space discretization of the PDE.
-        It is vectorized for best performance, so the ode solver can
-        use this property to speed up the solution.
 
         :param t: time variable.
 
@@ -150,6 +148,11 @@ class RichardsPDE(object):
 
     @property
     def arg_out(self):
+        """
+        Gives access to the variable output arguments.
+
+        :return: Dictionary with output values.
+        """
         return self.var_arg_out
     # _end_def_
 
