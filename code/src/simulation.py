@@ -367,6 +367,12 @@ class Simulation(object):
                   "interception": self.mData["interception"],
                   "precipitation": self.mData["precipitation_cm"][0]}
 
+        # Local copy (reference).
+        dz = self.mData["dz"]
+
+        # Local copy (reference).
+        psi_sat = self.mData["soil"].psi_sat
+
         # Burn-in loop.
         for j in range(burn_in):
 
@@ -382,7 +388,7 @@ class Simulation(object):
             y_j = self.pde_model.solve(t_span, y0, args_0)
 
             # Find 'wtd_est' at the j-th iteration.
-            wtd_est = find_wtd(y_j >= self.mData["soil"].psi_sat)
+            wtd_est = find_wtd(y_j >= psi_sat)
 
             # Compute the absolute error: |wtd_obs - wtd_est|
             abs_error = np.abs(self.mData["zWtd_cm"][0] - z[wtd_est])
@@ -395,7 +401,7 @@ class Simulation(object):
 
             # Repeat the burn-in integration as long as the distance
             # between the two solutions is above a threshold value.
-            if abs_error <= 2.0*self.mData["dz"] and mse_0 <= 0.01:
+            if abs_error <= 2.0 * dz and mse_0 <= 0.01:
                 # Change the flag.
                 early_stop = True
 
