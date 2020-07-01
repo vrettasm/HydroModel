@@ -363,7 +363,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, z)
 
         # Set a maximum number of iterations.
-        burn_in = 100
+        burn_in = 500
 
         # Early stop flag.
         early_stop = False
