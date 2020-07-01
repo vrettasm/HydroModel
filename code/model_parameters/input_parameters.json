@@ -9,11 +9,11 @@
 
   "IC_Filename": null,
 
-  "Data_Filename": "/Users/michailvrettas/Documents/GitHub/HydroModel/data/wells/no_10/Well_10_WY_08_09.csv",
+  "Data_Filename": "../data/wells/no_10/Well_10_WY_08_09.csv",
 
   "Well_No": 10,
 
-  "Site_Information": "/Users/michailvrettas/Documents/GitHub/HydroModel/data/model_parameters/site_information.json",
+  "Site_Information": "./model_parameters/site_information.json",
 
   "Water_Content": {
     "Theta_Max": 0.30,
