@@ -65,8 +65,9 @@ class Simulation(object):
 
     def setupModel(self, params, data):
         """
-        This method is called BEFORE the run() and sets up all the variables for the simulation.
-        It is also responsible for checking the validity of the input parameters before use.
+        This method is called BEFORE the run() and sets up all the variables for
+        the simulation.  It is also responsible for checking the validity of the
+        input parameters before use.
 
         :param params: (dict) contains all the given parameters. If None, then it
         will use the default parameters to initialize object. However this is not
@@ -215,7 +216,7 @@ class Simulation(object):
         self.mData["time"] = [t.round(freq="s") for t in timestamps]
 
         # Convert the meters to [L:cm] before storing them.
-        z_wtd_cm = np.array(np.abs(np.round(100.0*data.loc[:, "WTD_m"])))
+        z_wtd_cm = np.array(np.abs(np.round(100.0 * data.loc[:, "WTD_m"])))
 
         # Check if there are NaN values.
         if np.any(np.isnan(z_wtd_cm)):
@@ -362,7 +363,7 @@ class Simulation(object):
         y0, *_ = self.mData["hydro_model"].pressure_head(q_0, z)
 
         # Set a maximum number of iterations.
-        burn_in = 500
+        burn_in = 100
 
         # Early stop flag.
         early_stop = False
@@ -387,17 +388,16 @@ class Simulation(object):
         # Burn-in loop.
         for j in range(burn_in):
 
-            # Update the random field daily (~24hr):
-            if np.mod(j, 48) == 0:
-                args_0["n_rnd"] = np.random.randn(z.size)
-            # _end_if_
+            # During the burn-in (spin-up) period we do not
+            # update tht random field.
 
             # Since this is a burn-in period the actual time
             # does not matter. We are interested only in the
             # length of the time-span.
-            t_span = (0, 1)
+            t_span = (j, j + 1)
 
-            # Solve the PDE and return the solution at the final time point.
+            # Solve the PDE and return the solution at the
+            # final time point.
             y_j = self.pde_model.solve(t_span, y0, args_0)
 
             # Find 'wtd_est' at the j-th iteration.
