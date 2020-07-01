@@ -54,11 +54,11 @@ class HydrologicalModel(object):
         z, theta = np.atleast_1d(z, theta)
 
         # Get the vector size.
-        dim_d, dim_m = theta.size, None
+        dim_d, dim_m = theta.shape[0], None
 
         # Check if the input is 2D.
         if len(theta.shape) == 2:
-            dim_d, dim_m = theta.shape
+            dim_m = theta.shape[1]
         # _end_if_
 
         # Check the input dimensions (of the vertical domain).

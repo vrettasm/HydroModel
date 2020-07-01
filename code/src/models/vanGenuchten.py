@@ -41,11 +41,11 @@ class vanGenuchten(HydrologicalModel):
         z, psi = np.atleast_1d(z, psi)
 
         # Get the vector size.
-        dim_d, dim_m = psi.size, None
+        dim_d, dim_m = psi.shape[0], None
 
         # Check if the input is 2D.
         if len(psi.shape) == 2:
-            dim_d, dim_m = psi.shape
+            dim_m = psi.shape[1]
         # _end_if_
 
         # Check the input dimensions (of the vertical domain).
