@@ -60,7 +60,7 @@ def find_wtd(y=None):
     y = np.atleast_1d(y)
 
     # Get the length of the input vector.
-    dim_d = y.size
+    dim_d = y.shape[0]
 
     # Initialize return index. In the unlikely event that the whole state
     # vector is saturated, the wtd should point at the surface (1st cell).

@@ -176,7 +176,7 @@ class RichardsPDE(object):
         z, y, dydz = np.atleast_1d(z, y, dydz)
 
         # Get the dimensions of the state vector.
-        dim_d = y.size
+        dim_d = y.shape[0]
 
         # Compute the hydraulic conductivity 'K(.)' and the specific moisture
         # capacity 'C(.)'.  Additionally return the soil moisture at the same

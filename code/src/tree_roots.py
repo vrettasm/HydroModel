@@ -178,12 +178,12 @@ class TreeRoots(object):
         theta_z, z_roots = np.atleast_1d(theta_z, z_roots)
 
         # Get the size of the state vector.
-        dim_d = theta_z.size
+        dim_d = theta_z.shape[0]
 
         # Make sure the dimensions match.
-        if dim_d != z_roots.size:
+        if dim_d != z_roots.shape[0]:
             raise RuntimeError(" {0}: Input dimensions do not match:"
-                               " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z_roots.size))
+                               " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z_roots.shape[0]))
         # _end_if_
 
         # Compute porosity, field capacity and wilting points at 'z'.
