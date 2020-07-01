@@ -463,12 +463,12 @@ class RichardsPDE(object):
         return np.atleast_1d(p_left, q_left, p_right, q_right)
     # _end_def_
 
-    def solve(self, t, y0, *args):
+    def solve(self, t_span, y0, *args):
         """
         This function numerically integrates a system of ordinary differential
         equations (self), within the time span "t", given an initial value y0.
 
-        :param t: time window to integrate the ode (t0, tf).
+        :param t_span: time window to integrate the ode (t0, tf).
 
         :param y0: initial conditions array [dim_d].
 
@@ -497,9 +497,8 @@ class RichardsPDE(object):
         while n_trials > 0:
 
             # Current solution.
-            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF',
-                              atol=abs_tol, rtol=rel_tol, args=args,
-                              jac_sparsity=jac_n, vectorized=False)
+            sol_t = solve_ivp(self, t_span=t_span, y0=y0, method='BDF',
+                              atol=abs_tol, rtol=rel_tol, args=args, jac_sparsity=jac_n)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
