@@ -449,7 +449,7 @@ class Simulation(object):
                                " 'mData' is empty.".format(self.__class__.__name__))
         # _end_if_
 
-        # Cumulative transpiration and lateral flow.
+        # Transpiration and lateral flow values.
         # Reset to empty lists before each run.
         transpiration, lateral_flow = [], []
 
