@@ -532,11 +532,11 @@ def midpoints(x_left, u_left, x_right, u_right):
 
     :param x_left: [dim_d]
 
-    :param u_left: [dim_d]
+    :param u_left: [dim_d x dim_m]
 
     :param x_right: [dim_d]
 
-    :param u_right: [dim_d]
+    :param u_right: [dim_d x dim_m]
 
     :return: derivatives and the mid-points.
     """
@@ -563,6 +563,15 @@ def midpoints(x_left, u_left, x_right, u_right):
     # Spacings between the two input points.
     # This will be either scalar, or vector.
     dx = x_right - x_left
+
+    # Check for vectorization.
+    if len(u_mid.shape) == 2:
+        # Get the number of different vectors.
+        dim_d = u_mid.shape[1]
+
+        # Replicate 'dx' with the correct shape.
+        dx = dx.repeat(dim_d).reshape(dx.shape[0], dim_d)
+    # _end_if_
 
     # Central Difference Formula:
     du_mid = (u_right - u_left)/dx
