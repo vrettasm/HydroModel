@@ -388,19 +388,15 @@ class Simulation(object):
         # Burn-in loop.
         for j in range(burn_in):
 
-            # During the burn-in (spin-up) period we do not
-            # update tht random field.
+            # During the burn-in period we do not update the
+            # random field. Moreover, the actual times don't
+            # matter. Time span can be fixed.
+            t_span = (0, 1)
 
-            # Since this is a burn-in period the actual time
-            # does not matter. We are interested only in the
-            # length of the time-span.
-            t_span = (j, j + 1)
-
-            # Solve the PDE and return the solution at the
-            # final time point.
+            # Solve the PDE.
             y_j = self.pde_model.solve(t_span, y0, args_0)
 
-            # Find 'wtd_est' at the j-th iteration.
+            # Find estimated wtd at the j-th iteration.
             wtd_est = find_wtd(y_j >= psi_sat)
 
             # Compute the absolute error: |wtd_obs - wtd_est|
