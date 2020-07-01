@@ -525,29 +525,29 @@ class RichardsPDE(object):
 # _end_class_
 
 # Helper module method.
-def midpoints(x_left, u_left, x_right, u_right):
+def midpoints(x_left, fx_left, x_right, fx_right):
     """
     Interpolation (helper) function that is used
     in the 'discretization' of the Richards PDE.
 
     :param x_left: [dim_d]
 
-    :param u_left: [dim_d x dim_m]
+    :param fx_left: [dim_d x dim_m]
 
     :param x_right: [dim_d]
 
-    :param u_right: [dim_d x dim_m]
+    :param fx_right: [dim_d x dim_m]
 
     :return: derivatives and the mid-points.
     """
 
     # Make sure all input are at least 1D.
-    x_left, u_left, x_right, u_right = np.atleast_1d(x_left, u_left, x_right, u_right)
+    x_left, fx_left, x_right, fx_right = np.atleast_1d(x_left, fx_left, x_right, fx_right)
 
     # Check for input mis-match.
-    if u_left.shape != u_right.shape:
-        raise RuntimeError(" midpoints: Input 'u' dimensions do not match."
-                           " {0} not equal to {1}".format(u_left.shape, u_right.shape))
+    if fx_left.shape != fx_right.shape:
+        raise RuntimeError(" midpoints: Input 'fx' dimensions do not match."
+                           " {0} not equal to {1}".format(fx_left.shape, fx_right.shape))
     # _end_if_
 
     # Check for input mis-match.
@@ -557,25 +557,25 @@ def midpoints(x_left, u_left, x_right, u_right):
     # _end_if_
 
     # Use a simple (arithmetic) average to approximate
-    # the 'mid-points' between 'u_left' and 'u_right'.
-    u_mid = 0.5 * (u_left + u_right)
+    # the mid-points between 'fx_left' and 'fx_right'.
+    fx_mid = 0.5 * (fx_left + fx_right)
 
     # Spacings between the two input points.
     # This will be either scalar, or vector.
     dx = x_right - x_left
 
     # Check for vectorization.
-    if len(u_mid.shape) == 2:
+    if len(fx_mid.shape) == 2:
         # Get the number of different vectors.
-        dim_d = u_mid.shape[1]
+        dim_d = fx_mid.shape[1]
 
         # Replicate 'dx' with the correct shape.
         dx = dx.repeat(dim_d).reshape(dx.shape[0], dim_d)
     # _end_if_
 
     # Central Difference Formula:
-    du_mid = (u_right - u_left)/dx
+    dfx_mid = (fx_right - fx_left)/dx
 
     # Return the derivative and the mid-points.
-    return np.atleast_1d(u_mid, du_mid)
+    return np.atleast_1d(fx_mid, dfx_mid)
 # _end_def_
