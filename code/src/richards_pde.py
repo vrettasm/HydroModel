@@ -108,7 +108,7 @@ class RichardsPDE(object):
 
         # INTERIOR POINTS:
         y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
-                                  self.x_mesh[self.mid_i+1], y[self.mid_i+1])
+                                  self.x_mesh[self.mid_i + 1], y[self.mid_i + 1])
 
         # PDE evaluation.
         cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
@@ -126,8 +126,9 @@ class RichardsPDE(object):
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
-        dydt[self.mid_i] = (fR - fLi[0:-1] + (self.zxmp1[self.mid_i] * sR +
-                                              self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
+        dydt[self.mid_i] = (fR - fLi[0:-1] +
+                            (self.zxmp1[self.mid_i] * sR +
+                             self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
         # BOTTOM BOUNDARY:
         if np.all(qR == 0.0):
             dydt[-1] = pR
@@ -496,8 +497,9 @@ class RichardsPDE(object):
         while n_trials > 0:
 
             # Current solution.
-            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF', atol=abs_tol,
-                              rtol=rel_tol, args=args, jac_sparsity=jac_n)
+            sol_t = solve_ivp(self, t_span=t, y0=y0, method='BDF',
+                              atol=abs_tol, rtol=rel_tol, args=args,
+                              jac_sparsity=jac_n, vectorized=False)
 
             # Check if the solver terminated successfully.
             if sol_t.success:
@@ -567,10 +569,10 @@ def midpoints(x_left, fx_left, x_right, fx_right):
     # Check for vectorization.
     if len(fx_mid.shape) == 2:
         # Get the number of different vectors.
-        dim_d = fx_mid.shape[1]
+        dim_m = fx_mid.shape[1]
 
         # Replicate 'dx' with the correct shape.
-        dx = dx.repeat(dim_d).reshape(dx.shape[0], dim_d)
+        dx = dx.repeat(dim_m).reshape(dx.shape[0], dim_m)
     # _end_if_
 
     # Central Difference Formula:
