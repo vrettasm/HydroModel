@@ -70,8 +70,18 @@ class TestHydrologicalModels(unittest.TestCase):
         # Get the equivalent pressure head and effective saturation.
         psi_z, s_eff_z = test_model.pressure_head(theta_z, self.z_grid)
 
+        # Check the dimensions.
         self.assertEqual(theta_z.shape, psi_z.shape)
         self.assertEqual(theta_z.shape, s_eff_z.shape)
+
+        # Test 2D version.
+        theta_2d = theta_z.repeat(4).reshape(theta_z.size, 4)
+
+        # Get the equivalent pressure head and effective saturation.
+        psi_2d, *_ = test_model.pressure_head(theta_2d, self.z_grid)
+
+        # Check the dimensions.
+        self.assertEqual(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
     def test_vanG_model(self):
@@ -100,6 +110,13 @@ class TestHydrologicalModels(unittest.TestCase):
         # Check the dimensions.
         self.assertEqual(theta_1d.shape, psi_1d.shape)
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
+
+        # Test 2D version.
+        psi_2d = psi_1d.repeat(4).reshape(psi_1d.size, 4)
+        theta_2d, *_ = test_model(psi_2d, self.z_grid)
+
+        # Check the dimensions.
+        self.assertEqual(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
     def test_VrettasFung_model(self):
@@ -131,6 +148,13 @@ class TestHydrologicalModels(unittest.TestCase):
         # Check the dimensions.
         self.assertEqual(theta_1d.shape, psi_1d.shape)
         self.assertEqual(theta_1d.shape, s_eff_1d.shape)
+
+        # Test 2D version.
+        psi_2d = psi_1d.repeat(4).reshape(psi_1d.size, 4)
+        theta_2d, *_ = test_model(psi_2d, self.z_grid, {"n_rnd": n_rnd})
+
+        # Check the dimensions.
+        self.assertEqual(psi_2d.shape, theta_2d.shape)
     # _end_def_
 
 

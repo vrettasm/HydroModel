@@ -54,7 +54,12 @@ class HydrologicalModel(object):
         z, theta = np.atleast_1d(z, theta)
 
         # Get the vector size.
-        dim_d = theta.size
+        dim_d, dim_m = theta.size, None
+
+        # Check if the input is 2D.
+        if len(theta.shape) == 2:
+            dim_d, dim_m = theta.shape
+        # _end_if_
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -67,6 +72,11 @@ class HydrologicalModel(object):
 
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
+
+        # Vectorized version.
+        if dim_m:
+            porous_z = porous_z.repeat(dim_m).reshape(dim_d, dim_m)
+        # _end_if_
 
         # Pre-compute constant parameters.
         delta_s = porous_z - self.theta_res

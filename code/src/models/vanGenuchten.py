@@ -41,7 +41,12 @@ class vanGenuchten(HydrologicalModel):
         z, psi = np.atleast_1d(z, psi)
 
         # Get the vector size.
-        dim_d = psi.size
+        dim_d, dim_m = psi.size, None
+
+        # Check if the input is 2D.
+        if len(psi.shape) == 2:
+            dim_d, dim_m = psi.shape
+        # _end_if_
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -53,10 +58,15 @@ class vanGenuchten(HydrologicalModel):
         k_sat = self.k_hc.sat_soil * np.ones(psi.shape)
 
         # Get the porosity field at 'z'.
-        porous_z, _, _ = self.porous(z)
+        porous_z, *_ = self.porous(z)
 
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
+
+        # Vectorized version.
+        if dim_m:
+            porous_z = porous_z.repeat(dim_m).reshape(dim_d, dim_m)
+        # _end_if_
 
         # Pre-compute constant parameters.
         delta_s = porous_z - self.theta_res

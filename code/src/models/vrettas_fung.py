@@ -46,7 +46,12 @@ class VrettasFung(HydrologicalModel):
         z, psi = np.atleast_1d(z, psi)
 
         # Get the vector size.
-        dim_d = psi.size
+        dim_d, dim_m = psi.size, None
+
+        # Check if the input is 2D.
+        if len(psi.shape) == 2:
+            dim_d, dim_m = psi.shape
+        # _end_if_
 
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.size:
@@ -59,6 +64,11 @@ class VrettasFung(HydrologicalModel):
 
         # Make sure the porosity is at least 1-D.
         porous_z = np.atleast_1d(porous_z)
+
+        # Vectorized version.
+        if dim_m:
+            porous_z = porous_z.repeat(dim_m).reshape(dim_d, dim_m)
+        # _end_if_
 
         # Initialise at None. This will cause an error
         # if the n_rnd is not given as input. (revisit)
@@ -121,17 +131,32 @@ class VrettasFung(HydrologicalModel):
             # Weight function:
             s_eff_soil = s_eff[soil_layer_idx]
 
+            # Noise variance.
             sigma_soil = self.k_hc.sigma_noise * (1.0 - s_eff_soil)
 
-            # Update the value of $Kbkg_soil$.
-            k_bkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
+            # Vectorized version.
+            if dim_m:
+                # Update the value of $Kbkg_soil$.
+                k_bkg[soil_layer_idx, :] = logN_rnd(mean_soil.repeat(dim_m).reshape(n_soil, dim_m),
+                                                    sigma_soil,
+                                                    rnd_soil.repeat(dim_m).reshape(n_soil, dim_m))
 
-            # Hydraulic conductivity for Soil layer.
-            K[soil_layer_idx] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[soil_layer_idx]
+                # Hydraulic conductivity for Soil layer.
+                K[soil_layer_idx, :] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[soil_layer_idx, :]
+            else:
+                # Update the value of $Kbkg_soil$.
+                k_bkg[soil_layer_idx] = logN_rnd(mean_soil, sigma_soil, rnd_soil)
+
+                # Hydraulic conductivity for Soil layer.
+                K[soil_layer_idx] = (s_eff_soil ** self.k_hc.lambda_exponent) * k_bkg[soil_layer_idx]
+            # _end_if_
         # _end_if_
 
         # SAPROLITE LAYER:
         if sapr_layer_idx:
+            # Number of cells in the soil layer.
+            n_sapr = sapr_layer_idx[0].size
+
             # Test domain for the interpolation function.
             z_test = np.arange(l1, l2+1)
 
@@ -148,17 +173,32 @@ class VrettasFung(HydrologicalModel):
             # Weight function:
             s_eff_sapr = s_eff[sapr_layer_idx]
 
+            # Noise variance.
             sigma_sapr = self.k_hc.sigma_noise * (1.0 - s_eff_sapr)
 
-            # Update the value of $Kbkg_sapr$.
-            k_bkg[sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
+            # Vectorized version.
+            if dim_m:
+                # Update the value of $Kbkg_sapr$.
+                k_bkg[sapr_layer_idx, :] = logN_rnd(mean_sapr.repeat(dim_m).reshape(n_sapr, dim_m),
+                                                    sigma_sapr,
+                                                    rnd_sapr.repeat(dim_m).reshape(n_sapr, dim_m))
 
-            # Hydraulic conductivity for Saprolite layer.
-            K[sapr_layer_idx] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[sapr_layer_idx]
+                # Hydraulic conductivity for Saprolite layer.
+                K[sapr_layer_idx, :] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[sapr_layer_idx, :]
+            else:
+                # Update the value of $Kbkg_sapr$.
+                k_bkg[sapr_layer_idx] = logN_rnd(mean_sapr, sigma_sapr, rnd_sapr)
+
+                # Hydraulic conductivity for Saprolite layer.
+                K[sapr_layer_idx] = (s_eff_sapr ** self.k_hc.lambda_exponent) * k_bkg[sapr_layer_idx]
+            # _end_if_
         # _end_if_
 
         # WEATHERED BEDROCK LAYER:
         if wbed_layer_idx:
+            # Number of cells in the soil layer.
+            n_wbed = wbed_layer_idx[0].size
+
             # Compute the mean values of $Kbkg_wbed$.
             z_test = np.arange(l2, l3+1)
 
@@ -178,13 +218,25 @@ class VrettasFung(HydrologicalModel):
             # Weight function:
             s_eff_wbed = s_eff[wbed_layer_idx]
 
+            # Noise variance.
             sigma_wbed = self.k_hc.sigma_noise * (1.0 - s_eff_wbed)
 
-            # Update the value of $Kbkg_wbed$.
-            k_bkg[wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
+            # Vectorized version.
+            if dim_m:
+                # Update the value of $Kbkg_wbed$.
+                k_bkg[wbed_layer_idx, :] = logN_rnd(mean_wbed.repeat(dim_m).reshape(n_wbed, dim_m),
+                                                    sigma_wbed,
+                                                    rnd_wbed.repeat(dim_m).reshape(n_wbed, dim_m))
 
-            # Hydraulic conductivity for Saprolite layer.
-            K[wbed_layer_idx] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[wbed_layer_idx]
+                # Hydraulic conductivity for Saprolite layer.
+                K[wbed_layer_idx, :] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[wbed_layer_idx, :]
+            else:
+                # Update the value of $Kbkg_wbed$.
+                k_bkg[wbed_layer_idx] = logN_rnd(mean_wbed, sigma_wbed, rnd_wbed)
+
+                # Hydraulic conductivity for Saprolite layer.
+                K[wbed_layer_idx] = (s_eff_wbed ** self.k_hc.lambda_exponent) * k_bkg[wbed_layer_idx]
+            # _end_if_
         # _end_if_
 
         # SAFEGUARD:
@@ -192,7 +244,7 @@ class VrettasFung(HydrologicalModel):
         K = np.minimum(K, k_bkg)
 
         # Compute the Specific Moisture Capacity [dTheta/dPsi].
-        C = (self.m * self.n) * self.alpha *\
+        C = (self.m * self.n) * self.alpha * \
             delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n-1.0)
 
         # Set explicitly the saturated cells to the minimum value.
