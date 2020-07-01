@@ -474,7 +474,7 @@ class RichardsPDE(object):
 
         :param args: additional model parameters.
 
-        :return: dydt [dim_d]
+        :return: dydt [dim_d].
         """
 
         # Trials counter
