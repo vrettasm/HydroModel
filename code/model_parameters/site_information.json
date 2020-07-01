@@ -1,0 +1,147 @@
+{
+  "Info": "Contains the specific information about the drilling site.",
+
+  "Maintainer": "Michail Vrettas, PhD",
+
+  "Contact": "michail.vrettas@gmail.com",
+
+  "Last_Updated": "2020-06-10",
+
+  "Note_01": "All the depth values have units in centimeter [L:cm].",
+
+  "Note_02": "The actual maximum depths of the well may vary.",
+
+  "Well": {
+    "1": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 500.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6442,
+      "latitude": 39.7294,
+      "altitude": 398.9
+    },
+
+    "2": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 1300.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6441,
+      "latitude": 39.7291,
+      "altitude": 423.0
+    },
+
+    "3": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 1200.0,
+      "sat_depth": 100.0,
+      "longitude": -123.644,
+      "latitude": 39.7291,
+      "altitude": 425.4
+    },
+
+    "5": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 2300.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6441,
+      "latitude": 39.7289,
+      "altitude": 438.6
+    },
+
+    "6": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 1200.0,
+      "sat_depth": 100.0,
+      "longitude": -123.644,
+      "latitude": 39.7289,
+      "altitude": 441.5
+    },
+
+    "7": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 1200.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6438,
+      "latitude": 39.7289,
+      "altitude": 444.2
+    },
+
+    "10": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 2000.0,
+      "sat_depth": 125.0,
+      "longitude": -123.6442,
+      "latitude": 39.7287,
+      "altitude": 454.9
+    },
+
+    "12": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 600.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6442,
+      "latitude": 39.7293,
+      "altitude": 399.7
+    },
+
+    "13": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 1800.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6442,
+      "latitude": 39.7291,
+      "altitude": 424.6
+    },
+
+    "14": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 2900.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6443,
+      "latitude": 39.7289,
+      "altitude": 433.8
+    },
+
+    "15": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 2700.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6439,
+      "latitude": 39.7283,
+      "altitude": 468.0
+    },
+
+    "16": {
+      "soil": 0.0,
+      "saprolite": 50.0,
+      "weathered": 200.0,
+      "max_depth": 2100.0,
+      "sat_depth": 100.0,
+      "longitude": -123.6437,
+      "latitude": 39.7283,
+      "altitude": 455.0
+    }
+  }
+}

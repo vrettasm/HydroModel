@@ -1,0 +1,66 @@
+{
+  "Info": "Input parameters file for the Berkeley hydrological simulation",
+
+  "Author": "Michail Vrettas, PhD",
+
+  "Contact": "michail.vrettas@gmail.com",
+
+  "Date": "2020-05-21",
+
+  "IC_Filename": null,
+
+  "Data_Filename": "/Users/michailvrettas/Documents/GitHub/HydroModel/data/wells/no_10/Well_10_WY_08_09.csv",
+
+  "Well_No": 10,
+
+  "Site_Information": "/Users/michailvrettas/Documents/GitHub/HydroModel/data/model_parameters/site_information.json",
+
+  "Water_Content": {
+    "Theta_Max": 0.30,
+    "Theta_Min": 0.05,
+    "Theta_Residual": 0.04,
+    "Wilting_Point_cm": -1500.0,
+    "Field_Capacity_cm": 340.0
+  },
+
+  "Hydraulic_Conductivity": {
+    "Sat_Soil": 8.50,
+    "Sat_Saprolite": 3.20,
+    "Sat_Fresh_Bedrock": 0.10,
+    "Sigma_Noise": 2.0,
+    "Lambda_Exponent": 1.0
+  },
+
+  "Environmental": {
+    "Interception_pct": 0.1,
+    "Evaporation_pct": 0.0,
+    "Wet_Season_pct": 1.0,
+    "Atmospheric_Demand": 0.5
+  },
+
+  "Trees": {
+    "Leaf_Area_Index": 4.0,
+    "Max_Root_Depth_cm": 1000.0,
+    "Root_Pdf_Profile": "Negative_Exp"
+  },
+
+  "Hydrological_Model": {
+    "Name": "vrettas_fung",
+    "Porosity_Profile": "Stratified"
+  },
+
+  "Soil_Properties": {
+    "n": 2.0,
+    "a0": 0.009,
+    "psi_sat": -0.006,
+    "epsilon": 1.0e-7
+  },
+
+  "Simulation_Flags": {
+    "SPINUP": false,
+    "ET": false,
+    "LF": true,
+    "HLIFT": false,
+    "PREDICT": false
+  }
+}
