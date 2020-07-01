@@ -175,10 +175,6 @@ class RichardsPDE(object):
         # Ensure the input is 1-D.
         z, y, dydz = np.atleast_1d(z, y, dydz)
 
-        # Ensure the input is 1-D.
-        # Note: For stability do not let the dydz drop less than 1.0.
-        dydz = np.minimum(dydz, 1.001)
-
         # Get the dimensions of the state vector.
         dim_d = y.size
 
@@ -189,7 +185,7 @@ class RichardsPDE(object):
         theta, K, C, *_ = self.h_model(y, z, *args)
 
         # Compute the flux term.
-        flux = K * (dydz - 1.0)
+        flux = K * (np.minimum(dydz, 1.001) - 1.0)
 
         # Sink term is initialized to zero.
         sink = np.zeros(flux.shape)
@@ -291,81 +287,81 @@ class RichardsPDE(object):
                     transpire = uptake
                 # _end_if_
             # _end_transpiration_if_
+        # _end_spinup_if_
 
-            # Lateral (subsurface) Runoff:
-            if self.m_data["sim_flags"]["LF"]:
-                # Find saturated cell indexes.
-                # Note: Here we use boolean indexing.
-                id_sat = (y >= self.m_data["soil"].psi_sat)
+        # Lateral (subsurface) Runoff:
+        if self.m_data["sim_flags"]["LF"]:
+            # Find saturated cell indexes.
+            # Note: Here we use boolean indexing.
+            id_sat = (y >= self.m_data["soil"].psi_sat)
 
-                # Switch according to the running mode.
-                if self.m_data["sim_flags"]["PREDICT"]:
-                    # Predictive (running) mode.
-                    # Set the sink coefficient accordingly:
-                    if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
-                        # Wet season coefficient.
-                        alpha_low = -2.5e-3
-                    else:
-                        # Dry season coefficient.
-                        alpha_low = -1.5e-3
-                    # _end_if_
-
-                    # Number of cells, from the bottom  of the well, that stay
-                    # always saturated. That number can vary from well to well
-                    # and from  year to year.  This is to  prevent the spatial
-                    # domain from draining completely during extended droughts.
-                    low_lim = dim_d - (self.m_data["sat_cells"] - 1)
-
-                    # Exponent range.
-                    nu = np.linspace(1.5, 0.0, low_lim)
-
-                    # Find "wtd_est" (index).
-                    wtd_est = find_wtd(id_sat)
-
-                    # If the "wtd_est" is above a pre-defined depth value.
-                    if wtd_est < low_lim:
-                        # Set the cell indexes that we remove water from.
-                        j = np.arange(wtd_est, wtd_est + 1)
-
-                        # Update scale with current estimate of the wtd.
-                        # The higher the exponent the faster it drains!!
-                        # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
-                        alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
-
-                        # Compute the sink term proportional to y(z,t).
-                        sink[j] = np.minimum(alpha_lat * y[j], sink[j])
-
-                        # Store the lateral flow (runoff), along with
-                        # the locations (indexes) in the space domain.
-                        lateral_flow = np.abs(sink[j])
-                    # _end_if_
+            # Switch according to the running mode.
+            if self.m_data["sim_flags"]["PREDICT"]:
+                # Predictive (running) mode.
+                # Set the sink coefficient accordingly:
+                if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
+                    # Wet season coefficient.
+                    alpha_low = -2.5e-3
                 else:
-                    # Monitoring (running) mode.
-                    # Current water table observation.
-                    wtd_obs = int(np.minimum(args_i["wtd"], dim_d-1))
+                    # Dry season coefficient.
+                    alpha_low = -1.5e-3
+                # _end_if_
 
-                    # Sink (scale) coefficient:
-                    alpha_lat = -2.5e-4
+                # Number of cells, from the bottom  of the well, that stay
+                # always saturated. That number can vary from well to well
+                # and from  year to year.  This is to  prevent the spatial
+                # domain from draining completely during extended droughts.
+                low_lim = dim_d - (self.m_data["sat_cells"] - 1)
 
-                    # Find "wtd_est" (index).
-                    wtd_est = find_wtd(id_sat)
+                # Exponent range.
+                nu = np.linspace(1.5, 0.0, low_lim)
 
-                    # If the "wtd_est" is inside the space domain.
-                    if (wtd_est < dim_d) & (wtd_est < wtd_obs):
-                        # Find  the locations between the estimated
-                        # $wtdEst$ and the actual value of $wtdObs$.
-                        j = np.arange(wtd_est, wtd_obs)
+                # Find "wtd_est" (index).
+                wtd_est = find_wtd(id_sat)
 
-                        # Compute the sink term proportional to y(z,t).
-                        sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+                # If the "wtd_est" is above a pre-defined depth value.
+                if wtd_est < low_lim:
+                    # Set the cell indexes that we remove water from.
+                    j = np.arange(wtd_est, wtd_est + 1)
 
-                        # Store the lateral flow (runoff), along with
-                        # the locations (indexes) in the space domain.
-                        lateral_flow = np.abs(sink[j])
-                    # _end_if_
+                    # Update scale with current estimate of the wtd.
+                    # The higher the exponent the faster it drains!!
+                    # alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim
+                    alpha_lat = alpha_low * (1.0 - (j / low_lim) ** nu[j])
+
+                    # Compute the sink term proportional to y(z,t).
+                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+
+                    # Store the lateral flow (runoff), along with
+                    # the locations (indexes) in the space domain.
+                    lateral_flow = np.abs(sink[j])
+                # _end_if_
+            else:
+                # Monitoring (running) mode.
+                # Current water table observation.
+                wtd_obs = int(np.minimum(args_i["wtd"], dim_d-1))
+
+                # Sink (scale) coefficient:
+                alpha_lat = -2.5e-4
+
+                # Find "wtd_est" (index).
+                wtd_est = find_wtd(id_sat)
+
+                # If the "wtd_est" is inside the space domain.
+                if (wtd_est < dim_d) & (wtd_est < wtd_obs):
+                    # Find  the locations between the estimated
+                    # $wtdEst$ and the actual value of $wtdObs$.
+                    j = np.arange(wtd_est, wtd_obs)
+
+                    # Compute the sink term proportional to y(z,t).
+                    sink[j] = np.minimum(alpha_lat * y[j], sink[j])
+
+                    # Store the lateral flow (runoff), along with
+                    # the locations (indexes) in the space domain.
+                    lateral_flow = np.abs(sink[j])
                 # _end_if_
             # _end_if_
-        # _end_if_
+        # _end_Lateral_Flow_if_
 
         # Store the integrated transpiration to the output.
         if transpire is not None:
