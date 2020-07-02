@@ -428,9 +428,9 @@ class Simulation(object):
                 early_stop = True
 
                 # Display final message.
-                print(" [IC: {0}] finished at [itr: {1}] with"
-                      " [abs(error): {2}] and [MSE: {3}]\n".format(self.mData["Well_No"], j, abs_error, mse_0))
-
+                print(" [Initial Conditions for Well no. {0}] finished at [itr: {1}] with"
+                      " [abs(error): {2}] and [MSE: {3}] \n".format(self.mData["Well_No"],
+                                                                    j, abs_error, mse_0))
                 # Exit the loop.
                 break
             # _end_if_
@@ -438,7 +438,8 @@ class Simulation(object):
 
         # At this point the algorithm has reached maximum number of iterations.
         if not early_stop:
-            print(" [IC: {0}] finished at maximum number of iterations.\n".format(self.mData["Well_No"]))
+            print(" [Initial Conditions for Well no. {0}]"
+                  " finished at maximum number of iterations.\n".format(self.mData["Well_No"]))
         # _end_of_
 
         # [WARNING] Set the flag to TRUE!
