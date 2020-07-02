@@ -39,11 +39,11 @@ class TestUtilities(unittest.TestCase):
 
         # Check the vector version (2D).
         dim_d, dim_m = 100, 4
-        mu_mat = np.random.rand(dim_m, dim_d)
+        mu_mat = np.random.rand(dim_d, dim_m)
         sigma_ = np.ones(mu_mat.shape)
 
         # Sample n_samples parameters.
-        x_out = logN_rnd(mu_mat, sigma_, rng.standard_normal(dim_d))
+        x_out = logN_rnd(mu_mat, sigma_, rng.standard_normal((dim_d, dim_m)))
 
         # Check if the shapes match.
         self.assertEqual(mu_mat.shape, x_out.shape)
