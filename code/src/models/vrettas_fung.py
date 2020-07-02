@@ -110,14 +110,11 @@ class VrettasFung(HydrologicalModel):
         sapr_layer_idx = np.where((z >= l1) & (z <= l2))
         wbed_layer_idx = np.where((z >= l2) & (z <= l3))
 
-        # Create an 1_[d x m] array.
-        ones_dm = np.ones(psi.shape)
-
         # Initialize the Unsaturated Hydraulic Conductivity.
         K = self.k_hc.sat_soil * (s_eff ** self.k_hc.lambda_exponent)
 
         # Initialize the Background Hydraulic Conductivity.
-        k_bkg = self.k_hc.sat_soil * ones_dm
+        k_bkg = self.k_hc.sat_soil * np.ones(psi.shape)
 
         # SOIL LAYER
         if soil_layer_idx:
