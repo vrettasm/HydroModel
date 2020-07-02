@@ -52,7 +52,7 @@
   "Soil_Properties": {
     "n": 2.0,
     "a0": 0.009,
-    "psi_sat": -0.006,
+    "psi_sat": -0.0047,
     "epsilon": 1.0e-7
   },
 
