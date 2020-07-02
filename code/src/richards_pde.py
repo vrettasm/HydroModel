@@ -7,16 +7,17 @@ from .utilities import find_wtd
 
 class RichardsPDE(object):
     """
-    Richards' PDE model equations. It represents the movement of water in unsaturated soils.
+    Richards' PDE model equations. It represents the movement of water in un-
+    saturated soils.
 
         https://en.wikipedia.org/wiki/Richards_equation
 
-    The PDE discretization code here mimics MATLAB's "pdepe" function to solve 1-D parabolic
-    and elliptic PDEs.
+    The PDE discretization code here mimics MATLAB's "pdepe" function to solve
+    1-D parabolic and elliptic PDEs.
     """
 
-    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp1", "zxmp1", "nx", "h_model",
-                 "var_arg_out")
+    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp", "zxmp", "nx",
+                 "h_model", "var_arg_out")
 
     def __init__(self, m_data=None):
         """
@@ -65,9 +66,9 @@ class RichardsPDE(object):
         self.mid_i = np.arange(1, self.nx-1)
 
         # Interior grid (mid)-points.
-        self.xzmp1 = np.zeros(self.nx)
-        self.xzmp1[1:] = self.x_mesh[1:] - self.x_mid
-        self.zxmp1 = self.x_mid - self.x_mesh[0:-1]
+        self.xzmp = np.zeros(self.nx)
+        self.xzmp[1:] = self.x_mesh[1:] - self.x_mid
+        self.zxmp = self.x_mid - self.x_mesh[0:-1]
     # _end_def_
 
     def __call__(self, t, y, *args):
@@ -101,13 +102,13 @@ class RichardsPDE(object):
             dydt[0] = pL
         else:
             # Compute the contribution of C(.):
-            denom = np.atleast_1d(qL * self.zxmp1[0] * cL)
+            denom = np.atleast_1d(qL * self.zxmp[0] * cL)
 
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
             # Compute the derivative at $z = 0$:
-            dydt[0] = (pL + qL * (fL + self.zxmp1[0] * sL)) / denom
+            dydt[0] = (pL + qL * (fL + self.zxmp[0] * sL)) / denom
         # _end_if_
 
         # INTERIOR POINTS:
@@ -124,27 +125,27 @@ class RichardsPDE(object):
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        denom = np.atleast_1d(self.zxmp1[self.mid_i] * cR + self.xzmp1[self.mid_i] * cLi[0:-1])
+        denom = np.atleast_1d(self.zxmp[self.mid_i] * cR + self.xzmp[self.mid_i] * cLi[0:-1])
 
         # Avoid division by zero.
         denom[denom == 0.0] = 1.0
 
         # Compute the derivatives at $z = [1:-2]$:
         dydt[self.mid_i] = (fR - fLi[0:-1] +
-                            (self.zxmp1[self.mid_i] * sR +
-                             self.xzmp1[self.mid_i] * sLi[0:-1])) / denom
+                            (self.zxmp[self.mid_i] * sR +
+                             self.xzmp[self.mid_i] * sLi[0:-1])) / denom
         # BOTTOM BOUNDARY:
         if np.all(qR == 0.0):
             dydt[-1] = pR
         else:
             # Compute the contribution of C(.):
-            denom = np.atleast_1d(-qR * self.xzmp1[-1] * cLi[-1])
+            denom = np.atleast_1d(-qR * self.xzmp[-1] * cLi[-1])
 
             # Avoid division by zero.
             denom[denom == 0.0] = 1.0
 
             # Compute the derivative at $z = end$:
-            dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp1[-1] * sLi[-1])) / denom
+            dydt[-1] = (pR + qR * (fLi[-1] - self.xzmp[-1] * sLi[-1])) / denom
         # _end_if_
 
         # Return the derivative.
