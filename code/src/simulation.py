@@ -360,7 +360,8 @@ class Simulation(object):
         self.mData["sim_flags"]["SPINUP"] = True
 
         # Display info.
-        print(" [IC: {0}] Burn in period started ...".format(self.mData["Well_No"]))
+        print("\n [Initial Conditions for Well no. {0}]"
+              " Burn in period started ...".format(self.mData["Well_No"]))
 
         # Spatial domain.
         z = self.mData["z_grid"]
@@ -599,7 +600,7 @@ class Simulation(object):
                 mae = np.mean(abs_error[0:i])
 
                 # Display message.
-                print(" [No. {0}] {1}: MAE = {2:.2f} cm,"
+                print(" [Well No. {0}] {1}: MAE = {2:.2f} cm,"
                       " [{3}]".format(self.mData["Well_No"], i, mae, w_side))
             # _end_if_
         # _end_for_
