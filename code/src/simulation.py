@@ -203,9 +203,17 @@ class Simulation(object):
 
         # Add the selected hydrological model.
         if params["Hydrological_Model"]["Name"] == "vrettas_fung":
+            # Create the hydro-object.
             self.mData["hydro_model"] = VrettasFung(soil, porous, K, theta.res, dz)
+
+            # Print a message.
+            print(" Vrettas-Fung model selected.")
         else:
+            # Create the hydro-object.
             self.mData["hydro_model"] = vanGenuchten(soil, porous, K, theta.res, dz)
+
+            # Print a message.
+            print(" vanGenuchten model selected.")
         # _end_if_
 
         # Extract the observational data from the pandas.Dataframe:
