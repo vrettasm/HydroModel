@@ -26,11 +26,14 @@ def logN_rnd(mx, vx, en):
     # Avoid division by zero error.
     mx[mx == 0.0] = 1.0e-7
 
+    # Square mean values.
+    mx_sq = mx ** 2
+
     # Parameter 'mu' for the LogNormal distribution.
-    mu0 = np.log((mx ** 2) / np.sqrt(vx + mx ** 2))
+    mu0 = np.log(mx_sq / np.sqrt(vx + mx_sq))
 
     # Parameter 'sigma' for the LogNormal distribution.
-    sig = np.sqrt(np.log(vx / (mx ** 2) + 1.0))
+    sig = np.sqrt(np.log(vx / mx_sq + 1.0))
 
     # Random variable with (mu, sigma).
     return np.exp(mu0 + sig * en)
