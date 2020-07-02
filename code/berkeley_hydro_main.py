@@ -28,7 +28,7 @@ The work is described with details in two (open access) publications:
 import sys
 import pandas as pd
 from pathlib import Path
-from code.src.simulation import Simulation
+from src.simulation import Simulation
 
 # INFO:
 __author__ = "Michail Vrettas, PhD"
