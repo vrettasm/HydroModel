@@ -31,15 +31,17 @@ class VrettasFung(HydrologicalModel):
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi: pressure head (suction) [dim_m x dim_d]
+        :param psi: pressure head (suction) [dim_m x dim_d].
 
-        :param z: depth values (increasing downwards) [dim_d]
+        :param z: depth values (increasing downwards) [dim_d x 1].
 
         :param args: in here we pass additional parameters for the noise model.
 
         :return: q (water content), K (unsaturated hydraulic conductivity),
         C (specific moisture capacity), Kbkg (background hydraulic conductivity),
-        and q_inf_max (max infiltration capacity).
+        and q_inf_max (max infiltration capacity) [dim_d x dim_m].
+
+        :raises ValueError: if there is a mismatch in the input dimensions.
         """
 
         # Ensure the input is 1-D.
@@ -54,9 +56,9 @@ class VrettasFung(HydrologicalModel):
         # _end_if_
 
         # Check the input dimensions (of the vertical domain).
-        if dim_d != z.size:
+        if dim_d != z.shape[0]:
             raise ValueError(" {0}: Input size dimensions do not match:"
-                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.size))
+                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
         # _end_if_
 
         # Get the porosity field at 'z'.

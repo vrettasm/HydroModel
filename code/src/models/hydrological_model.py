@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 import numpy as np
 
 
@@ -15,11 +13,11 @@ class HydrologicalModel(object):
         """
         Default constructor.
 
-        :param soil: soil properties object
-        :param porous: porosity object
-        :param k_hc: hydraulic conductivity object
-        :param theta_res: water content (residual value)
-        :param dz: spatial discretization [L: cm]
+        :param soil: soil properties object.
+        :param porous: porosity object.
+        :param k_hc: hydraulic conductivity object.
+        :param theta_res: water content (residual value).
+        :param dz: spatial discretization [L: cm].
         """
 
         # Extract soil parameters.
@@ -30,24 +28,26 @@ class HydrologicalModel(object):
         self.epsilon = np.maximum(soil.epsilon, 1.0e-8)
 
         # Copy the porosity and hydraulic conductivity objects.
-        self.porous = deepcopy(porous)
-        self.k_hc = deepcopy(k_hc)
+        self.k_hc = k_hc
+        self.porous = porous
 
         # Make a copy of the other input parameters.
-        self.theta_res = theta_res
         self.dz = dz
+        self.theta_res = theta_res
     # _end_def_
 
     def pressure_head(self, theta, z):
         """
-        Returns the pressure head at depth(s) 'z', given as input the volumetric
-        water content theta.
+        Returns the pressure head at depth(s) 'z', given as input
+        the volumetric water content 'theta'.
 
-        :param theta: volumetric water content.
+        :param theta: volumetric water content [dim_d x dim_m].
 
-        :param z: depth that we want to get the pressure head.
+        :param z: depth that we want to get the pressure head [dim_d].
 
-        :return: pressure head (suction) at depth(s) 'z'.
+        :return: pressure head (suction) at depth(s) 'z' [dim_d x dim_m].
+
+        :raises ValueError: if there is a mismatch in the input dimensions.
         """
 
         # Ensure the input is 1-D.

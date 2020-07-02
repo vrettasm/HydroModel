@@ -26,15 +26,17 @@ class vanGenuchten(HydrologicalModel):
         A direct call to an object of this class will return the water content, along other
         related quantities, at a specific depth 'z', given the input pressure head (suction).
 
-        :param psi: pressure head (suction) [dim_d]
+        :param psi: pressure head (suction) [dim_d x dim_m].
 
-        :param z: depth values (increasing downwards) [dim_d]
+        :param z: depth values (increasing downwards) [dim_d x dim_m].
 
         :param args: (for compatibility) to keep a uniform interface.
 
         :return: q (water content), K (unsaturated hydraulic conductivity),
         C (specific moisture capacity), Ksat (saturated hydraulic conductivity),
-        and q_inf_max (max infiltration capacity.
+        and q_inf_max (max infiltration capacity [dim_d x dim_m].
+
+        :raises ValueError: if there is a mismatch in the input dimensions.
         """
 
         # Ensure the input is 1-D.

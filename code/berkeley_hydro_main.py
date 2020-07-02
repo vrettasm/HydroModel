@@ -46,7 +46,7 @@ def validateInputParametersFile(filename):
 
     :return: A dictionary loaded from the input file.
 
-    :raises ValueError if a keyword is missing from the file.
+    :raises ValueError: if a keyword is missing from the file.
     """
 
     # Import locally the json package.
