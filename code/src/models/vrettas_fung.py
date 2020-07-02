@@ -243,11 +243,13 @@ class VrettasFung(HydrologicalModel):
 
         # SAFEGUARD:
         K[id_sat] = k_bkg[id_sat]
+
+        # SAFEGUARD:
         K = np.minimum(K, k_bkg)
 
         # Compute the Specific Moisture Capacity [dTheta/dPsi].
         C = (self.m * self.n) * self.alpha * \
-            delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n-1.0)
+            delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n - 1.0)
 
         # Set explicitly the saturated cells to the minimum value.
         C[id_sat] = self.epsilon

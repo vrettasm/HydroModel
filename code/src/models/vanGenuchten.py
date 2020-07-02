@@ -56,9 +56,6 @@ class vanGenuchten(HydrologicalModel):
                              " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
         # _end_if_
 
-        # Create a vector with the K_{sat} values.
-        k_sat = self.k_hc.sat_soil * np.ones(psi.shape)
-
         # Get the porosity field at 'z'.
         porous_z, *_ = self.porous(z)
 
@@ -92,15 +89,20 @@ class vanGenuchten(HydrologicalModel):
         # Pre-compute the $m-th$ root.
         mth_s_eff = s_eff ** (1.0 / self.m)
 
+        # Create a vector with the K_{sat} values.
+        k_sat = self.k_hc.sat_soil * np.ones(psi.shape)
+
         # Compute the Unsaturated Hydraulic Conductivity.
         K = k_sat * np.sqrt(s_eff) * (1.0 - (1.0 - mth_s_eff) ** self.m) ** self.n
 
         # SAFEGUARD:
         K[id_sat] = k_sat[id_sat]
+
+        # SAFEGUARD:
         K = np.minimum(K, k_sat)
 
         # Compute the Specific Moisture Capacity [dTheta/dPsi].
-        C = (self.m * self.n) * self.alpha *\
+        C = (self.m * self.n) * self.alpha * \
             delta_s * (s_eff ** (1.0 / self.m + 1.0)) * (self.alpha * np.abs(psi)) ** (self.n - 1.0)
 
         # Set explicitly the saturated cells to the minimum value.
