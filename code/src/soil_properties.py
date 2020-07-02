@@ -14,9 +14,14 @@ class SoilProperties(object):
         Soil properties default constructor.
 
         :param n: (float) is a measure of the pore-size distribution [-]
+
         :param alpha: (float) is related to the inverse of the air entry suction [1/L : 1/cm]
+
         :param psi_sat: (float) suction at saturation [L: cm]
+
         :param epsilon: (float) tiny positive threshold value [-]
+
+        :raises ValueError: if the inputs are out of range.
         """
 
         # Check for allowed range.

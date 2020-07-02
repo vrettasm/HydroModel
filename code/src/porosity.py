@@ -25,15 +25,23 @@ class Porosity(object):
         profiles, for the z-domain (increasing downwards).
 
         :param z_grid: depth values at which we want to generate the porosity values.
+
         :param layers: tuple with the underground layers.
+
         :param theta: water content object.
+
         :param soil: soil properties object.
+
         :param p_model: porosity profile type:
                         1) Constant (for modeling short depths)
                         2) Linear (typical choice for small depths)
                         3) Exponential (typical choice for medium depths)
                         4) Stratified (for modeling high depths)
                         5) Noisy (assumes random "fractures" in the underground)
+
+        :raises ValueError: if there is no spatial input or wrong porosity profile.
+
+        :raises RuntimeError: if the domain is not increasing.
         """
         # Ensure the input is 1-D.
         z_grid = np.atleast_1d(z_grid)
@@ -45,7 +53,7 @@ class Porosity(object):
 
         # Make sure the z-grid domain is increasing.
         if np.any(np.diff(z_grid) <= 0.0):
-            raise ValueError(" {0}: Space domain z_grid is not increasing.".format(self.__class__.__name__))
+            raise RuntimeError(" {0}: Space domain z_grid is not increasing.".format(self.__class__.__name__))
         # _end_if_
 
         # Store the type of profile.

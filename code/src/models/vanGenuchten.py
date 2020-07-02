@@ -51,9 +51,9 @@ class vanGenuchten(HydrologicalModel):
         # _end_if_
 
         # Check the input dimensions (of the vertical domain).
-        if dim_d != z.size:
+        if dim_d != z.shape[0]:
             raise ValueError(" {0}: Input size dimensions do not match:"
-                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.size))
+                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
         # _end_if_
 
         # Create a vector with the K_{sat} values.

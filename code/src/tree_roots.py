@@ -172,6 +172,8 @@ class TreeRoots(object):
 
         :return: (1) root efficiency (alpha01 * alpha02) [dim_d x dim_m]
                  (2) available water in the root zone    [1 x 1]
+
+        :raises RuntimeError: if the input dimensions do not match.
         """
 
         # Ensure the input is 1-D.

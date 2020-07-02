@@ -78,6 +78,10 @@ class Simulation(object):
         precipitation values, etc.
 
         :return: None.
+
+        :raises ValueError: if some data are missing.
+
+        :raises RuntimeError: TBD.
         """
 
         # The spacing here defines a Uniform-Grid [L: cm].
@@ -103,7 +107,7 @@ class Simulation(object):
 
         # Make sure the well is not defined as fully saturated.
         if well["sat_depth"] >= well["max_depth"]:
-            raise ValueError(" {0}: The well seems fully saturated.".format(self.__class__.__name__))
+            raise RuntimeError(" {0}: The well seems fully saturated.".format(self.__class__.__name__))
         # _end_if_
 
         # Compute the number of continuously saturated cell (from the bottom).
@@ -220,8 +224,8 @@ class Simulation(object):
 
         # Check if there are NaN values.
         if np.any(np.isnan(z_wtd_cm)):
-            raise ValueError(" {0}: Water table depth observations"
-                             " contain NaN values.".format(self.__class__.__name__))
+            raise RuntimeError(" {0}: Water table depth observations"
+                               " contain NaN values.".format(self.__class__.__name__))
         # _end_if_
 
         # Since the observational data are not "gridded" we put them

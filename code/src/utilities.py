@@ -21,9 +21,7 @@ def logN_rnd(mx, vx, en):
     """
 
     # Ensure the input is at least 1-D.
-    mx = np.atleast_1d(mx)
-    vx = np.atleast_1d(vx)
-    en = np.atleast_1d(en)
+    mx, vx, en = np.atleast_1d(mx, vx, en)
 
     # Avoid division by zero error.
     mx[mx == 0.0] = 1.0e-7

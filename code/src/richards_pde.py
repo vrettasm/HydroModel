@@ -23,6 +23,10 @@ class RichardsPDE(object):
         Default constructor of the Richards' PDE class.
 
         :param m_data: dictionary with all the simulation parameters.
+
+        :raises ValueError: if there is no input data.
+
+        :raises RuntimeError: if the domain is not increasing.
         """
 
         # Check if we have been given input.

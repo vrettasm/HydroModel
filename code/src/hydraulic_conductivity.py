@@ -26,6 +26,8 @@ class HydraulicConductivity(object):
         :param sigma_noise: (float) noise amplitude (dimensionless [-]).
 
         :param lambda_exponent: (float) power parameter (conceptual).
+
+        :raises ValueError: if there the input values are not in range.
         """
 
         # Soil related variables.

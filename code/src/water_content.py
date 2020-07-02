@@ -29,6 +29,8 @@ class WaterContent(object):
         :param field_cap: (float) field capacity is the amount of soil moisture or water
         content held in the soil after excess water has drained away and the rate
         of downward movement has decreased.
+
+        :raises ValueError: if there checkValues method fails.
         """
 
         # Do not allow these values to be bellow zero, or above one.
