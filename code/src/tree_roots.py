@@ -119,7 +119,8 @@ class TreeRoots(object):
             root_pdf = (w1 * root_a) + (w2 * root_b)
 
         else:
-            raise ValueError(" Wrong root density profile type: {0}".format(r_model))
+            raise ValueError(" {0}: Wrong root density profile type:"
+                             " {1}".format(self.__class__.__name__, r_model))
         # _end_if_
 
         # Cut-off very small values before the normalization.
