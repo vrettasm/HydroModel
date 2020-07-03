@@ -53,8 +53,11 @@ class Simulation(object):
             self.name = name
         # _end_if_
 
-        # This dictionary will carry all the simulation data.
+        # This dictionary will hold all the simulation data.
         self.mData = {}
+
+        # Create a random number generator.
+        self.rng = np.random.default_rng()
 
         # Place holder for the pde model.
         self.pde_model = None
@@ -382,7 +385,7 @@ class Simulation(object):
         early_stop = False
 
         # Initial random vector.
-        n_rnd = np.random.randn(z.size)
+        n_rnd = self.rng.standard_normal(z.size)
 
         # Create a local dictionary with parameters for the specific iteration.
         args_0 = {"wtd": wtd_i[0][0],
@@ -515,7 +518,7 @@ class Simulation(object):
         psi[0] = y0.copy()
 
         # Create a random vector.
-        n_rnd = np.random.randn(dim_d)
+        n_rnd = self.rng.standard_normal(dim_d)
 
         # Run the hydrological model to get the initial water content.
         theta_vol[0], k_hrc[0], _, k_bkg[0], *_ = h_model(y0, z, {"n_rnd": n_rnd})
@@ -556,7 +559,7 @@ class Simulation(object):
             if (args_i["precipitation"] > 0.25) or (np.mod(i, 48) == 0):
 
                 # Standard normal random variables ~ N(0,1):
-                args_i["n_rnd"] = np.random.randn(dim_d)
+                args_i["n_rnd"] = self.rng.standard_normal(dim_d)
             # _end_if_
 
             # This time-window corresponds to '30' minutes time intervals

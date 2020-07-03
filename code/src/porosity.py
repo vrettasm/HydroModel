@@ -116,6 +116,8 @@ class Porosity(object):
             # _end_if_
 
         elif str.upper(p_model) == "NOISY":
+            # Create a random number generator.
+            rng = np.random.default_rng()
 
             # Variance Scale Factor (small positive number).
             _vsf = 5.0e-5
@@ -132,7 +134,7 @@ class Porosity(object):
 
                 # Update the profile in the saprolite zone.
                 q_sat[sap_layer_idx] = logN_rnd(mean_sap, _vsf * np.min(mean_sap),
-                                                np.random.randn(n_sap))
+                                                rng.standard_normal(n_sap))
             # _end_if_
 
             if np.any(web_layer_idx):
@@ -148,7 +150,7 @@ class Porosity(object):
 
                 # Update the profile in the weathered bedrock zone.
                 q_sat[web_layer_idx] = logN_rnd(mean_web, _vsf * np.min(mean_web),
-                                                np.random.randn(n_web))
+                                                rng.standard_normal(n_web))
             # _end_if_
 
         else:
