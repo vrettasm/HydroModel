@@ -7,7 +7,7 @@
 
   "Date": "2020-05-21",
 
-  "IC_Filename": null,
+  "IC_Filename": "../data/initial_conditions/well_no_10/ic_Well_10_WY_08_09.csv",
 
   "Data_Filename": "../data/wells/no_10/Well_10_WY_08_09.csv",
 
