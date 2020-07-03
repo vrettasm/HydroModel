@@ -671,8 +671,6 @@ class Simulation(object):
                 # _end_for_
             # _end_with_
 
-            # Final message.
-            print(" Done!")
         # _end_if_
     # _end_def_
 
