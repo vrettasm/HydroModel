@@ -31,7 +31,7 @@ class RichardsPDE(object):
         """
 
         # Check if we have been given input.
-        if not m_data:
+        if m_data is None:
             raise ValueError(" {0}: No input is given."
                              " The model cannot initialize.".format(self.__class__.__name__))
         # _end_if_
