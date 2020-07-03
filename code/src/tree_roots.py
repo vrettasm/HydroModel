@@ -266,7 +266,7 @@ class TreeRoots(object):
             rho_theta = np.zeros(theta_z.shape)
         # _end_if_
 
-        return np.atleast_1d(rho_theta, water_k)
+        return rho_theta, water_k
     # _end_def_
 
     def __str__(self):

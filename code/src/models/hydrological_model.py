@@ -110,7 +110,7 @@ class HydrologicalModel(object):
         psi_z[~np.isfinite(psi_z)] = -1.0e+5
 
         # Pressure head (suction), Effective Saturation.
-        return np.atleast_1d(psi_z, s_eff)
+        return psi_z, s_eff
     # _end_def_
 
 # _end_class_

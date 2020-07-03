@@ -114,7 +114,6 @@ class RichardsPDE(object):
         # INTERIOR POINTS:
         y_mid, dy_mid = midpoints(self.x_mesh[self.mid_i], y[self.mid_i],
                                   self.x_mesh[self.mid_i + 1], y[self.mid_i + 1])
-
         # PDE evaluation.
         cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
 
@@ -384,7 +383,7 @@ class RichardsPDE(object):
         # _end_if_
 
         # Exit:
-        return np.atleast_1d(C, sink, flux)
+        return C, sink, flux
     # _end_def_
 
     def ic_fun(self, y0, *args):
@@ -401,7 +400,7 @@ class RichardsPDE(object):
         """
 
         # Return the vector.
-        return np.atleast_1d(y0)
+        return y0
     # _end_def_
 
     def bc_fun(self, z_left, y_left, z_right, y_right, *args):
@@ -465,7 +464,7 @@ class RichardsPDE(object):
         q_right = np.ones(q_left.shape)
 
         # Return the boundary values.
-        return np.atleast_1d(p_left, q_left, p_right, q_right)
+        return p_left, q_left, p_right, q_right
     # _end_def_
 
     def solve(self, t_span, y0, *args):
@@ -583,5 +582,5 @@ def midpoints(x_left, fx_left, x_right, fx_right):
     dfx_mid = (fx_right - fx_left)/dx
 
     # Return the derivative and the mid-points.
-    return np.atleast_1d(fx_mid, dfx_mid)
+    return fx_mid, dfx_mid
 # _end_def_

@@ -123,7 +123,7 @@ class vanGenuchten(HydrologicalModel):
         q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
 
         # Tuple with all the related variables.
-        return np.atleast_1d(q, K, C, k_sat, q_inf_max)
+        return q, K, C, k_sat, q_inf_max
     # _end_def_
 
 # _end_class_
