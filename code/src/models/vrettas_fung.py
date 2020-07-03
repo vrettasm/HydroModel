@@ -114,7 +114,7 @@ class VrettasFung(HydrologicalModel):
         # Initialize the Background Hydraulic Conductivity.
         k_bkg = self.k_hc.sat_soil * np.ones(psi.shape)
 
-        # SOIL LAYER
+        # SOIL LAYER:
         if soil_layer_idx:
             # Number of cells in the soil layer.
             n_soil = soil_layer_idx[0].size
