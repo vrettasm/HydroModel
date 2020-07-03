@@ -690,7 +690,7 @@ def loadResults(filename=None):
     """
 
     # Check if we have given input file.
-    if not filename:
+    if filename is None:
         raise RuntimeError(" load_data: No input file is given.")
     # _end_if_
 
