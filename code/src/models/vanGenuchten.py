@@ -63,7 +63,7 @@ class vanGenuchten(HydrologicalModel):
         porous_z = np.atleast_1d(porous_z)
 
         # Vectorized version.
-        if dim_m:
+        if dim_m is not None:
             porous_z = porous_z.repeat(dim_m).reshape(dim_d, dim_m)
         # _end_if_
 
