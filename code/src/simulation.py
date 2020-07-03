@@ -653,7 +653,7 @@ class Simulation(object):
                   " is empty.".format(self.__class__.__name__))
         else:
             # Initial message.
-            print(" Saving the results to: {0}".format(self.name))
+            print(" Saving the results to: {0}.h5".format(self.name))
 
             # Create the output filename. Remove spaces (if any).
             file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
