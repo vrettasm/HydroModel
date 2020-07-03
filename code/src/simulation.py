@@ -371,6 +371,10 @@ class Simulation(object):
                     raise RuntimeError(" {0} : IC vector's dimensions do not match"
                                        " the spatial grid.".format(self.__class__.__name__))
                 # _end_if_
+
+                # Print a message.
+                print(" IC vector was loaded successfully from:"
+                      " {0}.".format(ic_data_file))
             # _end_with_
 
             # Create an initial conditions vector.
