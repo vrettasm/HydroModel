@@ -46,7 +46,7 @@ class vanGenuchten(HydrologicalModel):
         dim_d, dim_m = psi.shape[0], None
 
         # Check if the input is 2D.
-        if len(psi.shape) == 2:
+        if psi.ndim == 2:
             dim_m = psi.shape[1]
         # _end_if_
 

@@ -570,7 +570,7 @@ def midpoints(x_left, fx_left, x_right, fx_right):
     dx = x_right - x_left
 
     # Check for vectorization.
-    if len(fx_mid.shape) == 2:
+    if fx_mid.ndim == 2:
         # Get the number of different vectors.
         dim_m = fx_mid.shape[1]
 

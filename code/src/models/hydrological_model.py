@@ -57,7 +57,7 @@ class HydrologicalModel(object):
         dim_d, dim_m = theta.shape[0], None
 
         # Check if the input is 2D.
-        if len(theta.shape) == 2:
+        if theta.ndim == 2:
             dim_m = theta.shape[1]
         # _end_if_
 
