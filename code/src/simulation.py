@@ -368,7 +368,7 @@ class Simulation(object):
 
                 # Check if the dimensions match.
                 if z_grid.shape != init_cond.shape:
-                    raise RuntimeError(" {0} : Initial conditions vector. The dimensions"
+                    raise RuntimeError(" {0} : Initial conditions vector's dimensions"
                                        " do not match the spatial grid.".format(self.__class__.__name__))
                 # _end_if_
             # _end_with_
