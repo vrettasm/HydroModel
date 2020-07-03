@@ -563,7 +563,7 @@ class Simulation(object):
                       "precipitation": self.mData["precipitation_cm"][i]}
 
             # Update the random field (at least) daily (~24hr):
-            if (args_i["precipitation"] > 0.25) or (np.mod(i, 48) == 0):
+            if (args_i["precipitation"] > 0.5) or (np.mod(i, 48) == 0):
 
                 # Standard normal random variables ~ N(0,1):
                 args_i["n_rnd"] = self.rng.standard_normal(dim_d)
