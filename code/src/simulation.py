@@ -39,25 +39,32 @@ class Simulation(object):
         >> sim_01.saveResults()
     """
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, seed=None):
         """
         Default constructor of the Simulation class.
 
         :param name: (string) is optional but it will be used for constructing
         a meaningful filename to save the results at the end of the simulation.
+
+        :param seed: (int) is used to initialize the random generator. If None,
+        the generator will be initialized at random from the OS.
         """
         # Check if a simulation name has been given.
-        if not name:
-            self.name = "ID_None"
-        else:
+        if name is not None:
             self.name = name
+        else:
+            self.name = "ID_None"
         # _end_if_
 
         # This dictionary will hold all the simulation data.
         self.mData = {}
 
         # Create a random number generator.
-        self.rng = np.random.default_rng()
+        if seed is not None:
+            self.rng = np.random.default_rng(seed)
+        else:
+            self.rng = np.random.default_rng()
+        # _end_if_
 
         # Place holder for the pde model.
         self.pde_model = None
