@@ -350,10 +350,31 @@ class Simulation(object):
         # Create a Richards' equation object.
         self.pde_model = RichardsPDE(self.mData)
 
+        # Get the filename (or None).
+        ic_data_file = params["IC_Filename"]
+
         # Check if there is an initial conditions file.
-        if not params["IC_Filename"]:
+        if ic_data_file is None:
             # Create an initial conditions vector.
             self.mData["initial_cond"] = self.initial_conditions()
+        else:
+            # Open the initial conditions file.
+            with open(Path(ic_data_file), 'r') as input_file:
+                # The file should have four columns.
+                init_cond = pd.read_csv(input_file, names=["IC"])
+
+                # Make sure its numpy.array.
+                init_cond = np.array(init_cond.loc[:, "IC"])
+
+                # Check if the dimensions match.
+                if z_grid.shape != init_cond.shape:
+                    raise RuntimeError(" {0} : Initial conditions vector. The dimensions"
+                                       " do not match the spatial grid.".format(self.__class__.__name__))
+                # _end_if_
+            # _end_with_
+
+            # Create an initial conditions vector.
+            self.mData["initial_cond"] = init_cond
         # _end_if_
 
     # _end_def_
