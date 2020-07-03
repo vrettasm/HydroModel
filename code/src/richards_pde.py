@@ -119,9 +119,9 @@ class RichardsPDE(object):
         cR, sR, fR = self.pde_fun(self.x_mid[self.mid_i], y_mid, dy_mid, *args)
 
         # WARNING: DO NOT EDIT THESE LINES
-        cLi = np.append(cL, cR)
-        fLi = np.append(fL, fR)
-        sLi = np.append(sL, sR)
+        cLi = np.append(cL, cR, axis=0)
+        fLi = np.append(fL, fR, axis=0)
+        sLi = np.append(sL, sR, axis=0)
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
