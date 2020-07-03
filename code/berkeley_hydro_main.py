@@ -98,7 +98,7 @@ def main(params_file=None, data_file=None):
     """
 
     # Check if we got model parameters.
-    if params_file:
+    if params_file is not None:
         try:
             # Make sure params_file is a Path object.
             params_file = Path(params_file)
@@ -120,7 +120,7 @@ def main(params_file=None, data_file=None):
     # _end_if_
 
     # Check if we got simulation water data. Make sure its a Path object.
-    if data_file:
+    if data_file is not None:
         data_file = Path(data_file)
     else:
         data_file = Path(params["Data_Filename"])
