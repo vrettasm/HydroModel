@@ -58,7 +58,7 @@
 
   "Simulation_Flags": {
     "SPINUP": false,
-    "ET": false,
+    "ET": true,
     "LF": true,
     "HLIFT": false,
     "PREDICT": false
