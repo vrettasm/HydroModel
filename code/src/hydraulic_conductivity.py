@@ -62,11 +62,20 @@ class HydraulicConductivity(object):
 
     @property
     def sat_soil(self):
+        """
+        Accessor method.
+        :return: the saturated value of the soil layer.
+        """
         return self.param_sat_soil
     # _end_def_
 
     @sat_soil.setter
     def sat_soil(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the saturation of the soil layer.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
@@ -80,11 +89,20 @@ class HydraulicConductivity(object):
 
     @property
     def sat_saprolite(self):
+        """
+        Accessor method.
+        :return: the saturated value of the saprolite layer.
+        """
         return self.param_sat_saprolite
     # _end_def_
 
     @sat_saprolite.setter
     def sat_saprolite(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the saturation of the saprolite layer.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
@@ -98,11 +116,20 @@ class HydraulicConductivity(object):
 
     @property
     def sat_fresh_bedrock(self):
+        """
+        Accessor method.
+        :return: the saturated value of the fresh bedrock layer.
+        """
         return self.param_sat_fresh_bedrock
     # _end_def_
 
     @sat_fresh_bedrock.setter
     def sat_fresh_bedrock(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the saturation of the fresh bedrock layer.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
@@ -116,11 +143,20 @@ class HydraulicConductivity(object):
 
     @property
     def sigma_noise(self):
+        """
+        Accessor method.
+        :return: the sigma noise amplitude of the noise model.
+        """
         return self.param_sigma_noise
     # _end_def_
 
     @sigma_noise.setter
     def sigma_noise(self, new_value):
+        """
+        Accessor method.
+        :param new_value: of the sigma noise amplitude.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value >= 0.0:
             # Make the change.
@@ -134,11 +170,20 @@ class HydraulicConductivity(object):
 
     @property
     def lambda_exponent(self):
+        """
+        Accessor method.
+        :return: the lambda exponent of the noise model.
+        """
         return self.param_lambda_exponent
     # _end_def_
 
     @lambda_exponent.setter
     def lambda_exponent(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the lambda exponent of the noise model.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value >= 0.0:
             # Make the change.
