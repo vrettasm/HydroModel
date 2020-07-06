@@ -51,11 +51,20 @@ class SoilProperties(object):
 
     @property
     def n(self):
+        """
+        Accessor method.
+        :return: the 'n' parameter of the soil.
+        """
         return self.param_n
     # _end_def_
 
     @n.setter
     def n(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the 'n' parameter of the soil.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value > 1.0:
             # Make the change.
@@ -69,16 +78,29 @@ class SoilProperties(object):
 
     @property
     def m(self):
+        """
+        Accessor method.
+        :return: the 'm' parameter of the soil. It is defined as: 1 - 1/n.
+        """
         return 1.0 - (1.0/self.param_n)
     # _end_def_
 
     @property
     def alpha(self):
+        """
+        Accessor method.
+        :return: the 'a' parameter of the soil.
+        """
         return self.param_a
     # _end_def_
 
     @alpha.setter
     def alpha(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the 'a' parameter of the soil.
+        :return: None.
+        """
         # Accept only positive values.
         if new_value > 0.0:
             # Make the change.
@@ -92,11 +114,20 @@ class SoilProperties(object):
 
     @property
     def psi_sat(self):
+        """
+        Accessor method.
+        :return: the 'psi-sat' parameter of the soil.
+        """
         return self.param_psi_sat
     # _end_def_
 
     @psi_sat.setter
     def psi_sat(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the 'psi-sat' parameter of the soil.
+        :return: None.
+        """
         # Accept only negative values.
         if new_value <= 0.0:
             # Make the change.
@@ -110,11 +141,20 @@ class SoilProperties(object):
 
     @property
     def epsilon(self):
+        """
+        Accessor method.
+        :return: the threshold value for 'eps'.
+        """
         return self.param_epsilon
     # _end_def_
 
     @epsilon.setter
     def epsilon(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the threshold value 'eps'.
+        :return: None.
+        """
         # Accept only negative values.
         if new_value > 0.0:
             # Make the change.
