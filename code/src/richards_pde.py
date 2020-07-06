@@ -16,8 +16,8 @@ class RichardsPDE(object):
     1-D parabolic and elliptic PDEs.
     """
 
-    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp", "zxmp", "nx",
-                 "h_model", "var_arg_out")
+    __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp", "zxmp",
+                 "nx", "h_model", "var_arg_out", "sim_flags")
 
     def __init__(self, m_data=None):
         """
@@ -48,6 +48,9 @@ class RichardsPDE(object):
         # Spatial grid [dim_d x 1].
         self.x_mesh = self.m_data["z_grid"]
 
+        # Get the simulation flags.
+        self.sim_flags = self.m_data["sim_flags"]
+
         # Get the number of discrete points.
         self.nx = self.x_mesh.size
 
@@ -67,7 +70,11 @@ class RichardsPDE(object):
 
         # Interior grid (mid)-points.
         self.xzmp = np.zeros(self.nx)
+
+        # Interior grid (mid)-points.
         self.xzmp[1:] = self.x_mesh[1:] - self.x_mid
+
+        # Interior grid (mid)-points.
         self.zxmp = self.x_mid - self.x_mesh[0:-1]
     # _end_def_
 
@@ -79,7 +86,7 @@ class RichardsPDE(object):
 
         :param y: state vector of the PDE.
 
-        :return: derivative dydt
+        :return: derivative dydt.
         """
 
         # Make sure input is 1D.
@@ -124,8 +131,8 @@ class RichardsPDE(object):
         # WARNING: DO NOT EDIT THESE LINES
 
         # Compute the contribution of C(.):
-        denom = np.atleast_1d(self.zxmp[self.mid_i] * cR + self.xzmp[self.mid_i] * cLi[0:-1])
-
+        denom = np.atleast_1d(self.zxmp[self.mid_i] * cR +
+                              self.xzmp[self.mid_i] * cLi[0:-1])
         # Avoid division by zero.
         denom[denom == 0.0] = 1.0
 
@@ -190,7 +197,7 @@ class RichardsPDE(object):
         theta, K, C, *_ = self.h_model(y, z, *args)
 
         # Compute the flux term.
-        flux = K * (np.minimum(dydz, 1.001) - 1.0)
+        flux = K * (dydz - 1.0)
 
         # Sink term is initialized to zero.
         sink = np.zeros(flux.shape)
@@ -215,7 +222,7 @@ class RichardsPDE(object):
         roots_z = tree_roots(z[r_cells])
 
         # In Normal Mode: SPINUP == FALSE.
-        if not self.m_data["sim_flags"]["SPINUP"]:
+        if not self.sim_flags["SPINUP"]:
 
             # Compute day-light hours. We assume that the daylight is
             # between [06:00:00] (morning) and [17:59:59] (afternoon).
@@ -223,7 +230,7 @@ class RichardsPDE(object):
 
             # Hydraulic Redistribution.
             # This runs ONLY in during the night-time!
-            if self.m_data["sim_flags"]["HLIFT"] and (not daylight):
+            if self.sim_flags["HLIFT"] and (not daylight):
                 # Parameter for hydraulic redistribution:
                 a_star = 1800
 
@@ -247,7 +254,7 @@ class RichardsPDE(object):
 
             # Evapo-transpiration (Tree Roots Water Uptake)
             # This runs ONLY during day-time!
-            if self.m_data["sim_flags"]["ET"] and daylight:
+            if self.sim_flags["ET"] and daylight:
                 # Compute the root efficiency.
                 rho_theta, water_k = tree_roots.efficiency(theta[r_cells], z[r_cells])
 
@@ -291,17 +298,17 @@ class RichardsPDE(object):
                     # Store the transpiration as function of depth.
                     transpire = uptake
                 # _end_if_
-            # _end_transpiration_if_
+            # _end_Transpiration_if_
         # _end_spinup_if_
 
         # Lateral (subsurface) Runoff:
-        if self.m_data["sim_flags"]["LF"]:
+        if self.sim_flags["LF"]:
             # Find saturated cell indexes.
             # Note: Here we use boolean indexing.
             id_sat = (y >= self.m_data["soil"].psi_sat)
 
             # Switch according to the running mode.
-            if self.m_data["sim_flags"]["PREDICT"]:
+            if self.sim_flags["PREDICT"]:
                 # Predictive (running) mode.
                 # Set the sink coefficient accordingly:
                 if args_i["time"].month in [10, 11, 12, 1, 2, 3]:
