@@ -72,11 +72,20 @@ class WaterContent(object):
 
     @property
     def min(self):
+        """
+        Accessor method.
+        :return: the minimum water content.
+        """
         return self.minimum
     # _end_def_
 
     @min.setter
     def min(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the minimum water content.
+        :return: None.
+        """
         # Keep the old minimum value.
         old_value = self.minimum
 
@@ -96,11 +105,20 @@ class WaterContent(object):
 
     @property
     def max(self):
+        """
+        Accessor method.
+        :return: the maximum water content.
+        """
         return self.maximum
     # _end_def_
 
     @max.setter
     def max(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the maximum water content.
+        :return: None.
+        """
         # Keep the old minimum value.
         old_value = self.maximum
 
@@ -129,11 +147,20 @@ class WaterContent(object):
 
     @property
     def res(self):
+        """
+        Accessor method.
+        :return: the residual water content.
+        """
         return self.residual
     # _end_def_
 
     @res.setter
     def res(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the residual water content.
+        :return: None.
+        """
         # Keep the old minimum value.
         old_value = self.residual
 
@@ -153,21 +180,39 @@ class WaterContent(object):
 
     @property
     def wlt(self):
+        """
+        Accessor method.
+        :return: the wilting point.
+        """
         return self.wilting
     # _end_def_
 
     @wlt.setter
     def wlt(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the wilting point.
+        :return: None.
+        """
         self.wilting = new_value
     # _end_def_
 
     @property
     def flc(self):
+        """
+        Accessor method.
+        :return: the field capacity.
+        """
         return self.field_cap
     # _end_def_
 
     @flc.setter
     def flc(self, new_value):
+        """
+        Accessor method.
+        :param new_value: for the field capacity.
+        :return: None.
+        """
         self.field_cap = new_value
     # _end_def_
 
