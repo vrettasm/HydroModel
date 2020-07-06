@@ -7,7 +7,7 @@
 
   "Date": "2020-05-21",
 
-  "IC_Filename": "../data/initial_conditions/well_no_10/ic_Well_10_WY_08_09.csv",
+  "IC_Filename": null,
 
   "Data_Filename": "../data/wells/no_10/Well_10_WY_08_09.csv",
 
@@ -51,8 +51,8 @@
 
   "Soil_Properties": {
     "n": 2.0,
-    "a0": 0.009,
-    "psi_sat": -0.0047,
+    "a0": 0.0335,
+    "psi_sat": -0.000342,
     "epsilon": 1.0e-7
   },
 
