@@ -108,11 +108,14 @@ class VrettasFung(HydrologicalModel):
         sapr_layer_idx = np.where((z >= l1) & (z < l2))
         wbed_layer_idx = np.where((z >= l2) & (z <= l3))
 
+        # Local copy of hydraulic conductivity object.
+        k_hc = self.k_hc
+
         # Initialize the Unsaturated Hydraulic Conductivity.
-        K = self.k_hc.sat_soil * (s_eff ** self.k_hc.lambda_exponent)
+        K = k_hc.sat_soil * (s_eff ** k_hc.lambda_exponent)
 
         # Initialize the Background Hydraulic Conductivity.
-        k_bkg = self.k_hc.sat_soil * np.ones(psi.shape)
+        k_bkg = k_hc.sat_soil * np.ones(psi.shape)
 
         # SOIL LAYER:
         if soil_layer_idx:
@@ -120,7 +123,7 @@ class VrettasFung(HydrologicalModel):
             n_soil = soil_layer_idx[0].size
 
             # Set the mean values of $Kbkg_soil$.
-            mean_soil = self.k_hc.sat_soil * np.ones(n_soil)
+            mean_soil = k_hc.sat_soil * np.ones(n_soil)
 
             # Soil noise variables: !!! REDUCED !!!
             rnd_soil = 0.10 * n_rnd[soil_layer_idx]
@@ -129,7 +132,7 @@ class VrettasFung(HydrologicalModel):
             s_eff_soil = s_eff[soil_layer_idx]
 
             # Noise variance.
-            sigma_soil = self.k_hc.sigma_noise * (1.0 - s_eff_soil)
+            sigma_soil = k_hc.sigma_noise * (1.0 - s_eff_soil)
         else:
             # They need to be set to empty lists before the np.append().
             mean_soil, rnd_soil, sigma_soil, s_eff_soil = [], [], [], []
@@ -141,8 +144,8 @@ class VrettasFung(HydrologicalModel):
             z_test = np.arange(l1, l2+1)
 
             # Make a interpolation function.
-            fun_sapr = interp1d(z_test, np.linspace(self.k_hc.sat_soil,
-                                                    self.k_hc.sat_saprolite,
+            fun_sapr = interp1d(z_test, np.linspace(k_hc.sat_soil,
+                                                    k_hc.sat_saprolite,
                                                     z_test.size))
             # Compute the mean values of $Kbkg_sap$.
             mean_sapr = fun_sapr(z[sapr_layer_idx])
@@ -154,7 +157,7 @@ class VrettasFung(HydrologicalModel):
             s_eff_sapr = s_eff[sapr_layer_idx]
 
             # Noise variance.
-            sigma_sapr = self.k_hc.sigma_noise * (1.0 - s_eff_sapr)
+            sigma_sapr = k_hc.sigma_noise * (1.0 - s_eff_sapr)
         else:
             # They need to be set to empty lists before the np.append().
             mean_sapr, rnd_sapr, sigma_sapr, s_eff_sapr = [], [], [], []
@@ -166,8 +169,8 @@ class VrettasFung(HydrologicalModel):
             z_test = np.arange(l2, l3+1)
 
             # Compute the two parameters of the exponential function:
-            p0 = self.k_hc.sat_saprolite
-            p1 = np.log(p0 / self.k_hc.sat_fresh_bedrock) / l3
+            p0 = k_hc.sat_saprolite
+            p1 = np.log(p0 / k_hc.sat_fresh_bedrock) / l3
 
             # Construct the interpolation function.
             fun_wbed = interp1d(z_test, p0 * np.exp(-np.linspace(0, l3, z_test.size) * p1))
@@ -182,7 +185,7 @@ class VrettasFung(HydrologicalModel):
             s_eff_wbed = s_eff[wbed_layer_idx]
 
             # Noise variance.
-            sigma_wbed = self.k_hc.sigma_noise * (1.0 - s_eff_wbed)
+            sigma_wbed = k_hc.sigma_noise * (1.0 - s_eff_wbed)
         else:
             # They need to be set to empty lists before the np.append().
             mean_wbed, rnd_wbed, sigma_wbed, s_eff_wbed = [], [], [], []
@@ -203,7 +206,7 @@ class VrettasFung(HydrologicalModel):
             k_bkg[idx, :] = logN_rnd(mean_vec.repeat(dim_m).reshape(dim_d, dim_m),
                                      sigma_mat, rnd_vec.repeat(dim_m).reshape(dim_d, dim_m))
             # Hydraulic conductivity.
-            K[idx, :] = (s_eff_mat ** self.k_hc.lambda_exponent) * k_bkg[idx, :]
+            K[idx, :] = (s_eff_mat ** k_hc.lambda_exponent) * k_bkg[idx, :]
         else:
             # Prepare the vectors.
             sigma_vec = np.append(sigma_soil, np.append(sigma_sapr, sigma_wbed))
@@ -213,7 +216,7 @@ class VrettasFung(HydrologicalModel):
             k_bkg[idx] = logN_rnd(mean_vec, sigma_vec, rnd_vec)
 
             # Hydraulic conductivity.
-            K[idx] = (s_eff_vec ** self.k_hc.lambda_exponent) * k_bkg[idx]
+            K[idx] = (s_eff_vec ** k_hc.lambda_exponent) * k_bkg[idx]
         # _end_if_
 
         # SAFEGUARD:
@@ -235,13 +238,10 @@ class VrettasFung(HydrologicalModel):
         # Replace with a small positive number to improve numerical stability.
         C[bad_condition] = self.epsilon
 
-        # Space discretization [L: cm].
-        dz = self.dz
-
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_bkg[0])
+        q_inf_max = np.minimum(2.0 * (porous_z[0] - q[0]) * self.dz, k_bkg[0])
 
         # Tuple with all the related variables.
         return q, K, C, k_bkg, q_inf_max
