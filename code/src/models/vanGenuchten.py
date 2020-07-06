@@ -114,13 +114,10 @@ class vanGenuchten(HydrologicalModel):
         # Replace with a small positive number to improve numerical stability.
         C[bad_condition] = self.epsilon
 
-        # Space discretization [L: cm].
-        dz = self.dz
-
         # After: (Collins and Bras, 2007).
         # Here we assume that the equation is solved for 30min
         # time intervals, hence: dt = 0.5 and dz/dz --> 2.0*dz
-        q_inf_max = np.minimum(2.0*(porous_z[0] - q[0])*dz, k_sat[0])
+        q_inf_max = np.minimum(2.0 * (porous_z[0] - q[0]) * self.dz, k_sat[0])
 
         # Tuple with all the related variables.
         return q, K, C, k_sat, q_inf_max
