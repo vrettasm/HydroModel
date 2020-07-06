@@ -121,7 +121,7 @@ class Simulation(object):
         # _end_if_
 
         # Compute the number of continuously saturated cell (from the bottom).
-        self.mData["sat_cells"] = np.ceil(well["sat_depth"]/dz)
+        self.mData["sat_cells"] = np.ceil(well["sat_depth"] / dz)
 
         # Spatial domain parameters for the underground layers [L:cm]:
         layers = (well["soil"], well["saprolite"], well["weathered"], well["max_depth"])
@@ -212,7 +212,7 @@ class Simulation(object):
                                              dz, params["Trees"]["Root_Pdf_Profile"], porous)
 
         # Add the selected hydrological model.
-        if params["Hydrological_Model"]["Name"] == "vrettas_fung":
+        if str.upper(params["Hydrological_Model"]["Name"]) == "VRETTAS_FUNG":
             # Create the hydro-object.
             self.mData["hydro_model"] = VrettasFung(soil, porous, K, theta.res, dz)
 
@@ -282,8 +282,8 @@ class Simulation(object):
         et_pct = np.minimum(np.maximum(params["Environmental"]["Wet_Season_pct"], 0.0), 1.0)
 
         # Get the amount of ET per season [L: cm].
-        wet_et_cm = et_pct*total_atm_demand_cm
-        dry_et_cm = (1.0 - et_pct)*total_atm_demand_cm
+        wet_et_cm = et_pct * total_atm_demand_cm
+        dry_et_cm = (1.0 - et_pct) * total_atm_demand_cm
 
         # Dry counter.
         n_dry = 0
@@ -373,8 +373,7 @@ class Simulation(object):
                 # _end_if_
 
                 # Print a message.
-                print(" IC vector was loaded successfully from:"
-                      " {0}.".format(ic_data_file))
+                print(" IC vector was loaded successfully from: {0}.".format(ic_data_file))
             # _end_with_
 
             # Create an initial conditions vector.
@@ -589,7 +588,6 @@ class Simulation(object):
 
             # Update the random field (at least) daily (~24hr):
             if (args_i["precipitation"] > 0.5) or (np.mod(i, 48) == 0):
-
                 # Standard normal random variables ~ N(0,1):
                 args_i["n_rnd"] = self.rng.standard_normal(dim_d)
             # _end_if_
