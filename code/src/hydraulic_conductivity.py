@@ -5,12 +5,13 @@ class HydraulicConductivity(object):
     This class represents the hydraulic conductivity of the hydrologic model.
     """
 
-    __slots__ = ("param_sat_soil", "param_sat_saprolite", "param_sat_fresh_bedrock",
-                 "param_sigma_noise", "param_lambda_exponent")
+    __slots__ = ("param_sat_soil", "param_sat_saprolite", "param_sigma_noise",
+                 "param_sat_fresh_bedrock", "param_lambda_exponent")
 
     # Default constructor.
-    def __init__(self, sat_soil: float = 8.5, sat_saprolite: float = 3.2, sat_fresh_bedrock: float = 0.1,
-                 sigma_noise: float = 2.0, lambda_exponent: float = 1.0):
+    def __init__(self, sat_soil: float = 8.5, sat_saprolite: float = 3.2,
+                 sat_fresh_bedrock: float = 0.1, sigma_noise: float = 2.0,
+                 lambda_exponent: float = 1.0):
         """
         Constructs an object that will hold all the hydraulic conductivity variables.
 
