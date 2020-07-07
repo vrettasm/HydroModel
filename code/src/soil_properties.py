@@ -53,6 +53,7 @@ class SoilProperties(object):
     def n(self):
         """
         Accessor method.
+
         :return: the 'n' parameter of the soil.
         """
         return self.param_n
@@ -62,7 +63,9 @@ class SoilProperties(object):
     def n(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the 'n' parameter of the soil.
+
         :return: None.
         """
         # Accept only positive values.
@@ -80,6 +83,7 @@ class SoilProperties(object):
     def m(self):
         """
         Accessor method.
+
         :return: the 'm' parameter of the soil. It is defined as: 1 - 1/n.
         """
         return 1.0 - (1.0/self.param_n)
@@ -89,6 +93,7 @@ class SoilProperties(object):
     def alpha(self):
         """
         Accessor method.
+
         :return: the 'a' parameter of the soil.
         """
         return self.param_a
@@ -98,7 +103,9 @@ class SoilProperties(object):
     def alpha(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the 'a' parameter of the soil.
+
         :return: None.
         """
         # Accept only positive values.
@@ -116,6 +123,7 @@ class SoilProperties(object):
     def psi_sat(self):
         """
         Accessor method.
+
         :return: the 'psi-sat' parameter of the soil.
         """
         return self.param_psi_sat
@@ -125,7 +133,9 @@ class SoilProperties(object):
     def psi_sat(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the 'psi-sat' parameter of the soil.
+
         :return: None.
         """
         # Accept only negative values.
@@ -143,6 +153,7 @@ class SoilProperties(object):
     def epsilon(self):
         """
         Accessor method.
+
         :return: the threshold value for 'eps'.
         """
         return self.param_epsilon
@@ -152,7 +163,9 @@ class SoilProperties(object):
     def epsilon(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the threshold value 'eps'.
+
         :return: None.
         """
         # Accept only negative values.

@@ -14,9 +14,13 @@ class HydrologicalModel(object):
         Default constructor.
 
         :param soil: soil properties object.
+
         :param porous: porosity object.
+
         :param k_hc: hydraulic conductivity object.
+
         :param theta_res: water content (residual value).
+
         :param dz: spatial discretization [L: cm].
         """
 

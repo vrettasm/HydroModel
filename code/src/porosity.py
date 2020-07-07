@@ -187,6 +187,7 @@ class Porosity(object):
         the full profiles.
 
         :param z_new: the depth(s) at which we want the new profiles.
+
         :return: the porosity profile at depth(s) 'z'.
         """
 
@@ -205,6 +206,7 @@ class Porosity(object):
     def layers(self):
         """
         Accessor of the underground layers.
+
         :return: Tuple with the (L0, L1, ...)
         """
         return self.p_layers

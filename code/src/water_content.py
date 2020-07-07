@@ -65,6 +65,7 @@ class WaterContent(object):
     def _checkValues(self):
         """
         Check whether the water content values satisfy specific conditions.
+
         :return: True if the condition is satisfied.
         """
         return 0.0 <= self.residual < self.minimum < self.maximum <= 1.0
@@ -74,6 +75,7 @@ class WaterContent(object):
     def min(self):
         """
         Accessor method.
+
         :return: the minimum water content.
         """
         return self.minimum
@@ -83,7 +85,9 @@ class WaterContent(object):
     def min(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the minimum water content.
+
         :return: None.
         """
         # Keep the old minimum value.
@@ -107,6 +111,7 @@ class WaterContent(object):
     def max(self):
         """
         Accessor method.
+
         :return: the maximum water content.
         """
         return self.maximum
@@ -116,7 +121,9 @@ class WaterContent(object):
     def max(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the maximum water content.
+
         :return: None.
         """
         # Keep the old minimum value.
@@ -140,6 +147,7 @@ class WaterContent(object):
     def mid(self):
         """
         Auxiliary water content function.
+
         :return: the mid-point value between the min/max values.
         """
         return 0.5*(self.maximum + self.minimum)
@@ -149,6 +157,7 @@ class WaterContent(object):
     def res(self):
         """
         Accessor method.
+
         :return: the residual water content.
         """
         return self.residual
@@ -158,7 +167,9 @@ class WaterContent(object):
     def res(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the residual water content.
+
         :return: None.
         """
         # Keep the old minimum value.
@@ -182,6 +193,7 @@ class WaterContent(object):
     def wlt(self):
         """
         Accessor method.
+
         :return: the wilting point.
         """
         return self.wilting
@@ -191,7 +203,9 @@ class WaterContent(object):
     def wlt(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the wilting point.
+
         :return: None.
         """
         self.wilting = new_value
@@ -201,6 +215,7 @@ class WaterContent(object):
     def flc(self):
         """
         Accessor method.
+
         :return: the field capacity.
         """
         return self.field_cap
@@ -210,7 +225,9 @@ class WaterContent(object):
     def flc(self, new_value):
         """
         Accessor method.
+
         :param new_value: for the field capacity.
+
         :return: None.
         """
         self.field_cap = new_value
