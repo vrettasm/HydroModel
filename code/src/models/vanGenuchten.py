@@ -9,11 +9,8 @@ class vanGenuchten(HydrologicalModel):
     the unsaturated hydraulic conductivity along with other parameters related to the
     unsaturated flow of water in the vadose zone, using Richards' PDE.
 
-    -- REFERENCE --
     M. Th. van Genuchten (1980), A closed-form equation for predicting the hydraulic conductivity
     of unsaturated soils. Soil Science Society of America Journal 44, pp: 892-898.
-    -- REFERENCE --
-
     """
 
     def __init__(self, soil, porous, k_sat, theta_res, dz):
