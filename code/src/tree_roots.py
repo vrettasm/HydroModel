@@ -10,17 +10,18 @@ class TreeRoots(object):
     To have more consistent results, the root depth in here is mapped to a
     predefined range [1 to 100].
 
-    [1] Chun-Ta Lai and Gabriel Katul (2000): The dynamic role of root-water
+    1) Chun-Ta Lai and Gabriel Katul (2000): The dynamic role of root-water
     uptake in coupling potential to actual transpiration. Advances in Water
     Resources, Vol. 23, pages: 427-439.
 
-    [2] D. B. G. Collins and R. L. Bras (2007): Plant rooting strategies in
+    2) D. B. G. Collins and R. L. Bras (2007): Plant rooting strategies in
     water-limited ecosystems. Water Resources Research, Vol. 43, W06407,
     doi:10.1029/2006WR005541, pages: 1-10.
 
     """
 
-    __slots__ = ("profile", "r_model", "max_depth_cm", "f_interp", "dz", "porous")
+    __slots__ = ("profile", "r_model", "max_depth_cm", "f_interp", "dz",
+                 "porous")
 
     def __init__(self, ln, dz, r_model, porous):
         """
@@ -184,7 +185,8 @@ class TreeRoots(object):
         # Make sure the dimensions match.
         if dim_d != z_roots.shape[0]:
             raise RuntimeError(" {0}: Input dimensions do not match:"
-                               " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z_roots.shape[0]))
+                               " {1} not equal to {2}.".format(self.__class__.__name__,
+                                                               dim_d, z_roots.shape[0]))
         # _end_if_
 
         # Compute porosity, field capacity and wilting points at 'z'.

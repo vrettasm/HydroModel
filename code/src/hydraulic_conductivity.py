@@ -17,11 +17,13 @@ class HydraulicConductivity(object):
         Note: These values are defined at the top of the layer and can change by several
         orders of magnitude between the different soil layers.
 
-        :param sat_soil: (float) saturation at the soil layer ([L/T: cm/0.5hrs]).
+        Note: L is cm, T is 0.5hrs.
 
-        :param sat_saprolite: (float) saturation at the saprolite layer ([L/T: cm/0.5hrs]).
+        :param sat_soil: (float) saturation at the soil layer [L/T].
 
-        :param sat_fresh_bedrock: (float) saturation at the fresh bedrock layer ([L/T: cm/0.5hrs]).
+        :param sat_saprolite: (float) saturation at the saprolite layer [L/T].
+
+        :param sat_fresh_bedrock: (float) saturation at the fresh bedrock layer [L/T].
 
         :param sigma_noise: (float) noise amplitude (dimensionless [-]).
 
@@ -86,7 +88,8 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: The saturated value of the Soil layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         new_value))
         # _end_if_
     # _end_def_
 
@@ -116,7 +119,8 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: The saturated value of the Saprolite layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         new_value))
         # _end_if_
     # _end_def_
 
@@ -146,7 +150,8 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: The saturated value of the Fresh Bedrock layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__, new_value))
+                             " {1}, should be strictly positive.".format(self.__class__.__name__,
+                                                                         new_value))
         # _end_if_
     # _end_def_
 
@@ -176,7 +181,8 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: The sigma amplitude value of the noise model:"
-                             " {1}, should be non-negative.".format(self.__class__.__name__, new_value))
+                             " {1}, should be non-negative.".format(self.__class__.__name__,
+                                                                    new_value))
         # _end_if_
     # _end_def_
 
@@ -206,22 +212,24 @@ class HydraulicConductivity(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: The lambda exponent value of the noise model:"
-                             " {1}, should be non-negative.".format(self.__class__.__name__, new_value))
+                             " {1}, should be non-negative.".format(self.__class__.__name__,
+                                                                    new_value))
         # _end_if_
     # _end_def_
 
     # Auxiliary.
     def __str__(self):
         """
-        Override to print a readable string presentation of the HydraulicConductivity object.
-        This will include its id(), along with its fields values.
+        Override to print a readable string presentation of the HydraulicConductivity
+        object. This will include its id(), along with its fields values.
 
         :return: a string representation of a HydraulicConductivity object.
         """
         return " HydraulicConductivity Id({0}):"\
                " Sat-Soil={1}, Sat-Saprolite={2}, Sat-Fresh-Bedrock={3},"\
                " Sigma={4}, Lambda={5}".format(id(self), self.sat_soil, self.sat_saprolite,
-                                               self.sat_fresh_bedrock, self.sigma_noise, self.lambda_exponent)
+                                               self.sat_fresh_bedrock, self.sigma_noise,
+                                               self.lambda_exponent)
     # _end_def_
 
 # _end_class_

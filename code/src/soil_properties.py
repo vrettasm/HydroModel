@@ -11,13 +11,13 @@ class SoilProperties(object):
     def __init__(self, n: float = 2.0, alpha: float = 0.009, psi_sat: float = -100.0,
                  epsilon: float = 1.0e-7):
         """
-        Soil properties default constructor.
+        Soil properties default constructor. L is in cm.
 
         :param n: (float) is a measure of the pore-size distribution [-]
 
-        :param alpha: (float) is related to the inverse of the air entry suction [1/L : 1/cm]
+        :param alpha: (float) is related to the inverse of the air entry suction [1/L]
 
-        :param psi_sat: (float) suction at saturation [L: cm]
+        :param psi_sat: (float) suction at saturation [L]
 
         :param epsilon: (float) tiny positive threshold value [-]
 
@@ -115,7 +115,8 @@ class SoilProperties(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: Soil property 'alpha': {1},"
-                             " should be strictly positive.".format(self.__class__.__name__, new_value))
+                             " should be strictly positive.".format(self.__class__.__name__,
+                                                                    new_value))
         # _end_if_
     # _end_def_
 
@@ -145,7 +146,8 @@ class SoilProperties(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: Soil property 'psi_sat': {1},"
-                             " should be <= 0.".format(self.__class__.__name__, new_value))
+                             " should be <= 0.".format(self.__class__.__name__,
+                                                       new_value))
         # _end_if_
     # _end_def_
 
@@ -175,15 +177,16 @@ class SoilProperties(object):
         else:
             # Raise an error with a message.
             raise ValueError(" {0}: Soil property 'epsilon': {1},"
-                             " should be (tiny) positive.".format(self.__class__.__name__, new_value))
+                             " should be (tiny) positive.".format(self.__class__.__name__,
+                                                                  new_value))
         # _end_if_
     # _end_def_
 
     # Auxiliary.
     def __str__(self):
         """
-        Override to print a readable string presentation of the SoilProperties object.
-        This will include its id(), along with its fields values.
+        Override to print a readable string presentation of the SoilProperties
+        object. This will include its id(), along with its fields values.
 
         :return: a string representation of a SoilProperties object.
         """

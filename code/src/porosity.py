@@ -16,13 +16,13 @@ class Porosity(object):
     can vary.
     """
 
-    __slots__ = ("profile", "field_cap", "wilting_point", "f_interp",
-                 "p_model", "p_layers")
+    __slots__ = ("profile", "field_cap", "wilting_point", "f_interp", "p_model",
+                 "p_layers")
 
     def __init__(self, z_grid, layers, theta, soil, p_model):
         """
-        Constructs an object that will hold the porosity, field capacity and wilting point
-        profiles, for the z-domain (increasing downwards).
+        Constructs an object that will hold the porosity, field capacity and wilting
+        point profiles, for the z-domain (increasing downwards).
 
         :param z_grid: depth values at which we want to generate the porosity values.
 
@@ -154,7 +154,8 @@ class Porosity(object):
             # _end_if_
 
         else:
-            raise ValueError(" {0}: Wrong porosity profile type: {1}".format(self.__class__.__name__, p_model))
+            raise ValueError(" {0}: Wrong porosity profile type: {1}".format(self.__class__.__name__,
+                                                                             p_model))
         # _end_if_
 
         # Safeguard: make sure this profile is [MIN <= q_sat <= MAX]

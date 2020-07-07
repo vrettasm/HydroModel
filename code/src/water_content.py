@@ -103,7 +103,8 @@ class WaterContent(object):
 
             # Raise an error with a message.
             raise ValueError(" {0}: The new minimum: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__, new_value))
+                             " the rest of the values.".format(self.__class__.__name__,
+                                                               new_value))
         # _end_if_
     # _end_def_
 

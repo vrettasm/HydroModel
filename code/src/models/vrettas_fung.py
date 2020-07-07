@@ -9,13 +9,14 @@ class VrettasFung(HydrologicalModel):
     """
     This class represents a hydrologic model based on the Vrettas-Fung papers.
 
-    Vrettas, M. D., and I. Y. Fung (2015), "Toward a new parameterization of hydraulic conductivity
-    in climate models: Simulation of rapid groundwater fluctuations in Northern California", Journal
-    of Advances in Modeling Earth Systems, 07, doi:10.1002/2015MS000516.
+    Vrettas, M. D., and I. Y. Fung (2015), "Toward a new parameterization of hydraulic
+    conductivity in climate models: Simulation of rapid groundwater fluctuations in
+    Northern California", Journal of Advances in Modeling Earth Systems, 07,
+    doi:10.1002/2015MS000516.
 
-    Vrettas, M. D., and I. Y. Fung (2017), "Sensitivity of transpiration to subsurface properties:
-    Exploration with a 1-D model", Journal of Advances in Modelling Earth Systems, 9,
-    doi:10.1002/2016MS000901.
+    Vrettas, M. D., and I. Y. Fung (2017), "Sensitivity of transpiration to subsurface
+    properties: Exploration with a 1-D model", Journal of Advances in Modelling Earth
+    Systems, 9, doi:10.1002/2016MS000901.
     """
 
     def __init__(self, soil, porous, k_hc, theta_res, dz):
@@ -25,8 +26,9 @@ class VrettasFung(HydrologicalModel):
 
     def __call__(self, psi, z, *args):
         """
-        A direct call to an object of this class will return the water content, along other
-        related quantities, at a specific depth 'z', given the input pressure head (suction).
+        A direct call to an object of this class will return the water content,
+        along other related quantities, at a specific depth 'z', given the input
+        pressure head (suction).
 
         :param psi: pressure head (suction) [dim_d x dim_m].
 
@@ -55,7 +57,8 @@ class VrettasFung(HydrologicalModel):
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.shape[0]:
             raise ValueError(" {0}: Input size dimensions do not match:"
-                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
+                             " {1} not equal to {2}.".format(self.__class__.__name__,
+                                                             dim_d, z.shape[0]))
         # _end_if_
 
         # Get the porosity field at 'z'.

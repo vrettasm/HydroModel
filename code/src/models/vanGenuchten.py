@@ -5,12 +5,13 @@ from .hydrological_model import HydrologicalModel
 
 class vanGenuchten(HydrologicalModel):
     """
-    This class uses the 'van Genuchten' - Mualem model to create an object that computes
-    the unsaturated hydraulic conductivity along with other parameters related to the
-    unsaturated flow of water in the vadose zone, using Richards' PDE.
+    This class uses the 'van Genuchten' - Mualem model to create an object that
+    computes the unsaturated hydraulic conductivity along with other parameters
+    related to the unsaturated flow of water in the vadose zone, using Richards' PDE.
 
-    M. Th. van Genuchten (1980), A closed-form equation for predicting the hydraulic conductivity
-    of unsaturated soils. Soil Science Society of America Journal 44, pp: 892-898.
+    M. Th. van Genuchten (1980), A closed-form equation for predicting the hydraulic
+    conductivity of unsaturated soils. Soil Science Society of America Journal 44,
+    pp: 892-898.
     """
 
     def __init__(self, soil, porous, k_sat, theta_res, dz):
@@ -20,8 +21,9 @@ class vanGenuchten(HydrologicalModel):
 
     def __call__(self, psi, z, *args):
         """
-        A direct call to an object of this class will return the water content, along other
-        related quantities, at a specific depth 'z', given the input pressure head (suction).
+        A direct call to an object of this class will return the water content,
+        along other related quantities, at a specific depth 'z', given the input
+        pressure head (suction).
 
         :param psi: pressure head (suction) [dim_d x dim_m].
 
@@ -50,7 +52,8 @@ class vanGenuchten(HydrologicalModel):
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.shape[0]:
             raise ValueError(" {0}: Input size dimensions do not match:"
-                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
+                             " {1} not equal to {2}.".format(self.__class__.__name__,
+                                                             dim_d, z.shape[0]))
         # _end_if_
 
         # Get the porosity field at 'z'.

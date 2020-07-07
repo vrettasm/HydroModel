@@ -68,7 +68,8 @@ class HydrologicalModel(object):
         # Check the input dimensions (of the vertical domain).
         if dim_d != z.shape[0]:
             raise ValueError(" {0}: Input size dimensions do not match:"
-                             " {1} not equal to {2}.".format(self.__class__.__name__, dim_d, z.shape[0]))
+                             " {1} not equal to {2}.".format(self.__class__.__name__,
+                                                             dim_d, z.shape[0]))
         # _end_if_
 
         # Get the porosity field at 'z'.

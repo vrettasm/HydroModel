@@ -39,6 +39,8 @@ class Simulation(object):
         >> sim_01.saveResults()
     """
 
+    __slots__ = ("name", "mData", "rng", "pde_model", "output")
+
     def __init__(self, name=None, seed=None):
         """
         Default constructor of the Simulation class.
