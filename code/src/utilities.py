@@ -6,10 +6,13 @@ def logN_rnd(mx, vx, en):
     and 'sigma': X ~ LogN(mu, sigma), then log(X) follows the normal distribution with
     mean 'mu' and standard deviation 'sigma': log(X) ~ N(mu, sigma).
 
-    Example:
+    Example (from python console):
+
     >> x = logN_rnd(5.0, 1.0, np.random.randn(10000))
+
     >> x_mean = np.mean(x)
-    >> ... 4.992025079986667 (almost 5.0)
+
+    >> ... 4.992025079986667 (which is almost 5.0)
 
     :param mx: desired mean (of the Normal distribution).
 
