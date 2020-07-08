@@ -1,6 +1,11 @@
+import os
+import sys
 import unittest
 
-from code.src.soil_properties import SoilProperties
+# Make sure we can import the /src.
+sys.path.append(os.path.abspath("../../code"))
+
+from src.soil_properties import SoilProperties
 
 
 class TestSoilProperties(unittest.TestCase):

@@ -1,10 +1,14 @@
+import os
+import sys
 import unittest
-from math import isclose
-
 import numpy as np
+from math import isclose
 from numpy.random import default_rng
 
-from code.src.utilities import logN_rnd, find_wtd
+# Make sure we can import the /src.
+sys.path.append(os.path.abspath("../../code"))
+
+from src.utilities import logN_rnd, find_wtd
 
 
 class TestUtilities(unittest.TestCase):

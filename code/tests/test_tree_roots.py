@@ -1,12 +1,16 @@
+import os
+import sys
 import unittest
+import numpy as np
 from math import isclose
 
-import numpy as np
+# Make sure we can import the /src.
+sys.path.append(os.path.abspath("../../code"))
 
-from code.src.porosity import Porosity
-from code.src.soil_properties import SoilProperties
-from code.src.tree_roots import TreeRoots
-from code.src.water_content import WaterContent
+from src.porosity import Porosity
+from src.tree_roots import TreeRoots
+from src.water_content import WaterContent
+from src.soil_properties import SoilProperties
 
 
 class TestTreeRoots(unittest.TestCase):

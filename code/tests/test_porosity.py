@@ -1,10 +1,14 @@
+import os
+import sys
 import unittest
-
 import numpy as np
 
-from code.src.porosity import Porosity
-from code.src.soil_properties import SoilProperties
-from code.src.water_content import WaterContent
+# Make sure we can import the /src.
+sys.path.append(os.path.abspath("../../code"))
+
+from src.porosity import Porosity
+from src.water_content import WaterContent
+from src.soil_properties import SoilProperties
 
 
 class TestPorosity(unittest.TestCase):

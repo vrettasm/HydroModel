@@ -1,6 +1,11 @@
+import os
+import sys
 import unittest
 
-from code.src.hydraulic_conductivity import HydraulicConductivity
+# Make sure we can import the /src.
+sys.path.append(os.path.abspath("../../code"))
+
+from src.hydraulic_conductivity import HydraulicConductivity
 
 
 class TestHydraulicConductivity(unittest.TestCase):
