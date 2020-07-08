@@ -1,0 +1,938 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Code &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Hydrologic Models" href="src.models.html" />
+    <link rel="prev" title="Main Program" href="main.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="main.html" title="Main Program"
+             accesskey="P">previous</a> |
+          <a href="src.models.html" title="Hydrologic Models"
+             accesskey="N">next</a> |
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="source-code">
+<h1>Source Code<a class="headerlink" href="#source-code" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="src.models.html">Hydrologic Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src.models.html#module-src.models.hydrological_model">src.models.hydrological_model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.models.html#module-src.models.vanGenuchten">src.models.vanGenuchten module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src.models.html#module-src.models.vrettas_fung">src.models.vrettas_fung module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="module-src.hydraulic_conductivity">
+<span id="src-hydraulic-conductivity-module"></span><h2>src.hydraulic_conductivity module<a class="headerlink" href="#module-src.hydraulic_conductivity" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity">
+<em class="property">class </em><code class="sig-prename descclassname">src.hydraulic_conductivity.</code><code class="sig-name descname">HydraulicConductivity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">sat_soil</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">8.5</span></em>, <em class="sig-param"><span class="n">sat_saprolite</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">3.2</span></em>, <em class="sig-param"><span class="n">sat_fresh_bedrock</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.1</span></em>, <em class="sig-param"><span class="n">sigma_noise</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.0</span></em>, <em class="sig-param"><span class="n">lambda_exponent</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/hydraulic_conductivity.html#HydraulicConductivity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class represents the hydraulic conductivity of the hydrologic model.</p>
+<dl class="py method">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.lambda_exponent">
+<em class="property">property </em><code class="sig-name descname">lambda_exponent</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.lambda_exponent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the lambda exponent of the noise model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.param_lambda_exponent">
+<code class="sig-name descname">param_lambda_exponent</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.param_lambda_exponent" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.param_sat_fresh_bedrock">
+<code class="sig-name descname">param_sat_fresh_bedrock</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.param_sat_fresh_bedrock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.param_sat_saprolite">
+<code class="sig-name descname">param_sat_saprolite</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.param_sat_saprolite" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.param_sat_soil">
+<code class="sig-name descname">param_sat_soil</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.param_sat_soil" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.param_sigma_noise">
+<code class="sig-name descname">param_sigma_noise</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.param_sigma_noise" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.sat_fresh_bedrock">
+<em class="property">property </em><code class="sig-name descname">sat_fresh_bedrock</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.sat_fresh_bedrock" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the saturated value of the fresh bedrock layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.sat_saprolite">
+<em class="property">property </em><code class="sig-name descname">sat_saprolite</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.sat_saprolite" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the saturated value of the saprolite layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.sat_soil">
+<em class="property">property </em><code class="sig-name descname">sat_soil</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.sat_soil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the saturated value of the soil layer.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.hydraulic_conductivity.HydraulicConductivity.sigma_noise">
+<em class="property">property </em><code class="sig-name descname">sigma_noise</code><a class="headerlink" href="#src.hydraulic_conductivity.HydraulicConductivity.sigma_noise" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the sigma noise amplitude of the noise model.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.porosity">
+<span id="src-porosity-module"></span><h2>src.porosity module<a class="headerlink" href="#module-src.porosity" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.porosity.Porosity">
+<em class="property">class </em><code class="sig-prename descclassname">src.porosity.</code><code class="sig-name descname">Porosity</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z_grid</span></em>, <em class="sig-param"><span class="n">layers</span></em>, <em class="sig-param"><span class="n">theta</span></em>, <em class="sig-param"><span class="n">soil</span></em>, <em class="sig-param"><span class="n">p_model</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/porosity.html#Porosity"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.porosity.Porosity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class creates a porosity object. A porosity profile (field) is generated,
+as a function of the depth (z), along with the relevant field capacity and
+wilting point profiles (as functions of depth).</p>
+<p>Naturally the porosity in the soil decreases with depth because the free empty
+pores are smaller in size, therefore allowing for less water to be kept at any
+given depth. However, depending on the type (or mixture) of soils this profile
+can vary.</p>
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.f_interp">
+<code class="sig-name descname">f_interp</code><a class="headerlink" href="#src.porosity.Porosity.f_interp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.field_cap">
+<code class="sig-name descname">field_cap</code><a class="headerlink" href="#src.porosity.Porosity.field_cap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.porosity.Porosity.layers">
+<em class="property">property </em><code class="sig-name descname">layers</code><a class="headerlink" href="#src.porosity.Porosity.layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor of the underground layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Tuple with the (L0, L1, …)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.p_layers">
+<code class="sig-name descname">p_layers</code><a class="headerlink" href="#src.porosity.Porosity.p_layers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.p_model">
+<code class="sig-name descname">p_model</code><a class="headerlink" href="#src.porosity.Porosity.p_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.profile">
+<code class="sig-name descname">profile</code><a class="headerlink" href="#src.porosity.Porosity.profile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.porosity.Porosity.wilting_point">
+<code class="sig-name descname">wilting_point</code><a class="headerlink" href="#src.porosity.Porosity.wilting_point" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.richards_pde">
+<span id="src-richards-pde-module"></span><h2>src.richards_pde module<a class="headerlink" href="#module-src.richards_pde" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.richards_pde.RichardsPDE">
+<em class="property">class </em><code class="sig-prename descclassname">src.richards_pde.</code><code class="sig-name descname">RichardsPDE</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">m_data</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#RichardsPDE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.RichardsPDE" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Richards’ PDE model equations. It represents the movement of water in un-
+saturated soils.</p>
+<blockquote>
+<div><p><a class="reference external" href="https://en.wikipedia.org/wiki/Richards_equation">https://en.wikipedia.org/wiki/Richards_equation</a></p>
+</div></blockquote>
+<p>The PDE discretization code here mimics MATLAB’s “pdepe” function to solve
+1-D parabolic and elliptic PDEs.</p>
+<dl class="py method">
+<dt id="src.richards_pde.RichardsPDE.arg_out">
+<em class="property">property </em><code class="sig-name descname">arg_out</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.arg_out" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives access to the variable output arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Dictionary with output values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.richards_pde.RichardsPDE.bc_fun">
+<code class="sig-name descname">bc_fun</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z_left</span></em>, <em class="sig-param"><span class="n">y_left</span></em>, <em class="sig-param"><span class="n">z_right</span></em>, <em class="sig-param"><span class="n">y_right</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#RichardsPDE.bc_fun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.RichardsPDE.bc_fun" title="Permalink to this definition">¶</a></dt>
+<dd><p>Boundary Conditions (top and bottom).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z_left</strong> – location(s) 1</p></li>
+<li><p><strong>y_left</strong> – y(z_left, t)</p></li>
+<li><p><strong>z_right</strong> – location(s) 2</p></li>
+<li><p><strong>y_right</strong> – y(z_right, t)</p></li>
+<li><p><strong>args</strong> – additional arguments.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>p_left, q_left, p_right, q_right</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.h_model">
+<code class="sig-name descname">h_model</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.h_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.richards_pde.RichardsPDE.ic_fun">
+<code class="sig-name descname">ic_fun</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y0</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#RichardsPDE.ic_fun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.RichardsPDE.ic_fun" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function can model the initial conditions vector.
+In this case is a simple assignment, but it can handle
+mode complex initializations if required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y0</strong> – initial conditions vector y(z,t=0) [dim_d].</p></li>
+<li><p><strong>args</strong> – to pass additional parameters if requested.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>initial conditions vector.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.m_data">
+<code class="sig-name descname">m_data</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.m_data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.mid_i">
+<code class="sig-name descname">mid_i</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.mid_i" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.nx">
+<code class="sig-name descname">nx</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.nx" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.richards_pde.RichardsPDE.pde_fun">
+<code class="sig-name descname">pde_fun</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">z</span></em>, <em class="sig-param"><span class="n">y</span></em>, <em class="sig-param"><span class="n">dydz</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#RichardsPDE.pde_fun"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.RichardsPDE.pde_fun" title="Permalink to this definition">¶</a></dt>
+<dd><p>Richards’ Equation (PDE - 1d).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>z</strong> – spatial discretization grid, i.e. the depth values at which</p>
+</dd>
+</dl>
+<p>we want to return the solution of the PDE. [dim_d]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> – is the state vector of the PDE, y(z,t=t0). [dim_d]</p></li>
+<li><p><strong>dydz</strong> – is the derivative of the PDE i.e. dydt(z,t). [dim_d].</p></li>
+<li><p><strong>args</strong> – additional input parameters of the PDE.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>C (specific moisture capacity), sink, flux.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.sim_flags">
+<code class="sig-name descname">sim_flags</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.sim_flags" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.richards_pde.RichardsPDE.solve">
+<code class="sig-name descname">solve</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">t_span</span></em>, <em class="sig-param"><span class="n">y0</span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#RichardsPDE.solve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.RichardsPDE.solve" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function numerically integrates a system of ordinary differential
+equations (self), within the time span “t”, given an initial value y0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t_span</strong> – time window to integrate the ode (t0, tf).</p></li>
+<li><p><strong>y0</strong> – initial conditions array [dim_d].</p></li>
+<li><p><strong>args</strong> – additional model parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>dydt [dim_d].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.var_arg_out">
+<code class="sig-name descname">var_arg_out</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.var_arg_out" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.x_mesh">
+<code class="sig-name descname">x_mesh</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.x_mesh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.x_mid">
+<code class="sig-name descname">x_mid</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.x_mid" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.xzmp">
+<code class="sig-name descname">xzmp</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.xzmp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.richards_pde.RichardsPDE.zxmp">
+<code class="sig-name descname">zxmp</code><a class="headerlink" href="#src.richards_pde.RichardsPDE.zxmp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="src.richards_pde.midpoints">
+<code class="sig-prename descclassname">src.richards_pde.</code><code class="sig-name descname">midpoints</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x_left</span></em>, <em class="sig-param"><span class="n">fx_left</span></em>, <em class="sig-param"><span class="n">x_right</span></em>, <em class="sig-param"><span class="n">fx_right</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/richards_pde.html#midpoints"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.richards_pde.midpoints" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interpolation (helper) function that is used
+in the ‘discretization’ of the Richards PDE.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_left</strong> – [dim_d]</p></li>
+<li><p><strong>fx_left</strong> – [dim_d x dim_m]</p></li>
+<li><p><strong>x_right</strong> – [dim_d]</p></li>
+<li><p><strong>fx_right</strong> – [dim_d x dim_m]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>derivatives and the mid-points.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.simulation">
+<span id="src-simulation-module"></span><h2>src.simulation module<a class="headerlink" href="#module-src.simulation" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.simulation.Simulation">
+<em class="property">class </em><code class="sig-prename descclassname">src.simulation.</code><code class="sig-name descname">Simulation</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">name</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">seed</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#Simulation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.Simulation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Main simulation class. The normal workflow is as follow:</p>
+<p>1) Create a simulation object. You can also give a name
+that will be used when saving the data.</p>
+<blockquote>
+<div><p>&gt;&gt; sim_01 = Simulation(“Sim_01”)</p>
+</div></blockquote>
+<ol class="arabic" start="2">
+<li><p>Setup its parameters and water data (precipitation, etc.).</p>
+<blockquote>
+<div><p>&gt;&gt; sim_01.setupModel(params, water_data)</p>
+</div></blockquote>
+</li>
+<li><p>Run the simulation (this step might take a while).</p>
+<blockquote>
+<div><p>&gt;&gt; sim_01.run()</p>
+</div></blockquote>
+</li>
+<li><p>Finally save the results in a hdf5 (compressed) file.</p>
+<blockquote>
+<div><p>&gt;&gt; sim_01.saveResults()</p>
+</div></blockquote>
+</li>
+</ol>
+<dl class="py method">
+<dt id="src.simulation.Simulation.initial_conditions">
+<code class="sig-name descname">initial_conditions</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#Simulation.initial_conditions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.Simulation.initial_conditions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates an initial conditions vector, by running the PDE
+model forward in time for ‘burn-in’ number of iterations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>y0 state vector [dim_d].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.simulation.Simulation.mData">
+<code class="sig-name descname">mData</code><a class="headerlink" href="#src.simulation.Simulation.mData" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.simulation.Simulation.name">
+<code class="sig-name descname">name</code><a class="headerlink" href="#src.simulation.Simulation.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.simulation.Simulation.output">
+<code class="sig-name descname">output</code><a class="headerlink" href="#src.simulation.Simulation.output" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.simulation.Simulation.pde_model">
+<code class="sig-name descname">pde_model</code><a class="headerlink" href="#src.simulation.Simulation.pde_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.simulation.Simulation.rng">
+<code class="sig-name descname">rng</code><a class="headerlink" href="#src.simulation.Simulation.rng" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.simulation.Simulation.run">
+<code class="sig-name descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#Simulation.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.Simulation.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Runs the PDE model forward in time. All the output information is store in
+self.output dictionary where we can later save it to the disk for further
+analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.simulation.Simulation.saveResults">
+<code class="sig-name descname">saveResults</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#Simulation.saveResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.Simulation.saveResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Saves the simulation results to a file. All the data should be stored
+inside the self.output dictionary and be of type “numpy.ndarray”. For
+the moment the file is saved in the same directory as the main program.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.simulation.Simulation.setupModel">
+<code class="sig-name descname">setupModel</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params</span></em>, <em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#Simulation.setupModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.Simulation.setupModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method is called BEFORE the run() and sets up all the variables for
+the simulation.  It is also responsible for checking the validity of the
+input parameters before use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>params</strong> – (dict) contains all the given parameters. If None, then it</p>
+</dd>
+</dl>
+<p>will use the default parameters to initialize object. However this is not
+recommended since the user will have no control on the parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>data</strong> – (pandas.DataFrame) that will contain the water data for the</p>
+</dd>
+</dl>
+<p>simulation. These include, time-series of the dates, water table depths
+precipitation values, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>None.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – if some data are missing.</p></li>
+<li><p><strong>RuntimeError</strong> – TBD.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="src.simulation.loadResults">
+<code class="sig-prename descclassname">src.simulation.</code><code class="sig-name descname">loadResults</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/simulation.html#loadResults"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.simulation.loadResults" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the simulation data that have been stored in the hdf5 file
+using the object’s method saveResults().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> – (string) is the ‘.h5’ file that contains the data.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a dictionary with all the data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.soil_properties">
+<span id="src-soil-properties-module"></span><h2>src.soil_properties module<a class="headerlink" href="#module-src.soil_properties" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.soil_properties.SoilProperties">
+<em class="property">class </em><code class="sig-prename descclassname">src.soil_properties.</code><code class="sig-name descname">SoilProperties</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">2.0</span></em>, <em class="sig-param"><span class="n">alpha</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.009</span></em>, <em class="sig-param"><span class="n">psi_sat</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">- 100.0</span></em>, <em class="sig-param"><span class="n">epsilon</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">1e-07</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/soil_properties.html#SoilProperties"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.soil_properties.SoilProperties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class represents Soil properties.</p>
+<dl class="py method">
+<dt id="src.soil_properties.SoilProperties.alpha">
+<em class="property">property </em><code class="sig-name descname">alpha</code><a class="headerlink" href="#src.soil_properties.SoilProperties.alpha" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the ‘a’ parameter of the soil.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.soil_properties.SoilProperties.epsilon">
+<em class="property">property </em><code class="sig-name descname">epsilon</code><a class="headerlink" href="#src.soil_properties.SoilProperties.epsilon" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the threshold value for ‘eps’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.soil_properties.SoilProperties.m">
+<em class="property">property </em><code class="sig-name descname">m</code><a class="headerlink" href="#src.soil_properties.SoilProperties.m" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the ‘m’ parameter of the soil. It is defined as: 1 - 1/n.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.soil_properties.SoilProperties.n">
+<em class="property">property </em><code class="sig-name descname">n</code><a class="headerlink" href="#src.soil_properties.SoilProperties.n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the ‘n’ parameter of the soil.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.soil_properties.SoilProperties.param_a">
+<code class="sig-name descname">param_a</code><a class="headerlink" href="#src.soil_properties.SoilProperties.param_a" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.soil_properties.SoilProperties.param_epsilon">
+<code class="sig-name descname">param_epsilon</code><a class="headerlink" href="#src.soil_properties.SoilProperties.param_epsilon" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.soil_properties.SoilProperties.param_n">
+<code class="sig-name descname">param_n</code><a class="headerlink" href="#src.soil_properties.SoilProperties.param_n" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.soil_properties.SoilProperties.param_psi_sat">
+<code class="sig-name descname">param_psi_sat</code><a class="headerlink" href="#src.soil_properties.SoilProperties.param_psi_sat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.soil_properties.SoilProperties.psi_sat">
+<em class="property">property </em><code class="sig-name descname">psi_sat</code><a class="headerlink" href="#src.soil_properties.SoilProperties.psi_sat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the ‘psi-sat’ parameter of the soil.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.tree_roots">
+<span id="src-tree-roots-module"></span><h2>src.tree_roots module<a class="headerlink" href="#module-src.tree_roots" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.tree_roots.TreeRoots">
+<em class="property">class </em><code class="sig-prename descclassname">src.tree_roots.</code><code class="sig-name descname">TreeRoots</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ln</span></em>, <em class="sig-param"><span class="n">dz</span></em>, <em class="sig-param"><span class="n">r_model</span></em>, <em class="sig-param"><span class="n">porous</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/tree_roots.html#TreeRoots"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.tree_roots.TreeRoots" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class models tree roots. It computes the roots density for a given
+depth and also returns roots efficiency, as described in refs. [1, 2].</p>
+<p>To have more consistent results, the root depth in here is mapped to a
+predefined range [1 to 100].</p>
+<p>1) Chun-Ta Lai and Gabriel Katul (2000): The dynamic role of root-water
+uptake in coupling potential to actual transpiration. Advances in Water
+Resources, Vol. 23, pages: 427-439.</p>
+<p>2) D. B. G. Collins and R. L. Bras (2007): Plant rooting strategies in
+water-limited ecosystems. Water Resources Research, Vol. 43, W06407,
+doi:10.1029/2006WR005541, pages: 1-10.</p>
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.dz">
+<code class="sig-name descname">dz</code><a class="headerlink" href="#src.tree_roots.TreeRoots.dz" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.tree_roots.TreeRoots.efficiency">
+<code class="sig-name descname">efficiency</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">theta_z</span></em>, <em class="sig-param"><span class="n">z_roots</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/tree_roots.html#TreeRoots.efficiency"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.tree_roots.TreeRoots.efficiency" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method computes the root efficiency as the product of two terms:</p>
+<p>( i) alpha01 -&gt; maximum efficiency, when the water is not limiting,
+(ii) alpha02 -&gt; root shutdown.</p>
+<p>The method is vectorized for faster execution, when the input matrix
+“theta” has multiple columns [dim_d x dim_m].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>theta_z</strong> – soil moisture values at depth(s) ‘z’. [dim_d x dim_m]</p></li>
+<li><p><strong>z_roots</strong> – depth values at which we want to return the root efficiency. [dim_d x 1]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ol class="arabic simple">
+<li><p>root efficiency (alpha01 * alpha02) [dim_d x dim_m]</p></li>
+<li><p>available water in the root zone    [1 x 1]</p></li>
+</ol>
+</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>RuntimeError</strong> – if the input dimensions do not match.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.f_interp">
+<code class="sig-name descname">f_interp</code><a class="headerlink" href="#src.tree_roots.TreeRoots.f_interp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.max_depth_cm">
+<code class="sig-name descname">max_depth_cm</code><a class="headerlink" href="#src.tree_roots.TreeRoots.max_depth_cm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.tree_roots.TreeRoots.max_root_depth">
+<em class="property">property </em><code class="sig-name descname">max_root_depth</code><a class="headerlink" href="#src.tree_roots.TreeRoots.max_root_depth" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor of the maximum root depth [L: cm].</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the depth in centimeters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.porous">
+<code class="sig-name descname">porous</code><a class="headerlink" href="#src.tree_roots.TreeRoots.porous" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.profile">
+<code class="sig-name descname">profile</code><a class="headerlink" href="#src.tree_roots.TreeRoots.profile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.tree_roots.TreeRoots.r_model">
+<code class="sig-name descname">r_model</code><a class="headerlink" href="#src.tree_roots.TreeRoots.r_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.tree_roots.TreeRoots.root_type">
+<em class="property">property </em><code class="sig-name descname">root_type</code><a class="headerlink" href="#src.tree_roots.TreeRoots.root_type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor of the root density model type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the modelled pdf type (string).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.utilities">
+<span id="src-utilities-module"></span><h2>src.utilities module<a class="headerlink" href="#module-src.utilities" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="src.utilities.find_wtd">
+<code class="sig-prename descclassname">src.utilities.</code><code class="sig-name descname">find_wtd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">y</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/utilities.html#find_wtd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.utilities.find_wtd" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function identifies  the location of  the water table  depth (wtd)
+and returns  its index value.  It starts the search  from the bottom of
+the input vector and continues going upwards until the cell in question
+is not saturated. It assumes that the “wtd” exists right below the first
+non-saturated cell.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>y</strong> – bool vector with the saturated cells. (dim_d,).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>the index at the first “True”, from the end of the vector.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="src.utilities.logN_rnd">
+<code class="sig-prename descclassname">src.utilities.</code><code class="sig-name descname">logN_rnd</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mx</span></em>, <em class="sig-param"><span class="n">vx</span></em>, <em class="sig-param"><span class="n">en</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/utilities.html#logN_rnd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.utilities.logN_rnd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log-Normal function. If X follows the log-normal distribution with parameters ‘mu’
+and ‘sigma’: X ~ LogN(mu, sigma), then log(X) follows the normal distribution with
+mean ‘mu’ and standard deviation ‘sigma’: log(X) ~ N(mu, sigma).</p>
+<p>Example (from python console):</p>
+<p>&gt;&gt; x = logN_rnd(5.0, 1.0, np.random.randn(10000))</p>
+<p>&gt;&gt; x_mean = np.mean(x)</p>
+<p>&gt;&gt; … 4.992025079986667 (which is almost 5.0)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mx</strong> – desired mean (of the Normal distribution).</p></li>
+<li><p><strong>vx</strong> – desired variance (of the Normal distribution).</p></li>
+<li><p><strong>en</strong> – random variable N(0, 1)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a random variable drawn from LogNormal(mu, sigma)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-src.water_content">
+<span id="src-water-content-module"></span><h2>src.water_content module<a class="headerlink" href="#module-src.water_content" title="Permalink to this headline">¶</a></h2>
+<dl class="py class">
+<dt id="src.water_content.WaterContent">
+<em class="property">class </em><code class="sig-prename descclassname">src.water_content.</code><code class="sig-name descname">WaterContent</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">minimum</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.08</span></em>, <em class="sig-param"><span class="n">maximum</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.3</span></em>, <em class="sig-param"><span class="n">residual</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">0.05</span></em>, <em class="sig-param"><span class="n">wilting</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">- 1500.0</span></em>, <em class="sig-param"><span class="n">field_cap</span><span class="p">:</span> <span class="n">float</span> <span class="o">=</span> <span class="default_value">340.0</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/water_content.html#WaterContent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.water_content.WaterContent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class represents Water content, or soil moisture content.</p>
+<dl class="py attribute">
+<dt id="src.water_content.WaterContent.field_cap">
+<code class="sig-name descname">field_cap</code><a class="headerlink" href="#src.water_content.WaterContent.field_cap" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.flc">
+<em class="property">property </em><code class="sig-name descname">flc</code><a class="headerlink" href="#src.water_content.WaterContent.flc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the field capacity.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.inRange">
+<em class="property">static </em><code class="sig-name descname">inRange</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_value</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/src/water_content.html#WaterContent.inRange"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#src.water_content.WaterContent.inRange" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the new input value within the [0-1] range. This ensures that no negative
+values will enter the object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>new_value</strong> – (float) represents a water content value (dimensionless [-]).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>a new value in [0-1].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.max">
+<em class="property">property </em><code class="sig-name descname">max</code><a class="headerlink" href="#src.water_content.WaterContent.max" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the maximum water content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.water_content.WaterContent.maximum">
+<code class="sig-name descname">maximum</code><a class="headerlink" href="#src.water_content.WaterContent.maximum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.mid">
+<em class="property">property </em><code class="sig-name descname">mid</code><a class="headerlink" href="#src.water_content.WaterContent.mid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Auxiliary water content function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the mid-point value between the min/max values.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.min">
+<em class="property">property </em><code class="sig-name descname">min</code><a class="headerlink" href="#src.water_content.WaterContent.min" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the minimum water content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.water_content.WaterContent.minimum">
+<code class="sig-name descname">minimum</code><a class="headerlink" href="#src.water_content.WaterContent.minimum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.res">
+<em class="property">property </em><code class="sig-name descname">res</code><a class="headerlink" href="#src.water_content.WaterContent.res" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the residual water content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="src.water_content.WaterContent.residual">
+<code class="sig-name descname">residual</code><a class="headerlink" href="#src.water_content.WaterContent.residual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="src.water_content.WaterContent.wilting">
+<code class="sig-name descname">wilting</code><a class="headerlink" href="#src.water_content.WaterContent.wilting" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="src.water_content.WaterContent.wlt">
+<em class="property">property </em><code class="sig-name descname">wlt</code><a class="headerlink" href="#src.water_content.WaterContent.wlt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accessor method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>the wilting point.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="LICENSE.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HELP.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="main.html" title="Main Program"
+              >previous</a> |
+            <a href="src.models.html" title="Hydrologic Models"
+              >next</a> |
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/src.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

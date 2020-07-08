@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.water_content &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.water_content</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">maximum</span> <span class="k">as</span> <span class="n">np_max</span>
+<span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">minimum</span> <span class="k">as</span> <span class="n">np_min</span>
+
+
+<div class="viewcode-block" id="WaterContent"><a class="viewcode-back" href="../../src.html#src.water_content.WaterContent">[docs]</a><span class="k">class</span> <span class="nc">WaterContent</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class represents Water content, or soil moisture content.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;minimum&quot;</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">,</span> <span class="s2">&quot;residual&quot;</span><span class="p">,</span> <span class="s2">&quot;wilting&quot;</span><span class="p">,</span> <span class="s2">&quot;field_cap&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Default constructor.</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">minimum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.08</span><span class="p">,</span> <span class="n">maximum</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.30</span><span class="p">,</span> <span class="n">residual</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+                 <span class="n">wilting</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1500.0</span><span class="p">,</span> <span class="n">field_cap</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">340.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs an object that will hold all the water content variables.</span>
+
+<span class="sd">        :param minimum: (float) minimum water content (dimensionless [-]).</span>
+
+<span class="sd">        :param maximum: (float) maximum water content (dimensionless [-]).</span>
+
+<span class="sd">        :param residual: (float) residual water content, defined as the water content for</span>
+<span class="sd">        which the gradient $dTheta/dh$ becomes zero, and $theta_{sat}$ is the saturated</span>
+<span class="sd">        water content, which is equivalent to porosity, $phi$ (dimensionless [-]).</span>
+
+<span class="sd">        :param wilting: (float) permanent wilting point or wilting point is defined as the</span>
+<span class="sd">        minimum amount of water in the soil that the plant requires not to wilt.</span>
+
+<span class="sd">        :param field_cap: (float) field capacity is the amount of soil moisture or water</span>
+<span class="sd">        content held in the soil after excess water has drained away and the rate</span>
+<span class="sd">        of downward movement has decreased.</span>
+
+<span class="sd">        :raises ValueError: if there checkValues method fails.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Do not allow these values to be bellow zero, or above one.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">WaterContent</span><span class="o">.</span><span class="n">inRange</span><span class="p">(</span><span class="n">minimum</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">=</span> <span class="n">WaterContent</span><span class="o">.</span><span class="n">inRange</span><span class="p">(</span><span class="n">maximum</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual</span> <span class="o">=</span> <span class="n">WaterContent</span><span class="o">.</span><span class="n">inRange</span><span class="p">(</span><span class="n">residual</span><span class="p">)</span>
+
+        <span class="c1"># Check if the input values are in the right order.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkValues</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The volumetric water content input values&quot;</span>
+                             <span class="s2">&quot; are incorrect.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># These are in length units [L:cm] and can have negative values.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wilting</span> <span class="o">=</span> <span class="n">wilting</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span> <span class="o">=</span> <span class="n">field_cap</span>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="WaterContent.inRange"><a class="viewcode-back" href="../../src.html#src.water_content.WaterContent.inRange">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">inRange</span><span class="p">(</span><span class="n">new_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Sets the new input value within the [0-1] range. This ensures that no negative</span>
+<span class="sd">        values will enter the object.</span>
+
+<span class="sd">        :param new_value: (float) represents a water content value (dimensionless [-]).</span>
+
+<span class="sd">        :return: a new value in [0-1].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np_max</span><span class="p">(</span><span class="n">np_min</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">new_value</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span></div>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="nf">_checkValues</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check whether the water content values satisfy specific conditions.</span>
+
+<span class="sd">        :return: True if the condition is satisfied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">&lt;=</span> <span class="mf">1.0</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the minimum water content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@min</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">min</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the minimum water content.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Keep the old minimum value.</span>
+        <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span>
+
+        <span class="c1"># Make the change.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">new_value</span>
+
+        <span class="c1"># Check if the change has broken the correct order of the values.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkValues</span><span class="p">():</span>
+            <span class="c1"># Set back the old value.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span> <span class="o">=</span> <span class="n">old_value</span>
+
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The new minimum: </span><span class="si">{1}</span><span class="s2">, is not consistent with&quot;</span>
+                             <span class="s2">&quot; the rest of the values.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                               <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the maximum water content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@max</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">max</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the maximum water content.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Keep the old minimum value.</span>
+        <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span>
+
+        <span class="c1"># Make the change.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">=</span> <span class="n">new_value</span>
+
+        <span class="c1"># Check if the change has broken the correct order of the values.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkValues</span><span class="p">():</span>
+            <span class="c1"># Set back the old value.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">=</span> <span class="n">old_value</span>
+
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The new maximum: </span><span class="si">{1}</span><span class="s2">, is not consistent with&quot;</span>
+                             <span class="s2">&quot; the rest of the values.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mid</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Auxiliary water content function.</span>
+
+<span class="sd">        :return: the mid-point value between the min/max values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">maximum</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span><span class="p">)</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">res</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the residual water content.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@res</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">res</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the residual water content.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Keep the old minimum value.</span>
+        <span class="n">old_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span>
+
+        <span class="c1"># Make the change.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">residual</span> <span class="o">=</span> <span class="n">new_value</span>
+
+        <span class="c1"># Check if the change has broken the correct order of the values.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_checkValues</span><span class="p">():</span>
+            <span class="c1"># Set back the old value.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">residual</span> <span class="o">=</span> <span class="n">old_value</span>
+
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The new residual: </span><span class="si">{1}</span><span class="s2">, is not consistent with&quot;</span>
+                             <span class="s2">&quot; the rest of the values.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">wlt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the wilting point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">wilting</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@wlt</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">wlt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the wilting point.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wilting</span> <span class="o">=</span> <span class="n">new_value</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">flc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the field capacity.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@flc</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">flc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the field capacity.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span> <span class="o">=</span> <span class="n">new_value</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="c1"># Auxiliary.</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override to print a readable string presentation of the WaterContent object.</span>
+<span class="sd">        This will include its id(), along with its fields values.</span>
+
+<span class="sd">        :return: a string representation of a WaterContent object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot; WaterContent Id(</span><span class="si">{0}</span><span class="s2">):&quot;</span>\
+               <span class="s2">&quot; Minimum=</span><span class="si">{1}</span><span class="s2">, Maximum=</span><span class="si">{2}</span><span class="s2">, Residual=</span><span class="si">{3}</span><span class="s2">,&quot;</span>\
+               <span class="s2">&quot; Wilting=</span><span class="si">{4}</span><span class="s2">, Field capacity=</span><span class="si">{5}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">minimum</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">maximum</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">residual</span><span class="p">,</span>
+                                                         <span class="bp">self</span><span class="o">.</span><span class="n">wilting</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span><span class="p">)</span></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../LICENSE.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HELP.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

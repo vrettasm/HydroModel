@@ -1,0 +1,831 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.simulation &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.simulation</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">.hydraulic_conductivity</span> <span class="kn">import</span> <span class="n">HydraulicConductivity</span>
+<span class="kn">from</span> <span class="nn">.models.vanGenuchten</span> <span class="kn">import</span> <span class="n">vanGenuchten</span>
+<span class="kn">from</span> <span class="nn">.models.vrettas_fung</span> <span class="kn">import</span> <span class="n">VrettasFung</span>
+<span class="kn">from</span> <span class="nn">.porosity</span> <span class="kn">import</span> <span class="n">Porosity</span>
+<span class="kn">from</span> <span class="nn">.richards_pde</span> <span class="kn">import</span> <span class="n">RichardsPDE</span>
+<span class="kn">from</span> <span class="nn">.soil_properties</span> <span class="kn">import</span> <span class="n">SoilProperties</span>
+<span class="kn">from</span> <span class="nn">.tree_roots</span> <span class="kn">import</span> <span class="n">TreeRoots</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">find_wtd</span>
+<span class="kn">from</span> <span class="nn">.water_content</span> <span class="kn">import</span> <span class="n">WaterContent</span>
+
+
+<div class="viewcode-block" id="Simulation"><a class="viewcode-back" href="../../src.html#src.simulation.Simulation">[docs]</a><span class="k">class</span> <span class="nc">Simulation</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Main simulation class. The normal workflow is as follow:</span>
+
+<span class="sd">    1) Create a simulation object. You can also give a name</span>
+<span class="sd">    that will be used when saving the data.</span>
+
+<span class="sd">        &gt;&gt; sim_01 = Simulation(&quot;Sim_01&quot;)</span>
+
+<span class="sd">    2) Setup its parameters and water data (precipitation, etc.).</span>
+
+<span class="sd">        &gt;&gt; sim_01.setupModel(params, water_data)</span>
+
+<span class="sd">    3) Run the simulation (this step might take a while).</span>
+
+<span class="sd">        &gt;&gt; sim_01.run()</span>
+
+<span class="sd">    4) Finally save the results in a hdf5 (compressed) file.</span>
+
+<span class="sd">        &gt;&gt; sim_01.saveResults()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;mData&quot;</span><span class="p">,</span> <span class="s2">&quot;rng&quot;</span><span class="p">,</span> <span class="s2">&quot;pde_model&quot;</span><span class="p">,</span> <span class="s2">&quot;output&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default constructor of the Simulation class.</span>
+
+<span class="sd">        :param name: (string) is optional but it will be used for constructing</span>
+<span class="sd">        a meaningful filename to save the results at the end of the simulation.</span>
+
+<span class="sd">        :param seed: (int) is used to initialize the random generator. If None,</span>
+<span class="sd">        the generator will be initialized at random from the OS.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if a simulation name has been given.</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;ID_None&quot;</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># This dictionary will hold all the simulation data.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Create a random number generator.</span>
+        <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Place holder for the pde model.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pde_model</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Place holder for the output storage.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="Simulation.setupModel"><a class="viewcode-back" href="../../src.html#src.simulation.Simulation.setupModel">[docs]</a>    <span class="k">def</span> <span class="nf">setupModel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is called BEFORE the run() and sets up all the variables for</span>
+<span class="sd">        the simulation.  It is also responsible for checking the validity of the</span>
+<span class="sd">        input parameters before use.</span>
+
+<span class="sd">        :param params: (dict) contains all the given parameters. If None, then it</span>
+<span class="sd">        will use the default parameters to initialize object. However this is not</span>
+<span class="sd">        recommended since the user will have no control on the parameters.</span>
+
+<span class="sd">        :param data: (pandas.DataFrame) that will contain the water data for the</span>
+<span class="sd">        simulation. These include, time-series of the dates, water table depths</span>
+<span class="sd">        precipitation values, etc.</span>
+
+<span class="sd">        :return: None.</span>
+
+<span class="sd">        :raises ValueError: if some data are missing.</span>
+
+<span class="sd">        :raises RuntimeError: TBD.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># The spacing here defines a Uniform-Grid [L: cm].</span>
+        <span class="n">dz</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+        <span class="c1"># Copy the well number that is being simulated.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Open the file in &quot;Read Only&quot; mode.</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Site_Information&quot;</span><span class="p">]),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">site_file</span><span class="p">:</span>
+            <span class="c1"># Load the site information.</span>
+            <span class="n">site_info</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">site_file</span><span class="p">)</span>
+        <span class="c1"># _end_with_</span>
+
+        <span class="c1"># Check if the Well number exists in the site info file.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">])</span> <span class="ow">in</span> <span class="n">site_info</span><span class="p">[</span><span class="s2">&quot;Well&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The selected well does not exist&quot;</span>
+                             <span class="s2">&quot; in the site information file.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Extract the Well information.</span>
+        <span class="n">well</span> <span class="o">=</span> <span class="n">site_info</span><span class="p">[</span><span class="s2">&quot;Well&quot;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">])]</span>
+
+        <span class="c1"># Make sure the well is not defined as fully saturated.</span>
+        <span class="k">if</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;sat_depth&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;max_depth&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The well seems fully saturated.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Compute the number of continuously saturated cell (from the bottom).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;sat_cells&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">well</span><span class="p">[</span><span class="s2">&quot;sat_depth&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">dz</span><span class="p">)</span>
+
+        <span class="c1"># Spatial domain parameters for the underground layers [L:cm]:</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="p">(</span><span class="n">well</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">],</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;saprolite&quot;</span><span class="p">],</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;weathered&quot;</span><span class="p">],</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;max_depth&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Add the underground layers to the structure.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;layers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">layers</span>
+
+        <span class="c1"># Add the spatial discretization to the structure.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;dz&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dz</span>
+
+        <span class="c1"># Create a vertical grid (increasing downwards)</span>
+        <span class="n">z_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">well</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">],</span> <span class="n">well</span><span class="p">[</span><span class="s2">&quot;max_depth&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">dz</span><span class="p">,</span> <span class="n">dz</span><span class="p">)</span>
+
+        <span class="c1"># Add the spatial domain to the structure.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;z_grid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">z_grid</span>
+
+        <span class="c1"># Create a soil properties object.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">soil</span> <span class="o">=</span> <span class="n">SoilProperties</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Soil_Properties&quot;</span><span class="p">][</span><span class="s2">&quot;n&quot;</span><span class="p">],</span>
+                                  <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Soil_Properties&quot;</span><span class="p">][</span><span class="s2">&quot;a0&quot;</span><span class="p">],</span>
+                                  <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Soil_Properties&quot;</span><span class="p">][</span><span class="s2">&quot;psi_sat&quot;</span><span class="p">],</span>
+                                  <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Soil_Properties&quot;</span><span class="p">][</span><span class="s2">&quot;epsilon&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e0</span><span class="p">:</span>
+            <span class="c1"># Display the error message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; SoilProperties failed to initialize: </span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                  <span class="s2">&quot; It will use default initialization parameters.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e0</span><span class="p">))</span>
+
+            <span class="c1"># Default initialization.</span>
+            <span class="n">soil</span> <span class="o">=</span> <span class="n">SoilProperties</span><span class="p">()</span>
+        <span class="c1"># _end_try_</span>
+
+        <span class="c1"># Add soil properties to the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">soil</span>
+
+        <span class="c1"># Create a water content object.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">WaterContent</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Water_Content&quot;</span><span class="p">][</span><span class="s2">&quot;Theta_Min&quot;</span><span class="p">],</span>
+                                 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Water_Content&quot;</span><span class="p">][</span><span class="s2">&quot;Theta_Max&quot;</span><span class="p">],</span>
+                                 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Water_Content&quot;</span><span class="p">][</span><span class="s2">&quot;Theta_Residual&quot;</span><span class="p">],</span>
+                                 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Water_Content&quot;</span><span class="p">][</span><span class="s2">&quot;Wilting_Point_cm&quot;</span><span class="p">],</span>
+                                 <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Water_Content&quot;</span><span class="p">][</span><span class="s2">&quot;Field_Capacity_cm&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e0</span><span class="p">:</span>
+            <span class="c1"># Display the error message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; WaterContent failed to initialize: </span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                  <span class="s2">&quot; It will use default initialization parameters.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e0</span><span class="p">))</span>
+
+            <span class="c1"># Default initialization.</span>
+            <span class="n">theta</span> <span class="o">=</span> <span class="n">WaterContent</span><span class="p">()</span>
+        <span class="c1"># _end_try_</span>
+
+        <span class="c1"># Add water content to the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta</span>
+
+        <span class="c1"># Create a hydraulic conductivity object.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">K</span> <span class="o">=</span> <span class="n">HydraulicConductivity</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">][</span><span class="s2">&quot;Sat_Soil&quot;</span><span class="p">],</span>
+                                      <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">][</span><span class="s2">&quot;Sat_Saprolite&quot;</span><span class="p">],</span>
+                                      <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">][</span><span class="s2">&quot;Sat_Fresh_Bedrock&quot;</span><span class="p">],</span>
+                                      <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">][</span><span class="s2">&quot;Sigma_Noise&quot;</span><span class="p">],</span>
+                                      <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">][</span><span class="s2">&quot;Lambda_Exponent&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e0</span><span class="p">:</span>
+            <span class="c1"># Display the error message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; HydraulicConductivity failed to initialize: </span><span class="si">{}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                  <span class="s2">&quot; It will use default initialization parameters.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e0</span><span class="p">))</span>
+
+            <span class="c1"># Default initialization.</span>
+            <span class="n">K</span> <span class="o">=</span> <span class="n">HydraulicConductivity</span><span class="p">()</span>
+        <span class="c1"># _end_try_</span>
+
+        <span class="c1"># Add hydraulic conductivity to the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;K&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">K</span>
+
+        <span class="c1"># Add the environmental parameters.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;env_param&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Environmental&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Add the simulation (execution) flags.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;sim_flags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Simulation_Flags&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Create a porosity object.</span>
+        <span class="n">porous</span> <span class="o">=</span> <span class="n">Porosity</span><span class="p">(</span><span class="n">z_grid</span><span class="p">,</span> <span class="n">layers</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">soil</span><span class="p">,</span>
+                          <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydrological_Model&quot;</span><span class="p">][</span><span class="s2">&quot;Porosity_Profile&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Add it to the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;porosity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">porous</span>
+
+        <span class="c1"># Create and add the root density object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;tree_roots&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">TreeRoots</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Trees&quot;</span><span class="p">][</span><span class="s2">&quot;Max_Root_Depth_cm&quot;</span><span class="p">]</span><span class="o">/</span><span class="n">dz</span><span class="p">),</span>
+                                             <span class="n">dz</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Trees&quot;</span><span class="p">][</span><span class="s2">&quot;Root_Pdf_Profile&quot;</span><span class="p">],</span> <span class="n">porous</span><span class="p">)</span>
+
+        <span class="c1"># Add the selected hydrological model.</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Hydrological_Model&quot;</span><span class="p">][</span><span class="s2">&quot;Name&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="s2">&quot;VRETTAS_FUNG&quot;</span><span class="p">:</span>
+            <span class="c1"># Create the hydro-object.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;hydro_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">VrettasFung</span><span class="p">(</span><span class="n">soil</span><span class="p">,</span> <span class="n">porous</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="n">dz</span><span class="p">)</span>
+
+            <span class="c1"># Print a message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Vrettas-Fung model selected.&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Create the hydro-object.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;hydro_model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">vanGenuchten</span><span class="p">(</span><span class="n">soil</span><span class="p">,</span> <span class="n">porous</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">res</span><span class="p">,</span> <span class="n">dz</span><span class="p">)</span>
+
+            <span class="c1"># Print a message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; vanGenuchten model selected.&quot;</span><span class="p">)</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Extract the observational data from the pandas.Dataframe:</span>
+        <span class="n">r_datenum</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;Datenum&quot;</span><span class="p">]</span>
+
+        <span class="c1"># We need to convert the dates (from MATLAB to Python).</span>
+        <span class="c1"># NOTE: The value 719529 is MATLAB&#39;s datenum value of the &quot;Unix epoch&quot;</span>
+        <span class="c1"># start (1970-01-01), which is the default origin for pd.to_datetime().</span>
+        <span class="n">timestamps</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">r_datenum</span> <span class="o">-</span> <span class="mi">719529</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;D&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Store timestamps in the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;s&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">timestamps</span><span class="p">]</span>
+
+        <span class="c1"># Convert the meters to [L:cm] before storing them.</span>
+        <span class="n">z_wtd_cm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mf">100.0</span> <span class="o">*</span> <span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;WTD_m&quot;</span><span class="p">])))</span>
+
+        <span class="c1"># Check if there are NaN values.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">z_wtd_cm</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Water table depth observations&quot;</span>
+                               <span class="s2">&quot; contain NaN values.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Since the observational data are not &quot;gridded&quot; we put them</span>
+        <span class="c1"># on the z-grid [L: cm], before store them in the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">z_grid</span><span class="p">[</span><span class="n">z_grid</span> <span class="o">&gt;=</span> <span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">z_wtd_cm</span><span class="p">])</span>
+
+        <span class="c1"># The precipitation data are already in [L: cm].</span>
+        <span class="n">precip_cm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;Precipitation_cm&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Check if there are NaN values.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">precip_cm</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Precipitation observations&quot;</span>
+                             <span class="s2">&quot; contain NaN values.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Store to dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;precipitation_cm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">precip_cm</span>
+
+        <span class="c1"># TRANSPIRATION AND HYDRAULIC LIFT PARAMETERS:</span>
+
+        <span class="c1"># Compute the total atmospheric demand (i.e. root water uptake)</span>
+        <span class="c1"># as percentage of the total precipitation over the whole year.</span>
+        <span class="n">atm_demand</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Environmental&quot;</span><span class="p">][</span><span class="s2">&quot;Atmospheric_Demand&quot;</span><span class="p">]</span>
+        <span class="n">interception</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Environmental&quot;</span><span class="p">][</span><span class="s2">&quot;Interception_pct&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Store to dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;interception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">interception</span>
+
+        <span class="c1"># total_atm_demand_cm = np.sum(atm_demand*(1.0 - interception)*precip_cm)</span>
+        <span class="c1"># This is a test case where we use the precipitation demand from the year</span>
+        <span class="c1"># 2008-2009. The &#39;13.4253&#39; [cm] correspond to the 10% demand of that year.</span>
+        <span class="n">total_atm_demand_cm</span> <span class="o">=</span> <span class="mf">13.4253</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">*</span> <span class="n">atm_demand</span>
+
+        <span class="c1"># Make sure evapo-transpiration percentage &quot;et_pct&quot; is within bounds.</span>
+        <span class="c1"># NOTE: Wet_Season_pct declares how much of the losses are due to ET.</span>
+        <span class="n">et_pct</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Environmental&quot;</span><span class="p">][</span><span class="s2">&quot;Wet_Season_pct&quot;</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Get the amount of ET per season [L: cm].</span>
+        <span class="n">wet_et_cm</span> <span class="o">=</span> <span class="n">et_pct</span> <span class="o">*</span> <span class="n">total_atm_demand_cm</span>
+        <span class="n">dry_et_cm</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">et_pct</span><span class="p">)</span> <span class="o">*</span> <span class="n">total_atm_demand_cm</span>
+
+        <span class="c1"># Dry counter.</span>
+        <span class="n">n_dry</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">tk</span> <span class="ow">in</span> <span class="n">timestamps</span><span class="p">:</span>
+            <span class="c1"># Check if the month belongs in the &quot;dry-months&quot; list.</span>
+            <span class="k">if</span> <span class="n">tk</span><span class="o">.</span><span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]:</span>
+                <span class="n">n_dry</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_for_</span>
+
+        <span class="c1"># Get the number of time-points.</span>
+        <span class="n">dim_t</span> <span class="o">=</span> <span class="n">timestamps</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># Add it to the dictionary.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;dim_t&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dim_t</span>
+
+        <span class="c1"># Wet counter (complementary to the Dry counter)</span>
+        <span class="n">n_wet</span> <span class="o">=</span> <span class="n">dim_t</span> <span class="o">-</span> <span class="n">n_dry</span>
+
+        <span class="c1"># Preallocate the (plant) transpiration array.</span>
+        <span class="n">plant_tp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim_t</span><span class="p">)</span>
+
+        <span class="c1"># Assign each time-point the value for the ET.</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">tk</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">timestamps</span><span class="p">):</span>
+            <span class="c1"># Dry season ET:</span>
+            <span class="c1"># Distribute the dry season amount evenly</span>
+            <span class="c1"># in the time points that fall in that season.</span>
+            <span class="k">if</span> <span class="n">tk</span><span class="o">.</span><span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]:</span>
+                <span class="n">plant_tp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">dry_et_cm</span><span class="o">/</span><span class="n">n_dry</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># Wet season ET:</span>
+            <span class="k">if</span> <span class="n">tk</span><span class="o">.</span><span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+                <span class="n">plant_tp</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span><span class="o">*</span><span class="n">wet_et_cm</span><span class="o">/</span><span class="n">n_wet</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># N.B.: Here we multiply by 2 each value because half of the</span>
+            <span class="c1"># points fall in the day and the other half during the night.</span>
+        <span class="c1"># _end_for_</span>
+
+        <span class="c1"># SAFEGUARD: Replace NaN with zero.</span>
+        <span class="n">plant_tp</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">plant_tp</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="c1"># Hydraulic lift related parameters.</span>
+        <span class="n">theta_50</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="n">K</span><span class="o">.</span><span class="n">lambda_exponent</span><span class="p">),</span> <span class="mf">0.05</span><span class="p">)</span>
+
+        <span class="c1"># Inverse of $\psi_{50}$: assumes m=0.5, n=2.</span>
+        <span class="n">inv_psi_50</span> <span class="o">=</span> <span class="n">soil</span><span class="o">.</span><span class="n">alpha</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">theta_50</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">2.0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Store tree-root related parameters in this structure.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;atm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">plant_tp</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;LAI&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Trees&quot;</span><span class="p">][</span><span class="s2">&quot;Leaf_Area_Index&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;iPsi_50&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">inv_psi_50</span>
+
+        <span class="c1"># EVAPORATION:</span>
+        <span class="c1"># We assume a flat value for the surface evaporation throughout the whole</span>
+        <span class="c1"># year. Since the discrete time-points are half during the night and half</span>
+        <span class="c1"># during the day we multiply the values by 2.</span>
+
+        <span class="c1"># Set the evaporation uniformly.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;surface_evap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Environmental&quot;</span><span class="p">][</span><span class="s2">&quot;Evaporation_pct&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">precip_cm</span><span class="p">)</span> <span class="o">/</span> <span class="n">dim_t</span>
+
+        <span class="c1"># Create a Richards&#39; equation object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pde_model</span> <span class="o">=</span> <span class="n">RichardsPDE</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">)</span>
+
+        <span class="c1"># Get the filename (or None).</span>
+        <span class="n">ic_data_file</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;IC_Filename&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Check if there is an initial conditions file.</span>
+        <span class="k">if</span> <span class="n">ic_data_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Create an initial conditions vector.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;initial_cond&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_conditions</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Open the initial conditions file.</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">ic_data_file</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_file</span><span class="p">:</span>
+                <span class="c1"># The file should have four columns.</span>
+                <span class="n">init_cond</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;IC&quot;</span><span class="p">])</span>
+
+                <span class="c1"># Make sure its numpy.array.</span>
+                <span class="n">init_cond</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">init_cond</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;IC&quot;</span><span class="p">])</span>
+
+                <span class="c1"># Check if the dimensions match.</span>
+                <span class="k">if</span> <span class="n">z_grid</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">init_cond</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2"> : IC vector&#39;s dimensions do not match&quot;</span>
+                                       <span class="s2">&quot; the spatial grid.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+                <span class="c1"># _end_if_</span>
+
+                <span class="c1"># Print a message.</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; IC vector was loaded successfully from: </span><span class="si">{0}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ic_data_file</span><span class="p">))</span>
+            <span class="c1"># _end_with_</span>
+
+            <span class="c1"># Create an initial conditions vector.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;initial_cond&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">init_cond</span></div>
+        <span class="c1"># _end_if_</span>
+
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="Simulation.initial_conditions"><a class="viewcode-back" href="../../src.html#src.simulation.Simulation.initial_conditions">[docs]</a>    <span class="k">def</span> <span class="nf">initial_conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates an initial conditions vector, by running the PDE</span>
+<span class="sd">        model forward in time for &#39;burn-in&#39; number of iterations.</span>
+
+<span class="sd">        :return: y0 state vector [dim_d].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># [WARNING] Set the flag to TRUE!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;sim_flags&quot;</span><span class="p">][</span><span class="s2">&quot;SPINUP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Display info.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> [Initial Conditions for Well no. </span><span class="si">{0}</span><span class="s2">]&quot;</span>
+              <span class="s2">&quot; Burn in period started ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">]))</span>
+
+        <span class="c1"># Spatial domain.</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;z_grid&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Update the wtd parameter in the structure.</span>
+        <span class="n">wtd_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># Get the porosity profile.</span>
+        <span class="n">q_0</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;porosity&quot;</span><span class="p">]()</span>
+
+        <span class="c1"># Compute the pressure head values.</span>
+        <span class="n">y0</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;hydro_model&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">pressure_head</span><span class="p">(</span><span class="n">q_0</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+
+        <span class="c1"># Set a maximum number of iterations.</span>
+        <span class="n">burn_in</span> <span class="o">=</span> <span class="mi">1500</span>
+
+        <span class="c1"># Early stop flag.</span>
+        <span class="n">early_stop</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Initial random vector.</span>
+        <span class="n">n_rnd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+
+        <span class="c1"># Create a local dictionary with parameters for the specific iteration.</span>
+        <span class="n">args_0</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;wtd&quot;</span><span class="p">:</span> <span class="n">wtd_i</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                  <span class="s2">&quot;n_rnd&quot;</span><span class="p">:</span> <span class="n">n_rnd</span><span class="p">,</span>
+                  <span class="s2">&quot;atm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;atm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                  <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                  <span class="s2">&quot;interception&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;interception&quot;</span><span class="p">],</span>
+                  <span class="s2">&quot;precipitation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;precipitation_cm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]}</span>
+
+        <span class="c1"># Local copy (reference).</span>
+        <span class="n">dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;dz&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Local copy (reference).</span>
+        <span class="n">psi_sat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">psi_sat</span>
+
+        <span class="c1"># Burn-in loop.</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">burn_in</span><span class="p">):</span>
+
+            <span class="c1"># During the burn-in period we do not update the</span>
+            <span class="c1"># random field. Moreover, the actual times don&#39;t</span>
+            <span class="c1"># matter. Time span can be fixed.</span>
+            <span class="n">t_span</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># Solve the PDE.</span>
+            <span class="n">y_j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pde_model</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">t_span</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">args_0</span><span class="p">)</span>
+
+            <span class="c1"># Find estimated wtd at the j-th iteration.</span>
+            <span class="n">wtd_est</span> <span class="o">=</span> <span class="n">find_wtd</span><span class="p">(</span><span class="n">y_j</span> <span class="o">&gt;=</span> <span class="n">psi_sat</span><span class="p">)</span>
+
+            <span class="c1"># Compute the absolute error: |wtd_obs - wtd_est|</span>
+            <span class="n">abs_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="n">wtd_est</span><span class="p">])</span>
+
+            <span class="c1"># Find the MSE between the two state vector solutions.</span>
+            <span class="n">mse_0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_j</span> <span class="o">-</span> <span class="n">y0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+            <span class="c1"># Set the vector for the next iteration.</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="n">y_j</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Repeat the burn-in integration as long as the distance</span>
+            <span class="c1"># between the two solutions is above a threshold value.</span>
+            <span class="k">if</span> <span class="n">abs_error</span> <span class="o">&lt;=</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mse_0</span> <span class="o">&lt;=</span> <span class="mf">0.01</span><span class="p">:</span>
+                <span class="c1"># Change the flag.</span>
+                <span class="n">early_stop</span> <span class="o">=</span> <span class="kc">True</span>
+
+                <span class="c1"># Display final message.</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; [Initial Conditions for Well no. </span><span class="si">{0}</span><span class="s2">] finished at [itr: </span><span class="si">{1}</span><span class="s2">] with&quot;</span>
+                      <span class="s2">&quot; [abs(error): </span><span class="si">{2}</span><span class="s2">] and [MSE: </span><span class="si">{3}</span><span class="s2">] </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">],</span>
+                                                                    <span class="n">j</span><span class="p">,</span> <span class="n">abs_error</span><span class="p">,</span> <span class="n">mse_0</span><span class="p">))</span>
+                <span class="c1"># Exit the loop.</span>
+                <span class="k">break</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_for_</span>
+
+        <span class="c1"># At this point the algorithm has reached maximum number of iterations.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">early_stop</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; [Initial Conditions for Well no. </span><span class="si">{0}</span><span class="s2">]&quot;</span>
+                  <span class="s2">&quot; finished at maximum number of iterations.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">]))</span>
+        <span class="c1"># _end_of_</span>
+
+        <span class="c1"># [WARNING] Set the flag to TRUE!</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;sim_flags&quot;</span><span class="p">][</span><span class="s2">&quot;SPINUP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># Return the state vector.</span>
+        <span class="k">return</span> <span class="n">y0</span></div>
+    <span class="c1"># _end_if_</span>
+
+<div class="viewcode-block" id="Simulation.run"><a class="viewcode-back" href="../../src.html#src.simulation.Simulation.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs the PDE model forward in time. All the output information is store in</span>
+<span class="sd">        self.output dictionary where we can later save it to the disk for further</span>
+<span class="sd">        analysis.</span>
+
+<span class="sd">        :return: None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if the model parameters have been initialized.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Simulation data structure&quot;</span>
+                               <span class="s2">&quot; &#39;mData&#39; is empty.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Transpiration and lateral flow values.</span>
+        <span class="c1"># Reset to empty lists before each run.</span>
+        <span class="n">transpiration</span><span class="p">,</span> <span class="n">lateral_flow</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="c1"># Get the initial conditions vector.</span>
+        <span class="n">y0</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;initial_cond&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Extract pressure head at saturation.</span>
+        <span class="n">psi_sat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">psi_sat</span>
+
+        <span class="c1"># Extract hydrological model.</span>
+        <span class="n">h_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;hydro_model&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Spatial domain.</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;z_grid&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Space discretization size.</span>
+        <span class="n">dim_d</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># Time domain size.</span>
+        <span class="n">dim_t</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;dim_t&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Volumetric water content.</span>
+        <span class="n">theta_vol</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_t</span><span class="p">,</span> <span class="n">dim_d</span><span class="p">))</span>
+
+        <span class="c1"># Pressure head (suction).</span>
+        <span class="n">psi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_t</span><span class="p">,</span> <span class="n">dim_d</span><span class="p">))</span>
+
+        <span class="c1"># Background hydraulic conductivity.</span>
+        <span class="c1"># Note: This is the equivalent of the</span>
+        <span class="c1"># saturated in the vanGenuchten model.</span>
+        <span class="n">k_bkg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_t</span><span class="p">,</span> <span class="n">dim_d</span><span class="p">))</span>
+
+        <span class="c1"># Unsaturated hydraulic conductivity.</span>
+        <span class="n">k_hrc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">dim_t</span><span class="p">,</span> <span class="n">dim_d</span><span class="p">))</span>
+
+        <span class="c1"># Water table depths (estimated).</span>
+        <span class="n">wtd_est</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim_t</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Error (absolute) of water table depth.</span>
+        <span class="n">abs_error</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">dim_t</span><span class="p">)</span>
+
+        <span class="c1"># Initial wtd value.</span>
+        <span class="n">wtd_est</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_wtd</span><span class="p">(</span><span class="n">y0</span> <span class="o">&gt;=</span> <span class="n">psi_sat</span><span class="p">)</span>
+
+        <span class="c1"># Update the error (at t=t0).</span>
+        <span class="n">abs_error</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="n">wtd_est</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+        <span class="c1"># Save the initial conditions at time $t = 0$.</span>
+        <span class="n">psi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">y0</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+        <span class="c1"># Create a random vector.</span>
+        <span class="n">n_rnd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">dim_d</span><span class="p">)</span>
+
+        <span class="c1"># Run the hydrological model to get the initial water content.</span>
+        <span class="n">theta_vol</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">k_hrc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">_</span><span class="p">,</span> <span class="n">k_bkg</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">h_model</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;n_rnd&quot;</span><span class="p">:</span> <span class="n">n_rnd</span><span class="p">})</span>
+
+        <span class="c1"># Virtual time array.</span>
+        <span class="n">tk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">dim_t</span><span class="p">)</span>
+
+        <span class="c1"># Create a Richards&#39; equation object.</span>
+        <span class="n">pde_model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pde_model</span>
+
+        <span class="c1"># Start the timer.</span>
+        <span class="n">time_t0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Integrate the &#39;PDE&#39; in tk. Each iteration corresponds to 0.5hr interval.</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">tk</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+
+            <span class="c1"># Find the index (location) of the target water table depth.</span>
+            <span class="n">wtd_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
+
+            <span class="c1"># Check if the index has been found.</span>
+            <span class="k">if</span> <span class="n">wtd_i</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Print a warning message.</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Warning: Observation </span><span class="si">{0}</span><span class="s2"> cannot be found in the spatial domain.&quot;</span>
+                      <span class="s2">&quot; Skipping iteration </span><span class="si">{1}</span><span class="s2"> ...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">i</span><span class="p">))</span>
+                <span class="c1"># SKip.</span>
+                <span class="k">continue</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># Create a local dictionary with parameters for the specific iteration.</span>
+            <span class="n">args_i</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;wtd&quot;</span><span class="p">:</span> <span class="n">wtd_i</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                      <span class="s2">&quot;n_rnd&quot;</span><span class="p">:</span> <span class="n">n_rnd</span><span class="p">,</span>
+                      <span class="s2">&quot;atm&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;atm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                      <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span>
+                      <span class="s2">&quot;interception&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;interception&quot;</span><span class="p">],</span>
+                      <span class="s2">&quot;precipitation&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;precipitation_cm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]}</span>
+
+            <span class="c1"># Update the random field (at least) daily (~24hr):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;precipitation&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">48</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="c1"># Standard normal random variables ~ N(0,1):</span>
+                <span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;n_rnd&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">dim_d</span><span class="p">)</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># This time-window corresponds to &#39;30&#39; minutes time intervals</span>
+            <span class="c1"># between observations.</span>
+            <span class="n">t_span</span> <span class="o">=</span> <span class="p">(</span><span class="n">tk</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">tk</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+            <span class="c1"># Solve the PDE and return the solution at the final time point.</span>
+            <span class="n">y_i</span> <span class="o">=</span> <span class="n">pde_model</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">t_span</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">args_i</span><span class="p">)</span>
+
+            <span class="c1"># Find $wtd$ at the k-th iteration.</span>
+            <span class="n">wtd_est</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_wtd</span><span class="p">(</span><span class="n">y_i</span> <span class="o">&gt;=</span> <span class="n">psi_sat</span><span class="p">)</span>
+
+            <span class="c1"># Compute the absolute error: |wtd_{obs} - wtd_{est}|</span>
+            <span class="n">abs_error</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="n">wtd_est</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+
+            <span class="c1"># Store the pressure head to the array.</span>
+            <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">y_i</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Recover the values of the volumetric water content $\theta$</span>
+            <span class="c1"># and the hydraulic conductivities $K(\theta)$ and &#39;Kbkg&#39; for</span>
+            <span class="c1"># the values of the final solution of the PDE.</span>
+            <span class="n">theta_vol</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">k_hrc</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">_</span><span class="p">,</span> <span class="n">k_bkg</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">h_model</span><span class="p">(</span><span class="n">y_i</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">args_i</span><span class="p">)</span>
+
+            <span class="c1"># Update the initial condition vector for the next iteration.</span>
+            <span class="n">y0</span> <span class="o">=</span> <span class="n">y_i</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+            <span class="c1"># Store cumulative output from the PDE.</span>
+            <span class="n">lateral_flow</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pde_model</span><span class="o">.</span><span class="n">arg_out</span><span class="p">[</span><span class="s2">&quot;lateral_flow&quot;</span><span class="p">])</span>
+            <span class="n">transpiration</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pde_model</span><span class="o">.</span><span class="n">arg_out</span><span class="p">[</span><span class="s2">&quot;transpiration&quot;</span><span class="p">])</span>
+
+            <span class="c1"># Display summary statistics (every ~100 iterations).</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">mod</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># Below the water table.</span>
+                <span class="n">w_side</span> <span class="o">=</span> <span class="s1">&#39;+&#39;</span>
+
+                <span class="c1"># Above the water table.</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;zWtd_cm&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">z</span><span class="p">[</span><span class="n">wtd_est</span><span class="p">[</span><span class="n">i</span><span class="p">]]:</span>
+                    <span class="n">w_side</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
+                <span class="c1"># _end_if_</span>
+
+                <span class="c1"># Compute the current Mean Absolute Error.</span>
+                <span class="n">mae</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">abs_error</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">i</span><span class="p">])</span>
+
+                <span class="c1"># Display message.</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; [Well No. </span><span class="si">{0}</span><span class="s2">] </span><span class="si">{1}</span><span class="s2">: MAE = </span><span class="si">{2:.2f}</span><span class="s2"> cm,&quot;</span>
+                      <span class="s2">&quot; [</span><span class="si">{3}</span><span class="s2">]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;Well_No&quot;</span><span class="p">],</span> <span class="n">i</span><span class="p">,</span> <span class="n">mae</span><span class="p">,</span> <span class="n">w_side</span><span class="p">))</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_for_</span>
+
+        <span class="c1"># Stop the timer.</span>
+        <span class="n">time_tf</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="c1"># Print duration.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Elapsed time: </span><span class="si">{0:.2f}</span><span class="s2"> seconds.</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time_tf</span> <span class="o">-</span> <span class="n">time_t0</span><span class="p">))</span>
+
+        <span class="c1"># Compute the effective saturation (normalized water content).</span>
+        <span class="n">s_eff</span> <span class="o">=</span> <span class="n">theta_vol</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">mData</span><span class="p">[</span><span class="s2">&quot;porosity&quot;</span><span class="p">]()[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Prepare the output.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;K_hrc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k_hrc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;K_bkg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">k_bkg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;S_eff&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">s_eff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;psi_press&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;theta_vol&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">theta_vol</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;abs_error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">abs_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;wtd_est_cm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="n">wtd_est</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;lateral_flow&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lateral_flow</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;transpiration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">transpiration</span></div>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="Simulation.saveResults"><a class="viewcode-back" href="../../src.html#src.simulation.Simulation.saveResults">[docs]</a>    <span class="k">def</span> <span class="nf">saveResults</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Saves the simulation results to a file. All the data should be stored</span>
+<span class="sd">        inside the self.output dictionary and be of type &quot;numpy.ndarray&quot;. For</span>
+<span class="sd">        the moment the file is saved in the same directory as the main program.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if the output dictionary is empty.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">:</span>
+            <span class="c1"># Print a message and do not save anything.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Simulation data structure &#39;output&#39;&quot;</span>
+                  <span class="s2">&quot; is empty.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Initial message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Saving the results to: </span><span class="si">{0}</span><span class="s2">.h5&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+
+            <span class="c1"># Create the output filename. Remove spaces (if any).</span>
+            <span class="n">file_out</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.h5&quot;</span><span class="p">)</span>
+
+            <span class="c1"># Save the data to an &#39;HDF5&#39; file format.</span>
+            <span class="c1"># NOTE:  Create file; truncate if exists.</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">file_out</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">out_file</span><span class="p">:</span>
+                <span class="c1"># Local reference.</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span>
+
+                <span class="c1"># Extract all the data.</span>
+                <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                    <span class="c1"># Default compressions level is &#39;4&#39;.</span>
+                    <span class="n">out_file</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="n">compression</span><span class="o">=</span><span class="s1">&#39;gzip&#39;</span><span class="p">)</span></div></div>
+                <span class="c1"># _end_for_</span>
+            <span class="c1"># _end_with_</span>
+
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+
+<span class="c1"># Auxiliary function.</span>
+<div class="viewcode-block" id="loadResults"><a class="viewcode-back" href="../../src.html#src.simulation.loadResults">[docs]</a><span class="k">def</span> <span class="nf">loadResults</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Loads the simulation data that have been stored in the hdf5 file</span>
+<span class="sd">    using the object&#39;s method saveResults().</span>
+
+<span class="sd">    :param filename: (string) is the &#39;.h5&#39; file that contains the data.</span>
+
+<span class="sd">    :return: a dictionary with all the data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if we have given input file.</span>
+    <span class="k">if</span> <span class="n">filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; load_data: No input file is given.&quot;</span><span class="p">)</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Simulation data.</span>
+    <span class="n">sim_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Open the file for read only.</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_file</span><span class="p">:</span>
+
+        <span class="c1"># Extract all the data.</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">input_file</span><span class="p">:</span>
+            <span class="n">sim_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">input_file</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="c1"># _end_for_</span>
+
+    <span class="c1"># _end_with_</span>
+
+    <span class="c1"># Return the dictionary.</span>
+    <span class="k">return</span> <span class="n">sim_data</span></div>
+<span class="c1"># _end_def_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../LICENSE.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../HELP.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
