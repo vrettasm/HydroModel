@@ -33,10 +33,18 @@ def validateInputParametersFile(filename):
         model_params = json.load(input_file)
 
         # Required keys in the json file.
-        required_keys = ["IC_Filename", "Data_Filename", "Output_Name",
-                         "Well_No", "Water_Content", "Hydraulic_Conductivity",
-                         "Hydrological_Model", "Simulation_Flags", "Environmental",
-                         "Soil_Properties", "Trees", "Site_Information"]
+        required_keys = ["Trees",
+                         "Well_No",
+                         "Output_Name",
+                         "IC_Filename",
+                         "Data_Filename",
+                         "Water_Content",
+                         "Environmental",
+                         "Soil_Properties",
+                         "Site_Information",
+                         "Simulation_Flags",
+                         "Hydrological_Model",
+                         "Hydraulic_Conductivity"]
 
         # Check the keywords for membership in the file.
         for k in required_keys:
