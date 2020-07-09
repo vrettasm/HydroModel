@@ -30,22 +30,17 @@ def logN_rnd(mx, vx, en):
     # Avoid division by zero error.
     mx[mx == 0.0] = 1.0e-7
 
-    @njit
-    def _local_fast(p_mx, p_vx, p_en):
-        # Square mean values.
-        mx_sq = p_mx ** 2
+    # Square mean values.
+    mx_sq = mx ** 2
 
-        # Parameter 'mu' for the LogNormal distribution.
-        mu0 = np.log(mx_sq / np.sqrt(p_vx + mx_sq))
+    # Parameter 'mu' for the LogNormal distribution.
+    mu0 = np.log(mx_sq / np.sqrt(vx + mx_sq))
 
-        # Parameter 'sigma' for the LogNormal distribution.
-        sig = np.sqrt(np.log(p_vx / mx_sq + 1.0))
-
-        return np.exp(mu0 + sig * p_en)
-    # _end_def_
+    # Parameter 'sigma' for the LogNormal distribution.
+    sig = np.sqrt(np.log(vx / mx_sq + 1.0))
 
     # Random variable with (mu, sigma).
-    return _local_fast(mx, vx, en)
+    return np.exp(mu0 + sig * en)
 # _end_def_
 
 @njit
