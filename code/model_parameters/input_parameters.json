@@ -11,6 +11,8 @@
 
   "Data_Filename": "../data/wells/no_10/Well_10_WY_08_09.csv",
 
+  "Output_Name": "Sim_00",
+
   "Well_No": 10,
 
   "Site_Information": "./model_parameters/site_information.json",
