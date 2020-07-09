@@ -1,4 +1,5 @@
 import numpy as np
+from numba import njit
 
 def logN_rnd(mx, vx, en):
     """
@@ -42,6 +43,7 @@ def logN_rnd(mx, vx, en):
     return np.exp(mu0 + sig * en)
 # _end_def_
 
+@njit
 def find_wtd(y=None):
     """
     This function identifies  the location of  the water table  depth (wtd)
@@ -72,7 +74,7 @@ def find_wtd(y=None):
 
     # Initialize the index at the bottom.
     #  - i.e. start the search backwards.
-    for j, y_n in enumerate(reversed(y)):
+    for j, y_n in enumerate(y[::-1]):
         # Check if the cell is saturated.
         if not y_n:
             i = dim_d - j
