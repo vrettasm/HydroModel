@@ -3,6 +3,10 @@ from numba import njit
 
 @njit(fastmath=True)
 def _local_fast(mx, vx, en):
+    """
+    Local (hidden) function optimized with numba.njit.
+    The input signature is the same as the logN_rnd().
+    """
     # Square mean values.
     mx_sq = mx ** 2
 
