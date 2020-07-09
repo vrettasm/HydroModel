@@ -33,9 +33,10 @@ def validateInputParametersFile(filename):
         model_params = json.load(input_file)
 
         # Required keys in the json file.
-        required_keys = ["IC_Filename", "Data_Filename", "Well_No", "Water_Content",
-                         "Hydraulic_Conductivity", "Hydrological_Model", "Simulation_Flags",
-                         "Environmental", "Soil_Properties", "Trees", "Site_Information"]
+        required_keys = ["IC_Filename", "Data_Filename", "Output_Name",
+                         "Well_No", "Water_Content", "Hydraulic_Conductivity",
+                         "Hydrological_Model", "Simulation_Flags", "Environmental",
+                         "Soil_Properties", "Trees", "Site_Information"]
 
         # Check the keywords for membership in the file.
         for k in required_keys:
@@ -109,8 +110,16 @@ def main(params_file=None, data_file=None):
                                      names=["ID", "Datenum", "Precipitation_cm", "WTD_m"])
         # _end_with_
 
+        # Get the output name from the file.
+        output_name = params["Output_Name"]
+
+        # If nothing has been given set a default name.
+        if output_name is None:
+            output_name = "Sim_01"
+        # _end_if_
+
         # Create a simulation object.
-        sim_01 = Simulation("Sim_01")
+        sim_01 = Simulation(output_name)
 
         # Setup its parameters and water data.
         sim_01.setupModel(params, water_data)
