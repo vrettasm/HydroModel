@@ -1,6 +1,20 @@
 import numpy as np
 from numba import njit
 
+@njit(fastmath=True)
+def _local_fast(mx, vx, en):
+    # Square mean values.
+    mx_sq = mx ** 2
+
+    # Parameter 'mu' for the LogNormal distribution.
+    mu0 = np.log(mx_sq / np.sqrt(vx + mx_sq))
+
+    # Parameter 'sigma' for the LogNormal distribution.
+    sig = np.sqrt(np.log(vx / mx_sq + 1.0))
+
+    return np.exp(mu0 + sig * en)
+# _end_def_
+
 def logN_rnd(mx, vx, en):
     """
     Log-Normal function. If X follows the log-normal distribution with parameters 'mu'
@@ -30,17 +44,8 @@ def logN_rnd(mx, vx, en):
     # Avoid division by zero error.
     mx[mx == 0.0] = 1.0e-7
 
-    # Square mean values.
-    mx_sq = mx ** 2
-
-    # Parameter 'mu' for the LogNormal distribution.
-    mu0 = np.log(mx_sq / np.sqrt(vx + mx_sq))
-
-    # Parameter 'sigma' for the LogNormal distribution.
-    sig = np.sqrt(np.log(vx / mx_sq + 1.0))
-
     # Random variable with (mu, sigma).
-    return np.exp(mu0 + sig * en)
+    return _local_fast(mx, vx, en)
 # _end_def_
 
 @njit
