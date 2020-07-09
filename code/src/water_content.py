@@ -10,8 +10,9 @@ class WaterContent(object):
     __slots__ = ("minimum", "maximum", "residual", "wilting", "field_cap")
 
     # Default constructor.
-    def __init__(self, minimum: float = 0.08, maximum: float = 0.30, residual: float = 0.05,
-                 wilting: float = -1500.0, field_cap: float = 340.0):
+    def __init__(self, minimum: float = 0.08, maximum: float = 0.30,
+                 residual: float = 0.05, wilting: float = -1500.0,
+                 field_cap: float = 340.0):
         """
         Constructs an object that will hold all the water content variables.
 
@@ -19,16 +20,18 @@ class WaterContent(object):
 
         :param maximum: (float) maximum water content (dimensionless [-]).
 
-        :param residual: (float) residual water content, defined as the water content for
-        which the gradient $dTheta/dh$ becomes zero, and $theta_{sat}$ is the saturated
-        water content, which is equivalent to porosity, $phi$ (dimensionless [-]).
+        :param residual: (float) residual water content, defined as the water
+        content for which the gradient $dTheta/dh$ becomes zero, and $theta_{sat}$
+        is the saturated water content, which is equivalent to porosity, $phi$
+        (dimensionless [-]).
 
-        :param wilting: (float) permanent wilting point or wilting point is defined as the
-        minimum amount of water in the soil that the plant requires not to wilt.
+        :param wilting: (float) permanent wilting point or wilting point is
+        defined as the minimum amount of water in the soil that the plant
+        requires not to wilt.
 
-        :param field_cap: (float) field capacity is the amount of soil moisture or water
-        content held in the soil after excess water has drained away and the rate
-        of downward movement has decreased.
+        :param field_cap: (float) field capacity is the amount of soil moisture
+        or water content held in the soil after excess water has drained away
+        and the rate of downward movement has decreased.
 
         :raises ValueError: if there checkValues method fails.
         """
@@ -52,10 +55,11 @@ class WaterContent(object):
     @staticmethod
     def inRange(new_value: float):
         """
-        Sets the new input value within the [0-1] range. This ensures that no negative
-        values will enter the object.
+        Sets the new input value within the [0-1] range. This ensures
+        that no negative values will enter the object.
 
-        :param new_value: (float) represents a water content value (dimensionless [-]).
+        :param new_value: (float) represents a water content value
+        (dimensionless [-]).
 
         :return: a new value in [0-1].
         """
@@ -140,7 +144,8 @@ class WaterContent(object):
 
             # Raise an error with a message.
             raise ValueError(" {0}: The new maximum: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__, new_value))
+                             " the rest of the values.".format(self.__class__.__name__,
+                                                               new_value))
         # _end_if_
     # _end_def_
 
@@ -186,7 +191,8 @@ class WaterContent(object):
 
             # Raise an error with a message.
             raise ValueError(" {0}: The new residual: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__, new_value))
+                             " the rest of the values.".format(self.__class__.__name__,
+                                                               new_value))
         # _end_if_
     # _end_def_
 
@@ -237,14 +243,15 @@ class WaterContent(object):
     # Auxiliary.
     def __str__(self):
         """
-        Override to print a readable string presentation of the WaterContent object.
+        Override to print a readable string presentation of the object.
         This will include its id(), along with its fields values.
 
         :return: a string representation of a WaterContent object.
         """
         return " WaterContent Id({0}):"\
                " Minimum={1}, Maximum={2}, Residual={3},"\
-               " Wilting={4}, Field capacity={5}".format(id(self), self.minimum, self.maximum, self.residual,
+               " Wilting={4}, Field capacity={5}".format(id(self), self.minimum,
+                                                         self.maximum, self.residual,
                                                          self.wilting, self.field_cap)
     # _end_def_
 

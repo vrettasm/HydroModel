@@ -7,13 +7,13 @@ from .utilities import find_wtd
 
 class RichardsPDE(object):
     """
-    Richards' PDE model equations. It represents the movement of water in un-
-    saturated soils.
+    Richards' PDE model equations. It represents the movement of water
+    in unsaturated soils.
 
         https://en.wikipedia.org/wiki/Richards_equation
 
-    The PDE discretization code here mimics MATLAB's "pdepe" function to solve
-    1-D parabolic and elliptic PDEs.
+    The PDE discretization code here mimics MATLAB's "pdepe" function
+    to solve 1-D parabolic and elliptic PDEs.
     """
 
     __slots__ = ("m_data", "x_mesh", "x_mid", "mid_i", "xzmp", "zxmp",
@@ -32,8 +32,8 @@ class RichardsPDE(object):
 
         # Check if we have been given input.
         if m_data is None:
-            raise ValueError(" {0}: No input is given."
-                             " The model cannot initialize.".format(self.__class__.__name__))
+            raise ValueError(" {0}: No input is given. The model"
+                             " cannot initialize.".format(self.__class__.__name__))
         # _end_if_
 
         # Variable output arguments.
@@ -59,7 +59,8 @@ class RichardsPDE(object):
 
         # Make sure the space domain is increasing (downwards).
         if np.any(dx <= 0.0):
-            raise RuntimeError(" {0}: Space domain is not increasing.".format(self.__class__.__name__))
+            raise RuntimeError(" {0}: Space domain is not"
+                               " increasing.".format(self.__class__.__name__))
         # _end_if_
 
         # Initialize the $nx-1$ mid-points where functions will be evaluated.
@@ -102,8 +103,8 @@ class RichardsPDE(object):
         cL, sL, fL = self.pde_fun(self.x_mid[0], y0, dy0, *args)
 
         # Evaluate the boundary conditions.
-        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0], self.x_mesh[-1], y[-1], *args)
-
+        pL, qL, pR, qR = self.bc_fun(self.x_mesh[0], y[0],
+                                     self.x_mesh[-1], y[-1], *args)
         # TOP BOUNDARY:
         if np.all(qL == 0.0):
             dydt[0] = pL
@@ -509,7 +510,8 @@ class RichardsPDE(object):
 
             # Current solution.
             sol_t = solve_ivp(self, t_span=t_span, y0=y0, method='BDF',
-                              atol=abs_tol, rtol=rel_tol, args=args, jac_sparsity=jac_n)
+                              atol=abs_tol, rtol=rel_tol, args=args,
+                              jac_sparsity=jac_n)
 
             # Check if the solver terminated successfully.
             if sol_t.success:

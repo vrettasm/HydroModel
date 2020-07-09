@@ -21,9 +21,10 @@ def _local_fast(mx, vx, en):
 
 def logN_rnd(mx, vx, en):
     """
-    Log-Normal function. If X follows the log-normal distribution with parameters 'mu'
-    and 'sigma': X ~ LogN(mu, sigma), then log(X) follows the normal distribution with
-    mean 'mu' and standard deviation 'sigma': log(X) ~ N(mu, sigma).
+    Log-Normal function. If X follows the log-normal distribution with
+    parameters mu and sigma : X ~ LogN(mu, sigma), then log(X) follows
+    the normal distribution with mean 'mu' and standard deviation
+    'sigma': log(X) ~ N(mu, sigma).
 
     Example (from python console):
 

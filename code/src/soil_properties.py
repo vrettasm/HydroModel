@@ -185,8 +185,8 @@ class SoilProperties(object):
     # Auxiliary.
     def __str__(self):
         """
-        Override to print a readable string presentation of the SoilProperties
-        object. This will include its id(), along with its fields values.
+        Override to print a readable string presentation of the object.
+        This will include its id(), along with its fields values.
 
         :return: a string representation of a SoilProperties object.
         """

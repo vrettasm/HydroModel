@@ -420,7 +420,8 @@ class Simulation(object):
         # Initial random vector.
         n_rnd = self.rng.standard_normal(z.size)
 
-        # Create a local dictionary with parameters for the specific iteration.
+        # Create a local dictionary with parameters
+        # for the specific iteration.
         args_0 = {"wtd": wtd_i[0][0],
                   "n_rnd": n_rnd,
                   "atm": self.mData["atm"][0],
@@ -488,7 +489,7 @@ class Simulation(object):
     def run(self):
         """
         Runs the PDE model forward in time. All the output information is store in
-        self.output dictionary where we can later save it to the disk for further
+        self.output dictionary, where we can later save it to the disk for further
         analysis.
 
         :return: None

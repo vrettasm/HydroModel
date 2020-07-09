@@ -2,7 +2,7 @@ from numpy import maximum as np_max
 
 class HydraulicConductivity(object):
     """
-    This class represents the hydraulic conductivity of the hydrologic model.
+    This class represents the hydraulic conductivity of the hydrological model.
     """
 
     __slots__ = ("param_sat_soil", "param_sat_saprolite", "param_sigma_noise",
@@ -13,10 +13,9 @@ class HydraulicConductivity(object):
                  sat_fresh_bedrock: float = 0.1, sigma_noise: float = 2.0,
                  lambda_exponent: float = 1.0):
         """
-        Constructs an object that will hold all the hydraulic conductivity variables.
-
-        Note: These values are defined at the top of the layer and can change by several
-        orders of magnitude between the different soil layers.
+        Constructs an object that will hold all the hydraulic conductivity
+        variables. These values are defined at the top of the layer and can
+        change by several orders of magnitude between the different soil layers.
 
         Note: L is cm, T is 0.5hrs.
 
@@ -221,8 +220,8 @@ class HydraulicConductivity(object):
     # Auxiliary.
     def __str__(self):
         """
-        Override to print a readable string presentation of the HydraulicConductivity
-        object. This will include its id(), along with its fields values.
+        Override to print a readable string presentation of the object.
+        This will include its id(), along with its fields values.
 
         :return: a string representation of a HydraulicConductivity object.
         """

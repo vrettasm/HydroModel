@@ -21,10 +21,11 @@ class Porosity(object):
 
     def __init__(self, z_grid, layers, theta, soil, p_model):
         """
-        Constructs an object that will hold the porosity, field capacity and wilting
-        point profiles, for the z-domain (increasing downwards).
+        Constructs an object that will hold the porosity, field capacity and
+        wilting point profiles, for the z-domain (increasing downwards).
 
-        :param z_grid: depth values at which we want to generate the porosity values.
+        :param z_grid: depth values at which we want to generate the porosity
+        values.
 
         :param layers: tuple with the underground layers.
 
@@ -53,7 +54,8 @@ class Porosity(object):
 
         # Make sure the z-grid domain is increasing.
         if np.any(np.diff(z_grid) <= 0.0):
-            raise RuntimeError(" {0}: Space domain z_grid is not increasing.".format(self.__class__.__name__))
+            raise RuntimeError(" {0}: Space domain z_grid is not"
+                               " increasing.".format(self.__class__.__name__))
         # _end_if_
 
         # Store the type of profile.
@@ -81,7 +83,8 @@ class Porosity(object):
 
         elif str.upper(p_model) == "LINEAR":
 
-            # Increase linearly from max (top of the domain) to min (bottom of the domain).
+            # Increase linearly from max (top of the domain)
+            # to min (bottom of the domain).
             q_sat = np.linspace(theta.max, theta.min, len_z)
 
         elif str.upper(p_model) == "EXPONENTIAL":
@@ -154,8 +157,8 @@ class Porosity(object):
             # _end_if_
 
         else:
-            raise ValueError(" {0}: Wrong porosity profile type: {1}".format(self.__class__.__name__,
-                                                                             p_model))
+            raise ValueError(" {0}: Wrong porosity profile type:"
+                             " {1}".format(self.__class__.__name__, p_model))
         # _end_if_
 
         # Safeguard: make sure this profile is [MIN <= q_sat <= MAX]

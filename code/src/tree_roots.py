@@ -16,7 +16,7 @@ class TreeRoots(object):
 
     2) D. B. G. Collins and R. L. Bras (2007): Plant rooting strategies in
     water-limited ecosystems. Water Resources Research, Vol. 43, W06407,
-    doi:10.1029/2006WR005541, pages: 1-10.
+    pages: 1-10, doi:10.1029/2006WR005541.
 
     """
 
@@ -168,7 +168,8 @@ class TreeRoots(object):
 
         :param theta_z: soil moisture values at depth(s) 'z'. [dim_d x dim_m]
 
-        :param z_roots: depth values at which we want to return the root efficiency. [dim_d x 1]
+        :param z_roots: depth values at which we want to return the root efficiency.
+        [dim_d x 1]
 
         :return: (1) root efficiency (alpha01 * alpha02) [dim_d x dim_m]
                  (2) available water in the root zone    [1 x 1]
