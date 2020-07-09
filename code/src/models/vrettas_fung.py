@@ -127,7 +127,7 @@ class VrettasFung(HydrologicalModel):
             mean_soil = k_hc.sat_soil * np.ones(n_soil)
 
             # Soil noise variables: !!! REDUCED !!!
-            rnd_soil = 0.10 * n_rnd[soil_layer_idx]
+            rnd_soil = 0.05 * n_rnd[soil_layer_idx]
 
             # Weight function:
             s_eff_soil = s_eff[soil_layer_idx]
@@ -152,7 +152,7 @@ class VrettasFung(HydrologicalModel):
             mean_sapr = fun_sapr(z[sapr_layer_idx])
 
             # Saprolite noise variables: !!! REDUCED !!!
-            rnd_sapr = 0.15 * n_rnd[sapr_layer_idx]
+            rnd_sapr = 0.10 * n_rnd[sapr_layer_idx]
 
             # Weight function:
             s_eff_sapr = s_eff[sapr_layer_idx]
