@@ -219,13 +219,13 @@ class Simulation(object):
             self.mData["hydro_model"] = VrettasFung(soil, porous, K, theta.res, dz)
 
             # Print a message.
-            print(" Vrettas-Fung model selected.")
+            print(" Selected model: Vrettas-Fung")
         else:
             # Create the hydro-object.
             self.mData["hydro_model"] = vanGenuchten(soil, porous, K, theta.res, dz)
 
             # Print a message.
-            print(" vanGenuchten model selected.")
+            print(" Selected model: vanGenuchten")
         # _end_if_
 
         # Extract the observational data from the pandas.Dataframe:
