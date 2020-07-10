@@ -22,6 +22,30 @@ class VrettasFung(HydrologicalModel):
     def __init__(self, soil, porous, k_hc, theta_res, dz):
         # Call the constructor of the parent class.
         super().__init__(soil, porous, k_hc, theta_res, dz)
+
+        # Get all the underground boundaries.
+        (l0, l1, l2, l3) = porous.layers
+
+        # Test domain for the interpolation
+        # function in the saprolite domain.
+        z_sapr = np.arange(l1, l2 + 1)
+
+        # Make a interpolation function.
+        self.fun_sapr = interp1d(z_sapr,
+                                 np.linspace(k_hc.sat_soil,
+                                             k_hc.sat_saprolite, z_sapr.size))
+        # Test domain for the interpolation
+        # function in the weathered bedrock.
+        z_wbed = np.arange(l2, l3 + 1)
+
+        # Compute the two parameters of the
+        # exponential function:
+        p0 = k_hc.sat_saprolite
+        p1 = np.log(p0 / k_hc.sat_fresh_bedrock) / l3
+
+        # Make the interpolation function.
+        self.fun_wbed = interp1d(z_wbed,
+                                 p0 * np.exp(-np.linspace(0, l3, z_wbed.size) * p1))
     # _end_def_
 
     def __call__(self, psi, z, *args):
@@ -141,15 +165,8 @@ class VrettasFung(HydrologicalModel):
 
         # SAPROLITE LAYER:
         if sapr_layer_idx:
-            # Test domain for the interpolation function.
-            z_test = np.arange(l1, l2+1)
-
-            # Make a interpolation function.
-            fun_sapr = interp1d(z_test, np.linspace(k_hc.sat_soil,
-                                                    k_hc.sat_saprolite,
-                                                    z_test.size))
             # Compute the mean values of $Kbkg_sap$.
-            mean_sapr = fun_sapr(z[sapr_layer_idx])
+            mean_sapr = self.fun_sapr(z[sapr_layer_idx])
 
             # Saprolite noise variables: !!! REDUCED !!!
             rnd_sapr = 0.10 * n_rnd[sapr_layer_idx]
@@ -166,18 +183,8 @@ class VrettasFung(HydrologicalModel):
 
         # WEATHERED BEDROCK LAYER:
         if wbed_layer_idx:
-            # Compute the mean values of $Kbkg_wbed$.
-            z_test = np.arange(l2, l3+1)
-
-            # Compute the two parameters of the exponential function:
-            p0 = k_hc.sat_saprolite
-            p1 = np.log(p0 / k_hc.sat_fresh_bedrock) / l3
-
-            # Construct the interpolation function.
-            fun_wbed = interp1d(z_test, p0 * np.exp(-np.linspace(0, l3, z_test.size) * p1))
-
             # Get the values at the 'z' (weathered bedrock only).
-            mean_wbed = fun_wbed(z[wbed_layer_idx])
+            mean_wbed = self.fun_wbed(z[wbed_layer_idx])
 
             # Weathered bedrock noise variables:
             rnd_wbed = n_rnd[wbed_layer_idx]
