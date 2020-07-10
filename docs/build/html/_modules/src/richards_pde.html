@@ -1,0 +1,691 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.richards_pde &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.richards_pde</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy</span> <span class="kn">import</span> <span class="n">sparse</span>
+<span class="kn">from</span> <span class="nn">scipy.integrate</span> <span class="kn">import</span> <span class="n">solve_ivp</span>
+
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">find_wtd</span>
+
+
+<div class="viewcode-block" id="RichardsPDE"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.RichardsPDE">[docs]</a><span class="k">class</span> <span class="nc">RichardsPDE</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Richards&#39; PDE model equations. It represents the movement of water</span>
+<span class="sd">    in unsaturated soils.</span>
+
+<span class="sd">        https://en.wikipedia.org/wiki/Richards_equation</span>
+
+<span class="sd">    The PDE discretization code here mimics MATLAB&#39;s &quot;pdepe&quot; function</span>
+<span class="sd">    to solve 1-D parabolic and elliptic PDEs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;m_data&quot;</span><span class="p">,</span> <span class="s2">&quot;x_mesh&quot;</span><span class="p">,</span> <span class="s2">&quot;x_mid&quot;</span><span class="p">,</span> <span class="s2">&quot;mid_i&quot;</span><span class="p">,</span> <span class="s2">&quot;xzmp&quot;</span><span class="p">,</span> <span class="s2">&quot;zxmp&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;nx&quot;</span><span class="p">,</span> <span class="s2">&quot;h_model&quot;</span><span class="p">,</span> <span class="s2">&quot;var_arg_out&quot;</span><span class="p">,</span> <span class="s2">&quot;sim_flags&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">m_data</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default constructor of the Richards&#39; PDE class.</span>
+
+<span class="sd">        :param m_data: dictionary with all the simulation parameters.</span>
+
+<span class="sd">        :raises ValueError: if there is no input data.</span>
+
+<span class="sd">        :raises RuntimeError: if the domain is not increasing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if we have been given input.</span>
+        <span class="k">if</span> <span class="n">m_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: No input is given. The model&quot;</span>
+                             <span class="s2">&quot; cannot initialize.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Variable output arguments.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;transpiration&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;lateral_flow&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">}</span>
+
+        <span class="c1"># Make a reference to the input data structure.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span> <span class="o">=</span> <span class="n">m_data</span>
+
+        <span class="c1"># Get the hydrological model.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_model</span> <span class="o">=</span> <span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;hydro_model&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Spatial grid [dim_d x 1].</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;z_grid&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Get the simulation flags.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;sim_flags&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Get the number of discrete points.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># Get the distance between space points.</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="c1"># Make sure the space domain is increasing (downwards).</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">dx</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Space domain is not&quot;</span>
+                               <span class="s2">&quot; increasing.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Initialize the $nx-1$ mid-points where functions will be evaluated.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_mid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">dx</span>
+
+        <span class="c1"># Mid-point indexes.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Interior grid (mid)-points.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nx</span><span class="p">)</span>
+
+        <span class="c1"># Interior grid (mid)-points.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mid</span>
+
+        <span class="c1"># Interior grid (mid)-points.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zxmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mid</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function implements the space discretization of the PDE.</span>
+
+<span class="sd">        :param t: time variable.</span>
+
+<span class="sd">        :param y: state vector of the PDE.</span>
+
+<span class="sd">        :return: derivative dydt.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Make sure input is 1D.</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="c1"># Preallocate for efficiency.</span>
+        <span class="n">dydt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Evaluate the PDE at the top (1/2).</span>
+        <span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span> <span class="o">=</span> <span class="n">midpoints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="c1"># Evaluate the PDE at the top (2/2).</span>
+        <span class="n">cL</span><span class="p">,</span> <span class="n">sL</span><span class="p">,</span> <span class="n">fL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pde_fun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mid</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y0</span><span class="p">,</span> <span class="n">dy0</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c1"># Evaluate the boundary conditions.</span>
+        <span class="n">pL</span><span class="p">,</span> <span class="n">qL</span><span class="p">,</span> <span class="n">pR</span><span class="p">,</span> <span class="n">qR</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bc_fun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="c1"># TOP BOUNDARY:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">qL</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="n">dydt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">pL</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Compute the contribution of C(.):</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">qL</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">zxmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">cL</span><span class="p">)</span>
+
+            <span class="c1"># Avoid division by zero.</span>
+            <span class="n">denom</span><span class="p">[</span><span class="n">denom</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Compute the derivative at $z = 0$:</span>
+            <span class="n">dydt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pL</span> <span class="o">+</span> <span class="n">qL</span> <span class="o">*</span> <span class="p">(</span><span class="n">fL</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">zxmp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">sL</span><span class="p">))</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># INTERIOR POINTS:</span>
+        <span class="n">y_mid</span><span class="p">,</span> <span class="n">dy_mid</span> <span class="o">=</span> <span class="n">midpoints</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">],</span>
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">x_mesh</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># PDE evaluation.</span>
+        <span class="n">cR</span><span class="p">,</span> <span class="n">sR</span><span class="p">,</span> <span class="n">fR</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pde_fun</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_mid</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">],</span> <span class="n">y_mid</span><span class="p">,</span> <span class="n">dy_mid</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c1"># WARNING: DO NOT EDIT THESE LINES</span>
+        <span class="n">cLi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">cL</span><span class="p">,</span> <span class="n">cR</span><span class="p">))</span>
+        <span class="n">fLi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">fL</span><span class="p">,</span> <span class="n">fR</span><span class="p">))</span>
+        <span class="n">sLi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">sL</span><span class="p">,</span> <span class="n">sR</span><span class="p">))</span>
+        <span class="c1"># WARNING: DO NOT EDIT THESE LINES</span>
+
+        <span class="c1"># Compute the contribution of C(.):</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zxmp</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">]</span> <span class="o">*</span> <span class="n">cR</span> <span class="o">+</span>
+                              <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">]</span> <span class="o">*</span> <span class="n">cLi</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="c1"># Avoid division by zero.</span>
+        <span class="n">denom</span><span class="p">[</span><span class="n">denom</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="c1"># Compute the derivatives at $z = [1:-2]$:</span>
+        <span class="n">dydt</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">fR</span> <span class="o">-</span> <span class="n">fLi</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+                            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zxmp</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">]</span> <span class="o">*</span> <span class="n">sR</span> <span class="o">+</span>
+                             <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">mid_i</span><span class="p">]</span> <span class="o">*</span> <span class="n">sLi</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="c1"># BOTTOM BOUNDARY:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">qR</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="n">dydt</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">pR</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Compute the contribution of C(.):</span>
+            <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="o">-</span><span class="n">qR</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">cLi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+            <span class="c1"># Avoid division by zero.</span>
+            <span class="n">denom</span><span class="p">[</span><span class="n">denom</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Compute the derivative at $z = end$:</span>
+            <span class="n">dydt</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">pR</span> <span class="o">+</span> <span class="n">qR</span> <span class="o">*</span> <span class="p">(</span><span class="n">fLi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">xzmp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">sLi</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Return the derivative.</span>
+        <span class="k">return</span> <span class="n">dydt</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">arg_out</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gives access to the variable output arguments.</span>
+
+<span class="sd">        :return: Dictionary with output values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="RichardsPDE.pde_fun"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.RichardsPDE.pde_fun">[docs]</a>    <span class="k">def</span> <span class="nf">pde_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dydz</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Richards&#39; Equation (PDE - 1d).</span>
+
+<span class="sd">        :param z: spatial discretization grid, i.e. the depth values at which</span>
+<span class="sd">        we want to return the solution of the PDE. [dim_d]</span>
+
+<span class="sd">        :param y: is the state vector of the PDE, y(z,t=t0). [dim_d]</span>
+
+<span class="sd">        :param dydz: is the derivative of the PDE i.e. dydt(z,t). [dim_d].</span>
+
+<span class="sd">        :param args: additional input parameters of the PDE.</span>
+
+<span class="sd">        :return: C (specific moisture capacity), sink, flux.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Ensure the input is 1-D.</span>
+        <span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dydz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">dydz</span><span class="p">)</span>
+
+        <span class="c1"># Get the dimensions of the state vector.</span>
+        <span class="n">dim_d</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Compute the hydraulic conductivity &#39;K(.)&#39; and the specific moisture</span>
+        <span class="c1"># capacity &#39;C(.)&#39;.  Additionally return the soil moisture at the same</span>
+        <span class="c1"># depths and the porosity. These are used for the root efficiency and</span>
+        <span class="c1"># the hydraulic lift processes.</span>
+        <span class="n">theta</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_model</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c1"># Compute the flux term.</span>
+        <span class="n">flux</span> <span class="o">=</span> <span class="n">K</span> <span class="o">*</span> <span class="p">(</span><span class="n">dydz</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Sink term is initialized to zero.</span>
+        <span class="n">sink</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">flux</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Define additional output variables.</span>
+        <span class="n">transpire</span><span class="p">,</span> <span class="n">lateral_flow</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="c1"># We know that the first argument in the &#39;args&#39; list is a dictionary</span>
+        <span class="c1"># that contains all the necessary parameters for the i-th iteration.</span>
+        <span class="n">args_i</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Get the discretization step [L: cm]</span>
+        <span class="n">dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;dz&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Get the root density object.</span>
+        <span class="n">tree_roots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;tree_roots&quot;</span><span class="p">]</span>
+
+        <span class="c1"># Find the indexes of the root-zone.</span>
+        <span class="n">r_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z</span> <span class="o">&lt;=</span> <span class="n">tree_roots</span><span class="o">.</span><span class="n">max_root_depth</span><span class="p">)</span>
+
+        <span class="c1"># Get the roots density at depths (z).</span>
+        <span class="n">roots_z</span> <span class="o">=</span> <span class="n">tree_roots</span><span class="p">(</span><span class="n">z</span><span class="p">[</span><span class="n">r_cells</span><span class="p">])</span>
+
+        <span class="c1"># In Normal Mode: SPINUP == FALSE.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span><span class="p">[</span><span class="s2">&quot;SPINUP&quot;</span><span class="p">]:</span>
+
+            <span class="c1"># Compute day-light hours. We assume that the daylight is</span>
+            <span class="c1"># between [06:00:00] (morning) and [17:59:59] (afternoon).</span>
+            <span class="n">daylight</span> <span class="o">=</span> <span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">hour</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">18</span><span class="p">)</span>
+
+            <span class="c1"># Hydraulic Redistribution.</span>
+            <span class="c1"># This runs ONLY in during the night-time!</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span><span class="p">[</span><span class="s2">&quot;HLIFT&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">daylight</span><span class="p">):</span>
+                <span class="c1"># Parameter for hydraulic redistribution:</span>
+                <span class="n">a_star</span> <span class="o">=</span> <span class="mi">1800</span>
+
+                <span class="c1"># Inverse of $\psi_{50}$:</span>
+                <span class="n">inv_psi_50</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;iPsi_50&quot;</span><span class="p">]</span>
+
+                <span class="c1"># Saturated hydraulic conductance:</span>
+                <span class="n">c_sat</span> <span class="o">=</span> <span class="n">a_star</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;LAI&quot;</span><span class="p">]</span>
+
+                <span class="c1"># Hydraulic conductance parameter:</span>
+                <span class="n">c_hr</span> <span class="o">=</span> <span class="n">c_sat</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">inv_psi_50</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">r_cells</span><span class="p">])</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">roots_z</span>
+
+                <span class="c1"># Pressure difference.</span>
+                <span class="n">dy</span> <span class="o">=</span> <span class="n">dydz</span> <span class="o">*</span> <span class="n">dz</span>
+
+                <span class="c1"># Update the flux &#39;f&#39; with the new HR term. NB: We need to</span>
+                <span class="c1"># scale by &#39;0.5&#39; because the q_{HR} has [cm/h] and we need</span>
+                <span class="c1"># per 0.5h.</span>
+                <span class="n">flux</span><span class="p">[</span><span class="n">r_cells</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">c_hr</span> <span class="o">*</span> <span class="n">dy</span><span class="p">[</span><span class="n">r_cells</span><span class="p">]</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># Evapo-transpiration (Tree Roots Water Uptake)</span>
+            <span class="c1"># This runs ONLY during day-time!</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span><span class="p">[</span><span class="s2">&quot;ET&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="n">daylight</span><span class="p">:</span>
+                <span class="c1"># Compute the root efficiency.</span>
+                <span class="n">rho_theta</span><span class="p">,</span> <span class="n">water_k</span> <span class="o">=</span> <span class="n">tree_roots</span><span class="o">.</span><span class="n">efficiency</span><span class="p">(</span><span class="n">theta</span><span class="p">[</span><span class="n">r_cells</span><span class="p">],</span> <span class="n">z</span><span class="p">[</span><span class="n">r_cells</span><span class="p">])</span>
+
+                <span class="c1"># Get the product of the two terms.</span>
+                <span class="n">x_out</span> <span class="o">=</span> <span class="n">rho_theta</span> <span class="o">*</span> <span class="n">roots_z</span>
+
+                <span class="c1"># Compute the integral of:</span>
+                <span class="c1"># $\int_{z} (root_efficiency x root_fraction) dz$</span>
+                <span class="n">tot_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_out</span><span class="p">)</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span>
+
+                <span class="c1">#  Constraint No.2:</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">tot_x</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">):</span>
+                    <span class="c1"># Normalize it so it&#39;s equal to one.</span>
+                    <span class="n">x_out</span> <span class="o">=</span> <span class="n">x_out</span> <span class="o">/</span> <span class="n">tot_x</span>
+
+                    <span class="c1"># Recompute the integral.</span>
+                    <span class="n">tot_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x_out</span><span class="p">)</span> <span class="o">*</span> <span class="n">dz</span>
+                <span class="c1"># _end_if_</span>
+
+                <span class="c1"># Compute  the transpiration parameter only if there</span>
+                <span class="c1"># is not root shutdown! Otherwise don&#39;t remove water.</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">tot_x</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
+                    <span class="c1"># Total transpiration demand.</span>
+                    <span class="n">tot_tr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;atm&quot;</span><span class="p">],</span> <span class="n">water_k</span><span class="p">)</span>
+
+                    <span class="c1"># Avoid division by zero.</span>
+                    <span class="n">tot_x</span><span class="p">[</span><span class="n">tot_x</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+                    <span class="c1"># Compute the rate of potential transpiration</span>
+                    <span class="c1"># by dividing the total atmospheric demand,at</span>
+                    <span class="c1"># the current time, with the integrated value</span>
+                    <span class="c1"># of the (root_efficiency x root_fraction).</span>
+                    <span class="n">tr_pot</span> <span class="o">=</span> <span class="n">tot_tr</span> <span class="o">/</span> <span class="n">tot_x</span>
+
+                    <span class="c1"># Compute the uptake distribution.</span>
+                    <span class="n">uptake</span> <span class="o">=</span> <span class="n">tr_pot</span> <span class="o">*</span> <span class="n">x_out</span>
+
+                    <span class="c1"># Remove the root uptake from the sink term.</span>
+                    <span class="n">sink</span><span class="p">[</span><span class="n">r_cells</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">uptake</span>
+
+                    <span class="c1"># Store the transpiration as function of depth.</span>
+                    <span class="n">transpire</span> <span class="o">=</span> <span class="n">uptake</span>
+                <span class="c1"># _end_if_</span>
+            <span class="c1"># _end_Transpiration_if_</span>
+        <span class="c1"># _end_spinup_if_</span>
+
+        <span class="c1"># Lateral (subsurface) Runoff:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span><span class="p">[</span><span class="s2">&quot;LF&quot;</span><span class="p">]:</span>
+            <span class="c1"># Find saturated cell indexes.</span>
+            <span class="c1"># Note: Here we use boolean indexing.</span>
+            <span class="n">id_sat</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">psi_sat</span><span class="p">)</span>
+
+            <span class="c1"># Switch according to the running mode.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sim_flags</span><span class="p">[</span><span class="s2">&quot;PREDICT&quot;</span><span class="p">]:</span>
+                <span class="c1"># Predictive (running) mode.</span>
+                <span class="c1"># Set the sink coefficient accordingly:</span>
+                <span class="k">if</span> <span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">month</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+                    <span class="c1"># Wet season coefficient.</span>
+                    <span class="n">alpha_low</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.5e-3</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Dry season coefficient.</span>
+                    <span class="n">alpha_low</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.5e-3</span>
+                <span class="c1"># _end_if_</span>
+
+                <span class="c1"># Number of cells, from the bottom  of the well, that stay</span>
+                <span class="c1"># always saturated. That number can vary from well to well</span>
+                <span class="c1"># and from  year to year.  This is to  prevent the spatial</span>
+                <span class="c1"># domain from draining completely during extended droughts.</span>
+                <span class="n">low_lim</span> <span class="o">=</span> <span class="n">dim_d</span> <span class="o">-</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;sat_cells&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+                <span class="c1"># Exponent range.</span>
+                <span class="n">nu</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">1.5</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">low_lim</span><span class="p">)</span>
+
+                <span class="c1"># Find &quot;wtd_est&quot; (index).</span>
+                <span class="n">wtd_est</span> <span class="o">=</span> <span class="n">find_wtd</span><span class="p">(</span><span class="n">id_sat</span><span class="p">)</span>
+
+                <span class="c1"># If the &quot;wtd_est&quot; is above a pre-defined depth value.</span>
+                <span class="k">if</span> <span class="n">wtd_est</span> <span class="o">&lt;</span> <span class="n">low_lim</span><span class="p">:</span>
+                    <span class="c1"># Set the cell indexes that we remove water from.</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">wtd_est</span><span class="p">,</span> <span class="n">wtd_est</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+                    <span class="c1"># Update scale with current estimate of the wtd.</span>
+                    <span class="c1"># The higher the exponent the faster it drains!!</span>
+                    <span class="c1"># alpha_lat = alpha_low * (low_lim - wtd_est) / low_lim</span>
+                    <span class="n">alpha_lat</span> <span class="o">=</span> <span class="n">alpha_low</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">j</span> <span class="o">/</span> <span class="n">low_lim</span><span class="p">)</span> <span class="o">**</span> <span class="n">nu</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+
+                    <span class="c1"># Compute the sink term proportional to y(z,t).</span>
+                    <span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">alpha_lat</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+
+                    <span class="c1"># Store the lateral flow (runoff), along with</span>
+                    <span class="c1"># the locations (indexes) in the space domain.</span>
+                    <span class="n">lateral_flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="c1"># _end_if_</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Monitoring (running) mode.</span>
+                <span class="c1"># Current water table observation.</span>
+                <span class="n">wtd_obs</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">args_i</span><span class="p">[</span><span class="s2">&quot;wtd&quot;</span><span class="p">],</span> <span class="n">dim_d</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+                <span class="c1"># Sink (scale) coefficient:</span>
+                <span class="n">alpha_lat</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.5e-4</span>
+
+                <span class="c1"># Find &quot;wtd_est&quot; (index).</span>
+                <span class="n">wtd_est</span> <span class="o">=</span> <span class="n">find_wtd</span><span class="p">(</span><span class="n">id_sat</span><span class="p">)</span>
+
+                <span class="c1"># If the &quot;wtd_est&quot; is inside the space domain.</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">wtd_est</span> <span class="o">&lt;</span> <span class="n">dim_d</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">wtd_est</span> <span class="o">&lt;</span> <span class="n">wtd_obs</span><span class="p">):</span>
+                    <span class="c1"># Find  the locations between the estimated</span>
+                    <span class="c1"># $wtdEst$ and the actual value of $wtdObs$.</span>
+                    <span class="n">j</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">wtd_est</span><span class="p">,</span> <span class="n">wtd_obs</span><span class="p">)</span>
+
+                    <span class="c1"># Compute the sink term proportional to y(z,t).</span>
+                    <span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">alpha_lat</span> <span class="o">*</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+
+                    <span class="c1"># Store the lateral flow (runoff), along with</span>
+                    <span class="c1"># the locations (indexes) in the space domain.</span>
+                    <span class="n">lateral_flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">sink</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="c1"># _end_if_</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_Lateral_Flow_if_</span>
+
+        <span class="c1"># Store the integrated transpiration to the output.</span>
+        <span class="k">if</span> <span class="n">transpire</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span><span class="p">[</span><span class="s2">&quot;transpiration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">transpire</span><span class="p">)</span> <span class="o">*</span> <span class="n">dz</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span><span class="p">[</span><span class="s2">&quot;transpiration&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Store the integrated lateral flow to the output.</span>
+        <span class="k">if</span> <span class="n">lateral_flow</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span><span class="p">[</span><span class="s2">&quot;lateral_flow&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">lateral_flow</span><span class="p">)</span> <span class="o">*</span> <span class="n">dz</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">var_arg_out</span><span class="p">[</span><span class="s2">&quot;lateral_flow&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Exit:</span>
+        <span class="k">return</span> <span class="n">C</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">flux</span></div>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="RichardsPDE.ic_fun"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.RichardsPDE.ic_fun">[docs]</a>    <span class="k">def</span> <span class="nf">ic_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function can model the initial conditions vector.</span>
+<span class="sd">        In this case is a simple assignment, but it can handle</span>
+<span class="sd">        mode complex initializations if required.</span>
+
+<span class="sd">        :param y0: initial conditions vector y(z,t=0) [dim_d].</span>
+
+<span class="sd">        :param args: to pass additional parameters if requested.</span>
+
+<span class="sd">        :return: initial conditions vector.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Return the vector.</span>
+        <span class="k">return</span> <span class="n">y0</span></div>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="RichardsPDE.bc_fun"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.RichardsPDE.bc_fun">[docs]</a>    <span class="k">def</span> <span class="nf">bc_fun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_left</span><span class="p">,</span> <span class="n">y_left</span><span class="p">,</span> <span class="n">z_right</span><span class="p">,</span> <span class="n">y_right</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Boundary Conditions (top and bottom).</span>
+
+<span class="sd">        :param z_left: location(s) 1</span>
+
+<span class="sd">        :param y_left: y(z_left, t)</span>
+
+<span class="sd">        :param z_right: location(s) 2</span>
+
+<span class="sd">        :param y_right: y(z_right, t)</span>
+
+<span class="sd">        :param args: additional arguments.</span>
+
+<span class="sd">        :return: p_left, q_left, p_right, q_right</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Make sure input is 1-D.</span>
+        <span class="n">z_left</span><span class="p">,</span> <span class="n">y_left</span><span class="p">,</span> <span class="n">z_right</span><span class="p">,</span> <span class="n">y_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">z_left</span><span class="p">,</span> <span class="n">y_left</span><span class="p">,</span> <span class="n">z_right</span><span class="p">,</span> <span class="n">y_right</span><span class="p">)</span>
+
+        <span class="c1"># Get the maximum infiltration capacity from the model.</span>
+        <span class="n">theta_left</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">q_inf_max</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_model</span><span class="p">(</span><span class="n">y_left</span><span class="p">,</span> <span class="n">z_left</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+        <span class="c1"># [TOP]: Neumann boundary condition.</span>
+        <span class="n">q_left</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">y_left</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Initialize to zero flux.</span>
+        <span class="n">p_left</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">y_left</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Extract the value of the forcing (rainfall).</span>
+        <span class="c1"># (NB. Make sure is non-negative .... &gt;= 0.0)</span>
+        <span class="n">q_rain_flux</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;precipitation&quot;</span><span class="p">])</span>
+
+        <span class="c1"># Net rain flux that enters the domain is given by:</span>
+        <span class="c1"># &gt;&gt; netInputFlux = Precipitation - Interception.</span>
+        <span class="n">net_input_flux</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;interception&quot;</span><span class="p">])</span> <span class="o">*</span> <span class="n">q_rain_flux</span>
+
+        <span class="c1"># If the top cells are not saturated set an upper bound.</span>
+        <span class="n">p_left</span><span class="p">[</span><span class="n">y_left</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;soil&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">psi_sat</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">net_input_flux</span><span class="p">,</span> <span class="n">q_inf_max</span><span class="p">)</span>
+
+        <span class="c1"># Avoid this process during Spin-Up:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;sim_flags&quot;</span><span class="p">][</span><span class="s2">&quot;SPINUP&quot;</span><span class="p">]:</span>
+            <span class="c1"># Daylight hours: [06:00:00] (morning) and [17:59:59] (afternoon).</span>
+            <span class="n">daylight</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">hour</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">18</span><span class="p">)</span>
+
+            <span class="c1"># If the soil moisture drops at $\theta_{res}$,</span>
+            <span class="c1"># then we stop the evaporation process.</span>
+            <span class="n">allow_evaporation</span> <span class="o">=</span> <span class="n">theta_left</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">res</span>
+
+            <span class="c1"># If there is enough water to evaporate and it is daylight.</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">allow_evaporation</span><span class="p">)</span> <span class="ow">and</span> <span class="n">daylight</span><span class="p">:</span>
+                <span class="c1"># Apply the evaporation process to the upper bound.</span>
+                <span class="n">p_left</span> <span class="o">=</span> <span class="n">p_left</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_data</span><span class="p">[</span><span class="s2">&quot;surface_evap&quot;</span><span class="p">]</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># [BOTTOM]: Neumann condition is set to zero flux.</span>
+        <span class="n">p_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">p_left</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">q_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">q_left</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Return the boundary values.</span>
+        <span class="k">return</span> <span class="n">p_left</span><span class="p">,</span> <span class="n">q_left</span><span class="p">,</span> <span class="n">p_right</span><span class="p">,</span> <span class="n">q_right</span></div>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="RichardsPDE.solve"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.RichardsPDE.solve">[docs]</a>    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_span</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function numerically integrates a system of ordinary differential</span>
+<span class="sd">        equations (self), within the time span &quot;t&quot;, given an initial value y0.</span>
+
+<span class="sd">        :param t_span: time window to integrate the ode (t0, tf).</span>
+
+<span class="sd">        :param y0: initial conditions array [dim_d].</span>
+
+<span class="sd">        :param args: additional model parameters.</span>
+
+<span class="sd">        :return: dydt [dim_d].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Trials counter</span>
+        <span class="n">n_trials</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="c1"># Hard code tolerance values.</span>
+        <span class="n">rel_tol</span><span class="p">,</span> <span class="n">abs_tol</span> <span class="o">=</span> <span class="mf">1.0e-3</span><span class="p">,</span> <span class="mf">1.0e-3</span>
+
+        <span class="c1"># Auxiliary vectors of &quot;ones&quot;.</span>
+        <span class="n">diagonal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">y0</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="n">diag_off</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">y0</span><span class="o">.</span><span class="n">size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># Jacobian structure is tri-diagonal.</span>
+        <span class="n">jac_n</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">diags</span><span class="p">((</span><span class="n">diag_off</span><span class="p">,</span> <span class="n">diagonal</span><span class="p">,</span> <span class="n">diag_off</span><span class="p">),</span> <span class="n">offsets</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># Initial assignment.</span>
+        <span class="n">sol_t</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Try to solve the interval &quot;n_trials&quot; times.</span>
+        <span class="k">while</span> <span class="n">n_trials</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+
+            <span class="c1"># Current solution.</span>
+            <span class="n">sol_t</span> <span class="o">=</span> <span class="n">solve_ivp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t_span</span><span class="o">=</span><span class="n">t_span</span><span class="p">,</span> <span class="n">y0</span><span class="o">=</span><span class="n">y0</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;BDF&#39;</span><span class="p">,</span>
+                              <span class="n">atol</span><span class="o">=</span><span class="n">abs_tol</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rel_tol</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="n">args</span><span class="p">,</span>
+                              <span class="n">jac_sparsity</span><span class="o">=</span><span class="n">jac_n</span><span class="p">)</span>
+
+            <span class="c1"># Check if the solver terminated successfully.</span>
+            <span class="k">if</span> <span class="n">sol_t</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+                <span class="c1"># Exit the loop here.</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Reduce the noise in the model.</span>
+                <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;n_rnd&quot;</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">0.8</span>
+
+                <span class="c1"># Decrease counter by one.</span>
+                <span class="n">n_trials</span> <span class="o">-=</span> <span class="mi">1</span>
+
+                <span class="c1"># If we reach here the solver failed to integrate successfully.</span>
+                <span class="k">if</span> <span class="n">n_trials</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: The ODE solver failed with message:&quot;</span>
+                          <span class="s2">&quot; </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">sol_t</span><span class="o">.</span><span class="n">message</span><span class="p">))</span>
+                <span class="c1"># _end_if_</span>
+            <span class="c1"># _end_if_</span>
+        <span class="c1"># _end_while_</span>
+
+        <span class="c1"># Return the (integrated) time derivative: dydt.</span>
+        <span class="k">return</span> <span class="n">sol_t</span><span class="o">.</span><span class="n">y</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span></div></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+
+<span class="c1"># Helper module method.</span>
+<div class="viewcode-block" id="midpoints"><a class="viewcode-back" href="../../code.src.html#src.richards_pde.midpoints">[docs]</a><span class="k">def</span> <span class="nf">midpoints</span><span class="p">(</span><span class="n">x_left</span><span class="p">,</span> <span class="n">fx_left</span><span class="p">,</span> <span class="n">x_right</span><span class="p">,</span> <span class="n">fx_right</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Interpolation (helper) function that is used</span>
+<span class="sd">    in the &#39;discretization&#39; of the Richards PDE.</span>
+
+<span class="sd">    :param x_left: [dim_d]</span>
+
+<span class="sd">    :param fx_left: [dim_d x dim_m]</span>
+
+<span class="sd">    :param x_right: [dim_d]</span>
+
+<span class="sd">    :param fx_right: [dim_d x dim_m]</span>
+
+<span class="sd">    :return: derivatives and the mid-points.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Make sure all input are at least 1D.</span>
+    <span class="n">x_left</span><span class="p">,</span> <span class="n">fx_left</span><span class="p">,</span> <span class="n">x_right</span><span class="p">,</span> <span class="n">fx_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x_left</span><span class="p">,</span> <span class="n">fx_left</span><span class="p">,</span> <span class="n">x_right</span><span class="p">,</span> <span class="n">fx_right</span><span class="p">)</span>
+
+    <span class="c1"># Check for input mis-match.</span>
+    <span class="k">if</span> <span class="n">fx_left</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">fx_right</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; midpoints: Input &#39;fx&#39; dimensions do not match.&quot;</span>
+                           <span class="s2">&quot; </span><span class="si">{0}</span><span class="s2"> not equal to </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fx_left</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">fx_right</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Check for input mis-match.</span>
+    <span class="k">if</span> <span class="n">x_left</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">x_right</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; midpoints: Input &#39;x&#39; dimensions do not match.&quot;</span>
+                           <span class="s2">&quot; </span><span class="si">{0}</span><span class="s2"> not equal to </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x_left</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">x_right</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Use a simple (arithmetic) average to approximate</span>
+    <span class="c1"># the mid-points between &#39;fx_left&#39; and &#39;fx_right&#39;.</span>
+    <span class="n">fx_mid</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">fx_left</span> <span class="o">+</span> <span class="n">fx_right</span><span class="p">)</span>
+
+    <span class="c1"># Spacings between the two input points.</span>
+    <span class="c1"># This will be either scalar, or vector.</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">x_right</span> <span class="o">-</span> <span class="n">x_left</span>
+
+    <span class="c1"># Check for vectorization.</span>
+    <span class="k">if</span> <span class="n">fx_mid</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># Get the number of different vectors.</span>
+        <span class="n">dim_m</span> <span class="o">=</span> <span class="n">fx_mid</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># Replicate &#39;dx&#39; with the correct shape.</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">dx</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim_m</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dim_m</span><span class="p">)</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Central Difference Formula:</span>
+    <span class="n">dfx_mid</span> <span class="o">=</span> <span class="p">(</span><span class="n">fx_right</span> <span class="o">-</span> <span class="n">fx_left</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span>
+
+    <span class="c1"># Return the derivative and the mid-points.</span>
+    <span class="k">return</span> <span class="n">fx_mid</span><span class="p">,</span> <span class="n">dfx_mid</span></div>
+<span class="c1"># _end_def_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

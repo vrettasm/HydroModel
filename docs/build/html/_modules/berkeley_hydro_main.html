@@ -1,0 +1,269 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>berkeley_hydro_main &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for berkeley_hydro_main</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">src.simulation</span> <span class="kn">import</span> <span class="n">Simulation</span>
+
+<span class="c1"># INFO:</span>
+<span class="n">__author__</span> <span class="o">=</span> <span class="s2">&quot;Michail Vrettas, PhD&quot;</span>
+<span class="n">__email__</span> <span class="o">=</span> <span class="s2">&quot;michail.vrettas@gmail.com&quot;</span>
+
+
+<div class="viewcode-block" id="validateInputParametersFile"><a class="viewcode-back" href="../code.html#berkeley_hydro_main.validateInputParametersFile">[docs]</a><span class="k">def</span> <span class="nf">validateInputParametersFile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validates an input (json) file to check if it contains the required keys.</span>
+<span class="sd">    It does not validate the values of the keys.</span>
+
+<span class="sd">    :param filename: Is a &quot;Path&quot; object that contains the input model parameters</span>
+<span class="sd">    for the simulation.</span>
+
+<span class="sd">    :return: A dictionary loaded from the input file.</span>
+
+<span class="sd">    :raises ValueError: if a keyword is missing from the file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Import locally the json package.</span>
+    <span class="kn">import</span> <span class="nn">json</span>
+
+    <span class="c1"># Open the file in &quot;Read Only&quot; mode.</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_file</span><span class="p">:</span>
+
+        <span class="c1"># Load the model parameters.</span>
+        <span class="n">model_params</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span>
+
+        <span class="c1"># Required keys in the json file.</span>
+        <span class="n">required_keys</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Trees&quot;</span><span class="p">,</span> <span class="s2">&quot;Well_No&quot;</span><span class="p">,</span> <span class="s2">&quot;Output_Name&quot;</span><span class="p">,</span> <span class="s2">&quot;IC_Filename&quot;</span><span class="p">,</span>
+                         <span class="s2">&quot;Data_Filename&quot;</span><span class="p">,</span> <span class="s2">&quot;Water_Content&quot;</span><span class="p">,</span> <span class="s2">&quot;Environmental&quot;</span><span class="p">,</span>
+                         <span class="s2">&quot;Soil_Properties&quot;</span><span class="p">,</span> <span class="s2">&quot;Site_Information&quot;</span><span class="p">,</span> <span class="s2">&quot;Simulation_Flags&quot;</span><span class="p">,</span>
+                         <span class="s2">&quot;Hydrological_Model&quot;</span><span class="p">,</span> <span class="s2">&quot;Hydraulic_Conductivity&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check the keywords for membership in the file.</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">required_keys</span><span class="p">:</span>
+
+            <span class="c1"># The order in here doesn&#39;t matter.</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">model_params</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; Key: </span><span class="si">{0}</span><span class="s2">, is not given.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+            <span class="c1"># _end_if_</span>
+
+        <span class="c1"># _end_for_</span>
+
+        <span class="c1"># Show message.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Model parameters are given correctly.&quot;</span><span class="p">)</span>
+    <span class="c1"># _end_with_</span>
+
+    <span class="c1"># The dictionary will contain all the input parameters.</span>
+    <span class="k">return</span> <span class="n">model_params</span></div>
+<span class="c1"># _end_def_</span>
+
+
+<span class="c1"># Main function.</span>
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../code.html#berkeley_hydro_main.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">params_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">data_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    As the name suggests, this is the main function that is called to initiate the</span>
+<span class="sd">    simulation run.</span>
+
+<span class="sd">    :param params_file: (string) that points to the input file for the parameters.</span>
+
+<span class="sd">    :param data_file: (string) that points to the input file for the water data.</span>
+
+<span class="sd">    :return: None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Check if we got model parameters.</span>
+    <span class="k">if</span> <span class="n">params_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Make sure params_file is a Path object.</span>
+            <span class="n">params_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">params_file</span><span class="p">)</span>
+
+            <span class="c1"># Check if everything is ok.</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">validateInputParametersFile</span><span class="p">(</span><span class="n">params_file</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e0</span><span class="p">:</span>
+            <span class="c1"># Show the error message.</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">e0</span><span class="p">)</span>
+
+            <span class="c1"># Exit the program.</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># _end_try_</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; The simulation can&#39;t run without input parameters.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Exit the program.</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Check if we got simulation water data. Make sure its a Path object.</span>
+    <span class="k">if</span> <span class="n">data_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">data_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">data_file</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">data_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;Data_Filename&quot;</span><span class="p">])</span>
+    <span class="c1"># _end_if_</span>
+
+    <span class="c1"># Display where we got the water data from.</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot; Simulation water data file: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">data_file</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Open the water data in &quot;Read Only&quot; mode.</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">data_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">input_file</span><span class="p">:</span>
+            <span class="c1"># The file should have four columns.</span>
+            <span class="n">water_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">input_file</span><span class="p">,</span>
+                                     <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ID&quot;</span><span class="p">,</span> <span class="s2">&quot;Datenum&quot;</span><span class="p">,</span> <span class="s2">&quot;Precipitation_cm&quot;</span><span class="p">,</span> <span class="s2">&quot;WTD_m&quot;</span><span class="p">])</span>
+        <span class="c1"># _end_with_</span>
+
+        <span class="c1"># Get the output name from the file.</span>
+        <span class="n">output_name</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;Output_Name&quot;</span><span class="p">]</span>
+
+        <span class="c1"># If nothing has been given set a default name.</span>
+        <span class="k">if</span> <span class="n">output_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_name</span> <span class="o">=</span> <span class="s2">&quot;Sim_01&quot;</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Create a simulation object.</span>
+        <span class="n">sim_01</span> <span class="o">=</span> <span class="n">Simulation</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
+
+        <span class="c1"># Setup its parameters and water data.</span>
+        <span class="n">sim_01</span><span class="o">.</span><span class="n">setupModel</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">water_data</span><span class="p">)</span>
+
+        <span class="c1"># Run the simulation.</span>
+        <span class="n">sim_01</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+
+        <span class="c1"># Save the results.</span>
+        <span class="n">sim_01</span><span class="o">.</span><span class="n">saveResults</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e1</span><span class="p">)</span>
+
+        <span class="c1"># Exit the program.</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+    <span class="c1"># _end_try_</span>
+
+<span class="c1"># _end_maim_</span>
+
+
+<span class="c1"># Run the script.</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+
+    <span class="c1"># Check if we have given input parameters.</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># Local import.</span>
+        <span class="kn">import</span> <span class="nn">argparse</span>
+
+        <span class="c1"># Create a parser object</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot; Berkeley Hydrological Simulation &quot;</span><span class="p">)</span>
+
+        <span class="c1"># Input file with simulation parameters.</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--params&quot;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot; Input file (.json) with simulation parameters.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Input file with simulation data.</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--data&quot;</span><span class="p">,</span>
+                            <span class="n">help</span><span class="o">=</span><span class="s2">&quot; Input file (.csv) with simulation data (e.g.: precipitation, wtd).&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Parse the arguments.</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+        <span class="c1"># Call the main function.</span>
+        <span class="n">main</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">params</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Display final info.</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39; Simulation completed.&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s1">&#39;Error: Not enough input parameters.&#39;</span><span class="p">)</span>
+    <span class="c1"># _end_if_</span>
+
+<span class="c1"># _end_program_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

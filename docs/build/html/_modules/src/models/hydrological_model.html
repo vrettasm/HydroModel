@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.models.hydrological_model &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.models.hydrological_model</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+
+<div class="viewcode-block" id="HydrologicalModel"><a class="viewcode-back" href="../../../code.src.models.html#src.models.hydrological_model.HydrologicalModel">[docs]</a><span class="k">class</span> <span class="nc">HydrologicalModel</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class represents a general (base) class of a hydrological model.</span>
+<span class="sd">    All specific models must &quot;inherit&quot; from this class. In here we keep a</span>
+<span class="sd">    copy of the necessary data (+ objects) that are required to construct</span>
+<span class="sd">    a hydrological model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">soil</span><span class="p">,</span> <span class="n">porous</span><span class="p">,</span> <span class="n">k_hc</span><span class="p">,</span> <span class="n">theta_res</span><span class="p">,</span> <span class="n">dz</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default constructor.</span>
+
+<span class="sd">        :param soil: soil properties object.</span>
+
+<span class="sd">        :param porous: porosity object.</span>
+
+<span class="sd">        :param k_hc: hydraulic conductivity object.</span>
+
+<span class="sd">        :param theta_res: water content (residual value).</span>
+
+<span class="sd">        :param dz: spatial discretization [L: cm].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Extract soil parameters.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">soil</span><span class="o">.</span><span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">soil</span><span class="o">.</span><span class="n">m</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">soil</span><span class="o">.</span><span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">psi_sat</span> <span class="o">=</span> <span class="n">soil</span><span class="o">.</span><span class="n">psi_sat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">soil</span><span class="o">.</span><span class="n">epsilon</span><span class="p">,</span> <span class="mf">1.0e-8</span><span class="p">)</span>
+
+        <span class="c1"># Copy the porosity and hydraulic conductivity objects.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k_hc</span> <span class="o">=</span> <span class="n">k_hc</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">porous</span> <span class="o">=</span> <span class="n">porous</span>
+
+        <span class="c1"># Make a copy of the other input parameters.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dz</span> <span class="o">=</span> <span class="n">dz</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta_res</span> <span class="o">=</span> <span class="n">theta_res</span>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="HydrologicalModel.pressure_head"><a class="viewcode-back" href="../../../code.src.models.html#src.models.hydrological_model.HydrologicalModel.pressure_head">[docs]</a>    <span class="k">def</span> <span class="nf">pressure_head</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">z</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the pressure head at depth(s) &#39;z&#39;, given as input</span>
+<span class="sd">        the volumetric water content &#39;theta&#39;.</span>
+
+<span class="sd">        :param theta: volumetric water content [dim_d x dim_m].</span>
+
+<span class="sd">        :param z: depth that we want to get the pressure head [dim_d].</span>
+
+<span class="sd">        :return: pressure head (suction) at depth(s) &#39;z&#39; [dim_d x dim_m].</span>
+
+<span class="sd">        :raises ValueError: if there is a mismatch in the input dimensions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Ensure the input is 1-D.</span>
+        <span class="n">z</span><span class="p">,</span> <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+
+        <span class="c1"># Get the vector size.</span>
+        <span class="n">dim_d</span><span class="p">,</span> <span class="n">dim_m</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span>
+
+        <span class="c1"># Check if the input is 2D.</span>
+        <span class="k">if</span> <span class="n">theta</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">dim_m</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Check the input dimensions (of the vertical domain).</span>
+        <span class="k">if</span> <span class="n">dim_d</span> <span class="o">!=</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Input size dimensions do not match:&quot;</span>
+                             <span class="s2">&quot; </span><span class="si">{1}</span><span class="s2"> not equal to </span><span class="si">{2}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                             <span class="n">dim_d</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Get the porosity field at &#39;z&#39;.</span>
+        <span class="n">porous_z</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">porous</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+
+        <span class="c1"># Make sure the porosity is at least 1-D.</span>
+        <span class="n">porous_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">porous_z</span><span class="p">)</span>
+
+        <span class="c1"># Vectorized version.</span>
+        <span class="k">if</span> <span class="n">dim_m</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">porous_z</span> <span class="o">=</span> <span class="n">porous_z</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">dim_m</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">dim_d</span><span class="p">,</span> <span class="n">dim_m</span><span class="p">)</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Pre-compute constant parameters.</span>
+        <span class="n">delta_s</span> <span class="o">=</span> <span class="n">porous_z</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_res</span>
+
+        <span class="c1"># Volumetric water content [-] can&#39;t drop below the minimum level</span>
+        <span class="c1"># and also go above the porosity profile values at each depth &#39;z&#39;.</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_res</span><span class="p">),</span> <span class="n">porous_z</span><span class="p">)</span>
+
+        <span class="c1"># Compute the effective saturation (Se \in [0,1]).</span>
+        <span class="c1"># (i.e. the &quot;normalized&quot; water content)</span>
+        <span class="n">s_eff</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_res</span><span class="p">)</span> <span class="o">/</span> <span class="n">delta_s</span>
+
+        <span class="c1"># N.B: Here we do not allow &#39;s_eff&#39; to be equal to zero because</span>
+        <span class="c1"># raising zero to the power of &#39;-1/m&#39; will result in Inf errors.</span>
+        <span class="n">s_eff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">s_eff</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+
+        <span class="c1"># Check for saturated cells.</span>
+        <span class="c1"># Here allow for some small errors to exist.</span>
+        <span class="n">id_sat</span> <span class="o">=</span> <span class="n">s_eff</span> <span class="o">&gt;=</span> <span class="mf">0.99998</span>
+
+        <span class="c1"># % Initialize return array.</span>
+        <span class="n">psi_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Compute the pressure head (psi) on the unsaturated soil.</span>
+        <span class="n">psi_z</span><span class="p">[</span><span class="o">~</span><span class="n">id_sat</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="n">s_eff</span><span class="p">[</span><span class="o">~</span><span class="n">id_sat</span><span class="p">]</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">))</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span>
+
+        <span class="c1"># Compute the pressure head (psi) on the saturated soil.</span>
+        <span class="n">psi_z</span><span class="p">[</span><span class="n">id_sat</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">id_sat</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span>
+
+        <span class="c1"># SAFEGUARD:</span>
+        <span class="n">psi_z</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">psi_z</span><span class="p">)]</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0e+5</span>
+
+        <span class="c1"># Pressure head (suction), Effective Saturation.</span>
+        <span class="k">return</span> <span class="n">psi_z</span><span class="p">,</span> <span class="n">s_eff</span></div></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

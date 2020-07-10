@@ -1,0 +1,187 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Source" href="code.src.html" />
+    <link rel="prev" title="Documentation" href="modules.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="modules.html" title="Documentation"
+             accesskey="P">previous</a> |
+          <a href="code.src.html" title="Source"
+             accesskey="N">next</a> |
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="code">
+<h1>Code<a class="headerlink" href="#code" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code.src.html">Source</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.hydraulic_conductivity">Hydraulic Conductivity module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.porosity">Porosity module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.richards_pde">Richards PDE module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.simulation">Simulation module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.soil_properties">Soil Properties module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.tree_roots">Tree Roots module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.utilities">Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.html#module-src.water_content">Water Content module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="code.src.models.html">Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="code.src.models.html#module-src.models.hydrological_model">Hydrological Model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.models.html#module-src.models.vrettas_fung">Vrettas-Fung module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.src.models.html#module-src.models.vanGenuchten">van-Genuchten module</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="code.tests.html">Tests</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_hydraulic_conductivity">Test Hydraulic Conductivity module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_hydrological_models">Test Hydrological Models module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_porosity">Test Porosity module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_soil_properties">Test Soil Properties module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_tree_roots">Test Tree Roots module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_utilities">Test Utilities module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="code.tests.html#module-tests.test_water_content">Test Water Content module</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="module-berkeley_hydro_main">
+<span id="main-module"></span><h2>Main module<a class="headerlink" href="#module-berkeley_hydro_main" title="Permalink to this headline">¶</a></h2>
+<dl class="py function">
+<dt id="berkeley_hydro_main.main">
+<code class="sig-prename descclassname">berkeley_hydro_main.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">params_file</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data_file</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/berkeley_hydro_main.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#berkeley_hydro_main.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>As the name suggests, this is the main function that is called to initiate the
+simulation run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params_file</strong> – (string) that points to the input file for the parameters.</p></li>
+<li><p><strong>data_file</strong> – (string) that points to the input file for the water data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="berkeley_hydro_main.validateInputParametersFile">
+<code class="sig-prename descclassname">berkeley_hydro_main.</code><code class="sig-name descname">validateInputParametersFile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">filename</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/berkeley_hydro_main.html#validateInputParametersFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#berkeley_hydro_main.validateInputParametersFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Validates an input (json) file to check if it contains the required keys.
+It does not validate the values of the keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>filename</strong> – Is a “Path” object that contains the input model parameters</p>
+</dd>
+</dl>
+<p>for the simulation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>A dictionary loaded from the input file.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if a keyword is missing from the file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</div>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="modules.html" title="Documentation"
+              >previous</a> |
+            <a href="code.src.html" title="Source"
+              >next</a> |
+            <a href="py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+              <br/>
+              <a href="_sources/code.rst.txt"
+                rel="nofollow">Show Source</a>
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

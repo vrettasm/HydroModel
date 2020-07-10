@@ -1,0 +1,325 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.porosity &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.porosity</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">logN_rnd</span>
+
+
+<div class="viewcode-block" id="Porosity"><a class="viewcode-back" href="../../code.src.html#src.porosity.Porosity">[docs]</a><span class="k">class</span> <span class="nc">Porosity</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class creates a porosity object. A porosity profile (field) is generated,</span>
+<span class="sd">    as a function of the depth (z), along with the relevant field capacity and</span>
+<span class="sd">    wilting point profiles (as functions of depth).</span>
+
+<span class="sd">    Naturally the porosity in the soil decreases with depth because the free empty</span>
+<span class="sd">    pores are smaller in size, therefore allowing for less water to be kept at any</span>
+<span class="sd">    given depth. However, depending on the type (or mixture) of soils this profile</span>
+<span class="sd">    can vary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="s2">&quot;field_cap&quot;</span><span class="p">,</span> <span class="s2">&quot;wilting_point&quot;</span><span class="p">,</span> <span class="s2">&quot;f_interp&quot;</span><span class="p">,</span> <span class="s2">&quot;p_model&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;p_layers&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_grid</span><span class="p">,</span> <span class="n">layers</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">soil</span><span class="p">,</span> <span class="n">p_model</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructs an object that will hold the porosity, field capacity and</span>
+<span class="sd">        wilting point profiles, for the z-domain (increasing downwards).</span>
+
+<span class="sd">        :param z_grid: depth values at which we want to generate the porosity</span>
+<span class="sd">        values.</span>
+
+<span class="sd">        :param layers: tuple with the underground layers.</span>
+
+<span class="sd">        :param theta: water content object.</span>
+
+<span class="sd">        :param soil: soil properties object.</span>
+
+<span class="sd">        :param p_model: porosity profile type:</span>
+<span class="sd">                        1) Constant (for modeling short depths)</span>
+<span class="sd">                        2) Linear (typical choice for small depths)</span>
+<span class="sd">                        3) Exponential (typical choice for medium depths)</span>
+<span class="sd">                        4) Stratified (for modeling high depths)</span>
+<span class="sd">                        5) Noisy (assumes random &quot;fractures&quot; in the underground)</span>
+
+<span class="sd">        :raises ValueError: if there is no spatial input or wrong porosity profile.</span>
+
+<span class="sd">        :raises RuntimeError: if the domain is not increasing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Ensure the input is 1-D.</span>
+        <span class="n">z_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">z_grid</span><span class="p">)</span>
+
+        <span class="c1"># Make sure the z-grid domain is not empty.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">z_grid</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Input array z_grid is empty.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Make sure the z-grid domain is increasing.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z_grid</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Space domain z_grid is not&quot;</span>
+                               <span class="s2">&quot; increasing.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Store the type of profile.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_model</span> <span class="o">=</span> <span class="n">p_model</span>
+
+        <span class="c1"># Get the size of the spatial grid.</span>
+        <span class="n">len_z</span> <span class="o">=</span> <span class="n">z_grid</span><span class="o">.</span><span class="n">size</span>
+
+        <span class="c1"># Extract the limits of the soil layers:</span>
+        <span class="c1"># (1) Soil, (2) Saprolite, (3) Weathered Bedrock, (4) Fresh Bedrock.</span>
+        <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">l_sapr</span><span class="p">,</span> <span class="n">l_wbed</span><span class="p">,</span> <span class="n">l_fbed</span><span class="p">)</span> <span class="o">=</span> <span class="n">layers</span>
+
+        <span class="c1"># Add the layers to the object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p_layers</span> <span class="o">=</span> <span class="n">layers</span>
+
+        <span class="c1"># Find the indices of each underground layer.</span>
+        <span class="n">sap_layer_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">z_grid</span> <span class="o">&gt;=</span> <span class="n">l_sapr</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">z_grid</span> <span class="o">&lt;=</span> <span class="n">l_wbed</span><span class="p">)</span>
+        <span class="n">web_layer_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">z_grid</span> <span class="o">&gt;=</span> <span class="n">l_wbed</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">z_grid</span> <span class="o">&lt;=</span> <span class="n">l_fbed</span><span class="p">)</span>
+
+        <span class="c1"># Create the profile according to the selected type.</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">p_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;CONSTANT&quot;</span><span class="p">:</span>
+
+            <span class="c1"># The porosity is set to its maximum value.</span>
+            <span class="n">q_sat</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">max</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">len_z</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">p_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;LINEAR&quot;</span><span class="p">:</span>
+
+            <span class="c1"># Increase linearly from max (top of the domain)</span>
+            <span class="c1"># to min (bottom of the domain).</span>
+            <span class="n">q_sat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">min</span><span class="p">,</span> <span class="n">len_z</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">p_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;EXPONENTIAL&quot;</span><span class="p">:</span>
+
+            <span class="c1"># Compute the two parameters of the exponential function:</span>
+            <span class="c1"># f(z) = p0*exp(-z*p1),</span>
+            <span class="c1"># where f(0) = theta_max, and f(z_max) = theta_min</span>
+            <span class="n">p0</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">max</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p0</span> <span class="o">/</span> <span class="n">theta</span><span class="o">.</span><span class="n">min</span><span class="p">)</span> <span class="o">/</span> <span class="n">z_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># Fit the exponential function.</span>
+            <span class="n">q_sat</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">z_grid</span> <span class="o">*</span> <span class="n">p1</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">p_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;STRATIFIED&quot;</span><span class="p">:</span>
+
+            <span class="c1"># Initialize the field at maximum value.</span>
+            <span class="n">q_sat</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">max</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">len_z</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">sap_layer_idx</span><span class="p">):</span>
+                <span class="c1"># Fit a straight (decreasing) line in the saprolite layer.</span>
+                <span class="n">q_sat</span><span class="p">[</span><span class="n">sap_layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">mid</span><span class="p">,</span> <span class="n">sap_layer_idx</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">web_layer_idx</span><span class="p">):</span>
+                <span class="c1"># Compute the two parameters of the exponential function:</span>
+                <span class="c1"># f(z) = p0*exp(-z*p1),</span>
+                <span class="n">p0</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">mid</span>
+                <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p0</span> <span class="o">/</span> <span class="n">theta</span><span class="o">.</span><span class="n">min</span><span class="p">)</span> <span class="o">/</span> <span class="n">z_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="c1"># Fit the exponential function.</span>
+                <span class="n">q_sat</span><span class="p">[</span><span class="n">web_layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">l_fbed</span><span class="p">,</span> <span class="n">web_layer_idx</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="o">*</span> <span class="n">p1</span><span class="p">)</span>
+            <span class="c1"># _end_if_</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">p_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;NOISY&quot;</span><span class="p">:</span>
+            <span class="c1"># Create a random number generator.</span>
+            <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
+
+            <span class="c1"># Variance Scale Factor (small positive number).</span>
+            <span class="n">_vsf</span> <span class="o">=</span> <span class="mf">5.0e-5</span>
+
+            <span class="c1"># Initialize the field at maximum value.</span>
+            <span class="n">q_sat</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">max</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">len_z</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">sap_layer_idx</span><span class="p">):</span>
+                <span class="c1"># Number of cells in the saprolite layer.</span>
+                <span class="n">n_sap</span> <span class="o">=</span> <span class="n">sap_layer_idx</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+                <span class="c1"># Mean (saprolite) values.</span>
+                <span class="n">mean_sap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">max</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">mid</span><span class="p">,</span> <span class="n">n_sap</span><span class="p">)</span>
+
+                <span class="c1"># Update the profile in the saprolite zone.</span>
+                <span class="n">q_sat</span><span class="p">[</span><span class="n">sap_layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">logN_rnd</span><span class="p">(</span><span class="n">mean_sap</span><span class="p">,</span> <span class="n">_vsf</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">mean_sap</span><span class="p">),</span>
+                                                <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">n_sap</span><span class="p">))</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">web_layer_idx</span><span class="p">):</span>
+                <span class="c1"># Number of cells in the weathered bedrock layer.</span>
+                <span class="n">n_web</span> <span class="o">=</span> <span class="n">web_layer_idx</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+                <span class="c1"># Compute the two parameters of the exponential function:</span>
+                <span class="n">p0</span> <span class="o">=</span> <span class="n">theta</span><span class="o">.</span><span class="n">mid</span>
+                <span class="n">p1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">p0</span> <span class="o">/</span> <span class="n">theta</span><span class="o">.</span><span class="n">min</span><span class="p">)</span> <span class="o">/</span> <span class="n">z_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="c1"># Mean values.</span>
+                <span class="n">mean_web</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">l_fbed</span><span class="p">,</span> <span class="n">n_web</span><span class="p">)</span> <span class="o">*</span> <span class="n">p1</span><span class="p">)</span>
+
+                <span class="c1"># Update the profile in the weathered bedrock zone.</span>
+                <span class="n">q_sat</span><span class="p">[</span><span class="n">web_layer_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">logN_rnd</span><span class="p">(</span><span class="n">mean_web</span><span class="p">,</span> <span class="n">_vsf</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">mean_web</span><span class="p">),</span>
+                                                <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">n_web</span><span class="p">))</span>
+            <span class="c1"># _end_if_</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Wrong porosity profile type:&quot;</span>
+                             <span class="s2">&quot; </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">p_model</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Safeguard: make sure this profile is [MIN &lt;= q_sat &lt;= MAX]</span>
+        <span class="n">q_sat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">q_sat</span><span class="p">,</span> <span class="n">theta</span><span class="o">.</span><span class="n">min</span><span class="p">),</span> <span class="n">theta</span><span class="o">.</span><span class="n">max</span><span class="p">)</span>
+
+        <span class="c1"># Make sure the profile is flatten before assigning it to the object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">q_sat</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="c1"># Helper function.</span>
+        <span class="k">def</span> <span class="nf">fun_wrc</span><span class="p">(</span><span class="n">psi</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">theta</span><span class="o">.</span><span class="n">res</span> <span class="o">+</span> <span class="p">(</span><span class="n">q_sat</span> <span class="o">-</span> <span class="n">theta</span><span class="o">.</span><span class="n">res</span><span class="p">)</span> <span class="o">/</span>\
+                   <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="p">(</span><span class="n">soil</span><span class="o">.</span><span class="n">alpha</span> <span class="o">*</span> <span class="n">psi</span><span class="p">)</span> <span class="o">**</span> <span class="n">soil</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="o">**</span> <span class="n">soil</span><span class="o">.</span><span class="n">m</span>
+        <span class="c1"># _end_def_</span>
+
+        <span class="c1"># Field capacity over the whole z-domain.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">fun_wrc</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">flc</span><span class="p">),</span> <span class="n">theta</span><span class="o">.</span><span class="n">res</span><span class="p">)</span>
+
+        <span class="c1"># Wilting points over the whole z-domain.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wilting_point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">fun_wrc</span><span class="p">(</span><span class="n">theta</span><span class="o">.</span><span class="n">wlt</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span><span class="p">)</span>
+
+        <span class="c1"># Interpolate the profiles on the grid and store the functions.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">z_grid</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wilting_point</span><span class="p">])</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_new</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A call of the porosity object will return a tuple containing all three</span>
+<span class="sd">        profiles (i.e. porosity, field capacity, wilting point) for the specific</span>
+<span class="sd">        input &#39;z_new&#39;. If no new depth values &#39;z&#39; are given, the call will return</span>
+<span class="sd">        the full profiles.</span>
+
+<span class="sd">        :param z_new: the depth(s) at which we want the new profiles.</span>
+
+<span class="sd">        :return: the porosity profile at depth(s) &#39;z&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if we have given input.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">z_new</span><span class="p">):</span>
+            <span class="c1"># Return all three profiles at the new input &#39;z_new&#39;.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_interp</span><span class="p">(</span><span class="n">z_new</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Return all the profiles (over the whole z-domain).</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_cap</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">wilting_point</span>
+        <span class="c1"># _end_if_</span>
+
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">layers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor of the underground layers.</span>
+
+<span class="sd">        :return: Tuple with the (L0, L1, ...)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_layers</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override to print a readable string presentation of the Porosity object.</span>
+<span class="sd">        At the moment this will include its id(), along with its profile type.</span>
+
+<span class="sd">        :return: a string representation of a Porosity object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot; Porosity Id(</span><span class="si">{0}</span><span class="s2">): Type=</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_model</span><span class="p">)</span></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

@@ -1,0 +1,38 @@
+Help
+====
+This page provides basic help into how to install and run the software.
+The information here is accurate for Linux and MacOs operating systems.
+
+Installation
+------------
+There are two options to install the software.
+
+1. The easiest way is to visit the GitHub web-page of the project:
+   https://github.com/vrettasm/HydroModel and download the code in
+   zip format. This option doesn't require a prior installation of
+   git on the computer.
+
+2. Alternatively one can clone the project directly using git as
+   follows: ::
+
+    $ git clone https://github.com/vrettasm/HydroModel.git
+
+How to run
+----------
+To execute the program, first navigate to the main directory of
+the project (i.e. where the berkeley_hydro_main.py is located),
+and then run the following command: ::
+
+    $ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json
+
+The '-O' option is not necessary, but it could speed up the execution
+of the simulation.
+
+.. note::
+   This assumes that the 'input_parameters.json' file includes the datafile
+   location in the:
+   "Data_Filename": "path/to/datafile.csv"
+
+Contact
+-------
+If you have any questions please contact me at: vrettasm@gmail.com

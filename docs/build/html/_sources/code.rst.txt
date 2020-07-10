@@ -1,0 +1,20 @@
+Code
+====
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   code.src
+   code.src.models
+   code.tests
+
+Main module
+-----------
+
+.. automodule:: berkeley_hydro_main
+   :members:
+   :undoc-members:
+   :show-inheritance:

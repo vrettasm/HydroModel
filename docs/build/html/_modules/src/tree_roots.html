@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.tree_roots &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.tree_roots</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">gamma</span> <span class="k">as</span> <span class="n">sc_gamma</span>
+
+<div class="viewcode-block" id="TreeRoots"><a class="viewcode-back" href="../../code.src.html#src.tree_roots.TreeRoots">[docs]</a><span class="k">class</span> <span class="nc">TreeRoots</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    This class models tree roots. It computes the roots density for a given</span>
+<span class="sd">    depth and also returns roots efficiency, as described in refs. [1, 2].</span>
+
+<span class="sd">    To have more consistent results, the root depth in here is mapped to a</span>
+<span class="sd">    predefined range [1 to 100].</span>
+
+<span class="sd">    1) Chun-Ta Lai and Gabriel Katul (2000): The dynamic role of root-water</span>
+<span class="sd">    uptake in coupling potential to actual transpiration. Advances in Water</span>
+<span class="sd">    Resources, Vol. 23, pages: 427-439.</span>
+
+<span class="sd">    2) D. B. G. Collins and R. L. Bras (2007): Plant rooting strategies in</span>
+<span class="sd">    water-limited ecosystems. Water Resources Research, Vol. 43, W06407,</span>
+<span class="sd">    pages: 1-10, doi:10.1029/2006WR005541.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="s2">&quot;r_model&quot;</span><span class="p">,</span> <span class="s2">&quot;max_depth_cm&quot;</span><span class="p">,</span> <span class="s2">&quot;f_interp&quot;</span><span class="p">,</span> <span class="s2">&quot;dz&quot;</span><span class="p">,</span>
+                 <span class="s2">&quot;porous&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ln</span><span class="p">,</span> <span class="n">dz</span><span class="p">,</span> <span class="n">r_model</span><span class="p">,</span> <span class="n">porous</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Default constructor of the root density object class.</span>
+
+<span class="sd">        :param ln: number of discrete cells that form the total root zone.</span>
+
+<span class="sd">        :param dz: space discretization [L: cm].</span>
+
+<span class="sd">        :param r_model: root density model (type).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Make sure ln is integer.</span>
+        <span class="n">ln</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span>
+
+        <span class="c1"># Store the space discretization.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dz</span> <span class="o">=</span> <span class="n">dz</span>
+
+        <span class="c1"># Store the root density model.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r_model</span> <span class="o">=</span> <span class="n">r_model</span>
+
+        <span class="c1"># Store the porosity object.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">porous</span> <span class="o">=</span> <span class="n">porous</span>
+
+        <span class="c1"># Store the maximum root depth [L: cm].</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth_cm</span> <span class="o">=</span> <span class="p">(</span><span class="n">ln</span> <span class="o">*</span> <span class="n">dz</span><span class="p">)</span>
+
+        <span class="c1"># Discrete cells with uniform &#39;dz&#39; spacing.</span>
+        <span class="c1"># This maps the depth in: [1-100].</span>
+        <span class="n">n_cells</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">ln</span><span class="p">)</span>
+
+        <span class="c1"># Create the profile according to the selected type.</span>
+        <span class="k">if</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">r_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;UNIFORM&quot;</span><span class="p">:</span>
+
+            <span class="n">root_pdf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">ln</span><span class="p">)</span><span class="o">/</span><span class="n">ln</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">r_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;NEGATIVE_EXP&quot;</span><span class="p">:</span>
+
+            <span class="c1"># [WARNING]: The range should be between [1..20].</span>
+            <span class="c1"># Exponential (mean) parameter:</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="mi">15</span>
+
+            <span class="c1"># Point to evaluate the exponential function.</span>
+            <span class="n">kp</span> <span class="o">=</span> <span class="n">n_cells</span><span class="o">/</span><span class="n">mu</span>
+
+            <span class="c1"># Set the exponential profile.</span>
+            <span class="n">root_pdf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">kp</span><span class="p">)</span><span class="o">/</span><span class="n">mu</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">r_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;GAMMA_PDF&quot;</span><span class="p">:</span>
+
+            <span class="c1"># [WARNING]: The range should be between [1..10].</span>
+            <span class="c1"># Shape parameter &#39;a&#39;:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="mf">2.5</span>
+
+            <span class="c1"># Scale parameter &#39;b&#39;:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+            <span class="c1"># The gamma &#39;pdf&#39; is given by (in LaTex format):</span>
+            <span class="c1"># $f(x|a,b) = \frac{1}{b^a Gamma(a)} x^{a-1}e^{-x/b}$</span>
+            <span class="n">root_pdf</span> <span class="o">=</span> <span class="n">sc_gamma</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">n_cells</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">str</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">r_model</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;MIXTURE&quot;</span><span class="p">:</span>
+
+            <span class="c1"># -(A)-</span>
+            <span class="c1"># [WARNING]: The range should be between [1..20].</span>
+            <span class="c1"># Exponential (mean) parameter:</span>
+            <span class="n">mu</span> <span class="o">=</span> <span class="mi">15</span>
+
+            <span class="c1"># Point to evaluate the exponential function.</span>
+            <span class="n">kp</span> <span class="o">=</span> <span class="n">n_cells</span><span class="o">/</span><span class="n">mu</span>
+
+            <span class="c1"># Set the exponential profile.</span>
+            <span class="n">root_a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">kp</span><span class="p">)</span><span class="o">/</span><span class="n">mu</span>
+
+            <span class="c1"># -(B)-</span>
+            <span class="c1"># [WARNING]: The range should be between [1..10].</span>
+            <span class="c1"># Shape parameter &#39;a&#39;:</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="mf">2.5</span>
+
+            <span class="c1"># Scale parameter &#39;b&#39;:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">5.0</span>
+
+            <span class="c1"># The gamma &#39;pdf&#39; is given by (in LaTex format):</span>
+            <span class="c1"># $f(x|a,b) = \frac{1}{b^a Gamma(a)} x^{a-1}e^{-x/b}$</span>
+            <span class="n">root_b</span> <span class="o">=</span> <span class="n">sc_gamma</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">n_cells</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">)</span>
+
+            <span class="c1"># Prior of the first pdf.</span>
+            <span class="n">w1</span> <span class="o">=</span> <span class="mf">0.15</span>
+
+            <span class="c1"># Prior of the second pdf.</span>
+            <span class="n">w2</span> <span class="o">=</span> <span class="mf">0.85</span>
+
+            <span class="c1"># Apply mixture model.</span>
+            <span class="n">root_pdf</span> <span class="o">=</span> <span class="p">(</span><span class="n">w1</span> <span class="o">*</span> <span class="n">root_a</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">w2</span> <span class="o">*</span> <span class="n">root_b</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Wrong root density profile type:&quot;</span>
+                             <span class="s2">&quot; </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">r_model</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Cut-off very small values before the normalization.</span>
+        <span class="n">root_pdf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">root_pdf</span><span class="p">,</span> <span class="mf">1.0e-8</span><span class="p">)</span>
+
+        <span class="c1"># Compute the integral of the root profile term.</span>
+        <span class="n">total_area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">root_pdf</span><span class="p">)</span><span class="o">*</span><span class="n">dz</span>
+
+        <span class="c1"># Assign the normalized root profile.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profile</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">root_pdf</span><span class="o">/</span><span class="n">total_area</span><span class="p">)</span>
+
+        <span class="c1"># Interpolate the profile on the total root depth [L: cm].</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">f_interp</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">ln</span> <span class="o">*</span> <span class="n">dz</span><span class="p">,</span> <span class="n">ln</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">)</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z_new</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A call of the tree roots object will return the root pdf profile for a</span>
+<span class="sd">        specific input &#39;z_new&#39;. If no new depth values are given, the call will</span>
+<span class="sd">        return the full profile.</span>
+
+<span class="sd">        :param z_new: the depth(s) at which we want the new profile [L: cm].</span>
+
+<span class="sd">        :return: the density profile at depth(s) &#39;z&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check if we have given input.</span>
+        <span class="k">if</span> <span class="n">z_new</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Return the profile (over the whole z-domain).</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Return the profile at the new input &#39;z_new&#39;.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">f_interp</span><span class="p">(</span><span class="n">z_new</span><span class="p">)</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+<div class="viewcode-block" id="TreeRoots.efficiency"><a class="viewcode-back" href="../../code.src.html#src.tree_roots.TreeRoots.efficiency">[docs]</a>    <span class="k">def</span> <span class="nf">efficiency</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta_z</span><span class="p">,</span> <span class="n">z_roots</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method computes the root efficiency as the product of two terms:</span>
+
+<span class="sd">        ( i) alpha01 -&gt; maximum efficiency, when the water is not limiting,</span>
+<span class="sd">        (ii) alpha02 -&gt; root shutdown.</span>
+
+<span class="sd">        The method is vectorized for faster execution, when the input matrix</span>
+<span class="sd">        &quot;theta&quot; has multiple columns [dim_d x dim_m].</span>
+
+<span class="sd">        :param theta_z: soil moisture values at depth(s) &#39;z&#39;. [dim_d x dim_m]</span>
+
+<span class="sd">        :param z_roots: depth values at which we want to return the root efficiency.</span>
+<span class="sd">        [dim_d x 1]</span>
+
+<span class="sd">        :return: (1) root efficiency (alpha01 * alpha02) [dim_d x dim_m]</span>
+<span class="sd">                 (2) available water in the root zone    [1 x 1]</span>
+
+<span class="sd">        :raises RuntimeError: if the input dimensions do not match.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Ensure the input is 1-D.</span>
+        <span class="n">theta_z</span><span class="p">,</span> <span class="n">z_roots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">theta_z</span><span class="p">,</span> <span class="n">z_roots</span><span class="p">)</span>
+
+        <span class="c1"># Get the size of the state vector.</span>
+        <span class="n">dim_d</span> <span class="o">=</span> <span class="n">theta_z</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Make sure the dimensions match.</span>
+        <span class="k">if</span> <span class="n">dim_d</span> <span class="o">!=</span> <span class="n">z_roots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Input dimensions do not match:&quot;</span>
+                               <span class="s2">&quot; </span><span class="si">{1}</span><span class="s2"> not equal to </span><span class="si">{2}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                               <span class="n">dim_d</span><span class="p">,</span> <span class="n">z_roots</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Compute porosity, field capacity and wilting points at &#39;z&#39;.</span>
+        <span class="n">porous_z</span><span class="p">,</span> <span class="n">f_cap_z</span><span class="p">,</span> <span class="n">wlt_z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">porous</span><span class="p">(</span><span class="n">z_roots</span><span class="p">)</span>
+
+        <span class="c1"># Compute the available water (for extraction) in the root-zone.</span>
+        <span class="n">water_k</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">theta_z</span> <span class="o">-</span> <span class="n">wlt_z</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span>
+
+        <span class="c1"># Check if there is water that can be extracted.</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">water_k</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
+            <span class="c1"># Compute the cumulative sum of - $\Sum_{z=0}^{zb} \theta(z)$, from the</span>
+            <span class="c1"># top of the surface (z = 0), until the depth of the root zone (z = zb).</span>
+            <span class="n">local_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">theta_z</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span>
+
+            <span class="c1"># Extract the last column (corresponds to the total integral).</span>
+            <span class="n">total_z</span> <span class="o">=</span> <span class="n">local_z</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="c1"># Make sure the variable is 1-D.</span>
+            <span class="n">total_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">total_z</span><span class="p">)</span>
+
+            <span class="c1"># Safeguard: Avoid division by zero.</span>
+            <span class="n">total_z</span><span class="p">[</span><span class="n">total_z</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Compute the denominator of the first term in alpha_01.</span>
+            <span class="n">denom_01</span> <span class="o">=</span> <span class="n">porous_z</span> <span class="o">-</span> <span class="n">wlt_z</span>
+
+            <span class="c1"># Safeguard: Avoid division by zero.</span>
+            <span class="n">denom_01</span><span class="p">[</span><span class="n">denom_01</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Maximum efficiency when water is not limiting.</span>
+            <span class="n">alpha_01</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">theta_z</span><span class="o">/</span><span class="n">denom_01</span><span class="p">,</span> <span class="n">local_z</span><span class="o">/</span><span class="n">total_z</span><span class="p">)</span>
+
+            <span class="c1"># Preallocate root shutdown (default is zero).</span>
+            <span class="c1"># Satisfies the cases where: $\theta &lt;= \theta_{wlt}$</span>
+            <span class="n">alpha_02</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta_z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+            <span class="c1"># Find the indexes (in the soil moisture),</span>
+            <span class="c1"># where $\theta_{wlt} &lt; \theta &lt;= \theta_{flc}$</span>
+            <span class="n">cond_01</span> <span class="o">=</span> <span class="p">(</span><span class="n">wlt_z</span> <span class="o">&lt;</span> <span class="n">theta_z</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">theta_z</span> <span class="o">&lt;=</span> <span class="n">f_cap_z</span><span class="p">)</span>
+
+            <span class="c1"># Compute the denominator in alpha_02.</span>
+            <span class="n">denom_02</span> <span class="o">=</span> <span class="n">f_cap_z</span><span class="p">[</span><span class="n">cond_01</span><span class="p">]</span> <span class="o">-</span> <span class="n">wlt_z</span><span class="p">[</span><span class="n">cond_01</span><span class="p">]</span>
+
+            <span class="c1"># Safeguard: (this should never happen).</span>
+            <span class="n">denom_02</span><span class="p">[</span><span class="n">denom_02</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Compute the root extraction for each layer.</span>
+            <span class="n">alpha_02</span><span class="p">[</span><span class="n">cond_01</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">theta_z</span><span class="p">[</span><span class="n">cond_01</span><span class="p">]</span> <span class="o">-</span> <span class="n">f_cap_z</span><span class="p">[</span><span class="n">cond_01</span><span class="p">])</span><span class="o">/</span><span class="n">denom_02</span>
+
+            <span class="c1"># The final condition checks whether $theta(z) &gt; theta_{flc}$,</span>
+            <span class="c1"># and sets the values of &#39;alpha_02&#39; to one.</span>
+            <span class="n">alpha_02</span><span class="p">[</span><span class="n">theta_z</span> <span class="o">&gt;</span> <span class="n">f_cap_z</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Safeguard: Make sure [0.0 &lt;= alpha_02 &lt;= 1.0].</span>
+            <span class="n">alpha_02</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">alpha_02</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+
+            <span class="c1"># Here we make sure that if all the root zone is flooded with water at</span>
+            <span class="c1"># full capacity  (theta(z) &gt; theta_{flc}), then we artificially reduce</span>
+            <span class="c1"># the ET demand to prevent the roots from drowning.</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">alpha_02</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">):</span>
+                <span class="n">alpha_02</span> <span class="o">*=</span> <span class="mf">0.1</span>
+            <span class="c1"># _end_if_</span>
+
+            <span class="c1"># Root efficiency for each layer: $\rho(\theta(z))$</span>
+            <span class="n">rho_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">alpha_01</span> <span class="o">*</span> <span class="n">alpha_02</span><span class="p">)</span>
+
+            <span class="c1"># Compute the integral of the root efficiency term.</span>
+            <span class="n">tot_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">rho_theta</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span>
+
+            <span class="c1"># Avoid division by zero.</span>
+            <span class="n">tot_theta</span><span class="p">[</span><span class="n">tot_theta</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+            <span class="c1"># Constraint No.1: normalize it so the integral is equal to one.</span>
+            <span class="n">rho_theta</span> <span class="o">=</span> <span class="n">rho_theta</span> <span class="o">/</span> <span class="n">tot_theta</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Here we set everything to zero.</span>
+            <span class="n">water_k</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="n">rho_theta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">theta_z</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="k">return</span> <span class="n">rho_theta</span><span class="p">,</span> <span class="n">water_k</span></div>
+    <span class="c1"># _end_def_</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override to print a readable string presentation of the Tree Root object.</span>
+<span class="sd">        At the moment this will include its id(), along with its profile type.</span>
+
+<span class="sd">        :return: a string representation of a Root density object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot; Tree-Roots Id(</span><span class="si">{0}</span><span class="s2">): Type=</span><span class="si">{1}</span><span class="s2">,&quot;</span>\
+               <span class="s2">&quot; Max-Depth=</span><span class="si">{2}</span><span class="s2"> [cm]&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth_cm</span><span class="p">)</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_root_depth</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor of the maximum root depth [L: cm].</span>
+
+<span class="sd">        :return: the depth in centimeters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth_cm</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">root_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor of the root density model type.</span>
+
+<span class="sd">        :return: the modelled pdf type (string).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_model</span></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>

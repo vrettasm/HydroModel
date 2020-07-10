@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>src.soil_properties &#8212; Hydro-Berkeley 1.0.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/agogo.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="header-wrapper" role="banner">
+      <div class="header">
+        <div class="headertitle"><a
+          href="../../index.html">Hydro-Berkeley 1.0.0 documentation</a></div>
+        <div class="rel" role="navigation" aria-label="related navigation">
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a>
+        </div>
+       </div>
+    </div>
+
+    <div class="content-wrapper">
+      <div class="content">
+        <div class="document">
+            
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for src.soil_properties</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="SoilProperties"><a class="viewcode-back" href="../../code.src.html#src.soil_properties.SoilProperties">[docs]</a><span class="k">class</span> <span class="nc">SoilProperties</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This class represents Soil properties.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;param_n&quot;</span><span class="p">,</span> <span class="s2">&quot;param_a&quot;</span><span class="p">,</span> <span class="s2">&quot;param_psi_sat&quot;</span><span class="p">,</span> <span class="s2">&quot;param_epsilon&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Default constructor.</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.009</span><span class="p">,</span> <span class="n">psi_sat</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">,</span>
+                 <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-7</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Soil properties default constructor. L is in cm.</span>
+
+<span class="sd">        :param n: (float) is a measure of the pore-size distribution [-]</span>
+
+<span class="sd">        :param alpha: (float) is related to the inverse of the air entry suction [1/L]</span>
+
+<span class="sd">        :param psi_sat: (float) suction at saturation [L]</span>
+
+<span class="sd">        :param epsilon: (float) tiny positive threshold value [-]</span>
+
+<span class="sd">        :raises ValueError: if the inputs are out of range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Check for allowed range.</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># Pore size distribution parameter.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;n&#39;&quot;</span>
+                             <span class="s2">&quot; should be &gt; 1.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Check for allowed range.</span>
+        <span class="k">if</span> <span class="n">alpha</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_a</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;alpha&#39;&quot;</span>
+                             <span class="s2">&quot; should be strictly positive.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+
+        <span class="c1"># Pressure head (suction) should only be negative.</span>
+        <span class="c1"># If zero value is given it means full saturation.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_psi_sat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">psi_sat</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+        <span class="c1"># This should be a small positive number.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">param_epsilon</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="mf">1.0e-8</span><span class="p">)</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the &#39;n&#39; parameter of the soil.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_n</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@n</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">n</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the &#39;n&#39; parameter of the soil.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Accept only positive values.</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="c1"># Make the change.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_n</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;n&#39;: </span><span class="si">{1}</span><span class="s2">,&quot;</span>
+                             <span class="s2">&quot; should be &gt; 1.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">m</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the &#39;m&#39; parameter of the soil. It is defined as: 1 - 1/n.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">param_n</span><span class="p">)</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">alpha</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the &#39;a&#39; parameter of the soil.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_a</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@alpha</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">alpha</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the &#39;a&#39; parameter of the soil.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Accept only positive values.</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="c1"># Make the change.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_a</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;alpha&#39;: </span><span class="si">{1}</span><span class="s2">,&quot;</span>
+                             <span class="s2">&quot; should be strictly positive.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                                    <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">psi_sat</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the &#39;psi-sat&#39; parameter of the soil.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_psi_sat</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@psi_sat</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">psi_sat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the &#39;psi-sat&#39; parameter of the soil.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Accept only negative values.</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="c1"># Make the change.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_psi_sat</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;psi_sat&#39;: </span><span class="si">{1}</span><span class="s2">,&quot;</span>
+                             <span class="s2">&quot; should be &lt;= 0.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                       <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :return: the threshold value for &#39;eps&#39;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_epsilon</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="nd">@epsilon</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Accessor method.</span>
+
+<span class="sd">        :param new_value: for the threshold value &#39;eps&#39;.</span>
+
+<span class="sd">        :return: None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Accept only negative values.</span>
+        <span class="k">if</span> <span class="n">new_value</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="c1"># Make the change.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">param_epsilon</span> <span class="o">=</span> <span class="n">new_value</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Raise an error with a message.</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: Soil property &#39;epsilon&#39;: </span><span class="si">{1}</span><span class="s2">,&quot;</span>
+                             <span class="s2">&quot; should be (tiny) positive.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                                                                  <span class="n">new_value</span><span class="p">))</span>
+        <span class="c1"># _end_if_</span>
+    <span class="c1"># _end_def_</span>
+
+    <span class="c1"># Auxiliary.</span>
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override to print a readable string presentation of the object.</span>
+<span class="sd">        This will include its id(), along with its fields values.</span>
+
+<span class="sd">        :return: a string representation of a SoilProperties object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot; SoilProperties Id(</span><span class="si">{0}</span><span class="s2">): n=</span><span class="si">{1}</span><span class="s2">, alpha=</span><span class="si">{2}</span><span class="s2">, psi_sat=</span><span class="si">{3}</span><span class="s2">,&quot;</span> \
+               <span class="s2">&quot; epsilon=</span><span class="si">{4}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_a</span><span class="p">,</span>
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">param_psi_sat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">param_epsilon</span><span class="p">)</span></div>
+    <span class="c1"># _end_def_</span>
+
+<span class="c1"># _end_class_</span>
+</pre></div>
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+        </div>
+        <div class="sidebar">
+          
+          <h3>Table of Contents</h3>
+          <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data_format.html">Data Format</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../help.html">Help</a></li>
+</ul>
+
+          <div role="search">
+            <h3 style="margin-top: 1.5em;">Search</h3>
+            <form class="search" action="../../search.html" method="get">
+                <input type="text" name="q" />
+                <input type="submit" value="Go" />
+            </form>
+          </div>
+
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+    <div class="footer-wrapper">
+      <div class="footer">
+        <div class="left">
+          <div role="navigation" aria-label="related navigaton">
+            <a href="../../py-modindex.html" title="Python Module Index"
+              >modules</a> |
+            <a href="../../genindex.html" title="General Index"
+              >index</a>
+          </div>
+          <div role="note" aria-label="source link">
+          </div>
+        </div>
+
+        <div class="right">
+          
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2020, Michail Vrettas, PhD.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 3.1.2.
+    </div>
+        </div>
+        <div class="clearer"></div>
+      </div>
+    </div>
+
+  </body>
+</html>
