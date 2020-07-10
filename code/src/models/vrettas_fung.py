@@ -199,32 +199,34 @@ class VrettasFung(HydrologicalModel):
             mean_wbed, rnd_wbed, sigma_wbed, s_eff_wbed = [], [], [], []
         # _end_if_
 
-        # Prepare the vectors.
-        rnd_vec = np.append(rnd_soil, np.append(rnd_sapr, rnd_wbed))
-        mean_vec = np.append(mean_soil, np.append(mean_sapr, mean_wbed))
+        # At least 1-D, because the np.concatenate()
+        # will throw an error if the value is scalar.
+        rnd_soil = np.atleast_1d(rnd_soil)
+
+        # Prepare the vectors/matrices.
+        rand_arr = np.concatenate((rnd_soil, rnd_sapr, rnd_wbed))
+        mean_arr = np.concatenate((mean_soil, mean_sapr, mean_wbed))
+
+        # Prepare the vectors/matrices.
+        sigma_arr = np.concatenate((sigma_soil, sigma_sapr, sigma_wbed))
+        s_eff_arr = np.concatenate((s_eff_soil, s_eff_sapr, s_eff_wbed))
+
+        # Put the indices all together.
         idx = np.append(soil_layer_idx, np.append(sapr_layer_idx, wbed_layer_idx))
 
         # Vectorized version.
         if dim_m is not None:
-            # Prepare the matrices.
-            sigma_mat = np.append(sigma_soil, np.append(sigma_sapr, sigma_wbed)).reshape(dim_d, dim_m)
-            s_eff_mat = np.append(s_eff_soil, np.append(s_eff_sapr, s_eff_wbed)).reshape(dim_d, dim_m)
-
             # Update the value of 'Kbkg'.
-            k_bkg[idx, :] = logN_rnd(mean_vec.repeat(dim_m).reshape(dim_d, dim_m),
-                                     sigma_mat, rnd_vec.repeat(dim_m).reshape(dim_d, dim_m))
+            k_bkg[idx, :] = logN_rnd(mean_arr.repeat(dim_m).reshape(dim_d, dim_m),
+                                     sigma_arr, rand_arr.repeat(dim_m).reshape(dim_d, dim_m))
             # Hydraulic conductivity.
-            K[idx, :] = (s_eff_mat ** k_hc.lambda_exponent) * k_bkg[idx, :]
+            K[idx, :] = (s_eff_arr ** k_hc.lambda_exponent) * k_bkg[idx, :]
         else:
-            # Prepare the vectors.
-            sigma_vec = np.append(sigma_soil, np.append(sigma_sapr, sigma_wbed))
-            s_eff_vec = np.append(s_eff_soil, np.append(s_eff_sapr, s_eff_wbed))
-
             # Update the value of 'Kbkg'.
-            k_bkg[idx] = logN_rnd(mean_vec, sigma_vec, rnd_vec)
+            k_bkg[idx] = logN_rnd(mean_arr, sigma_arr, rand_arr)
 
             # Hydraulic conductivity.
-            K[idx] = (s_eff_vec ** k_hc.lambda_exponent) * k_bkg[idx]
+            K[idx] = (s_eff_arr ** k_hc.lambda_exponent) * k_bkg[idx]
         # _end_if_
 
         # SAFEGUARD:
