@@ -1,5 +1,5 @@
 data/
-docs/
+docs_original/
 logs/
 .idea/
 code/src/__pycache__/
