@@ -1,6 +1,5 @@
-HydroModel - Berkeley
-=====================
-
+# HydroModel - Berkeley
+---
 Hydrological Model (version 1.0.0)
 
 This project implements the Python code of the underground (stochastic)
@@ -12,28 +11,25 @@ operational. The data (water table depths, precipitation values, etc.) are
 not available online and could be accessible only through communication
 to Prof. Inez Fung (PI of the project).
 
-Data Format
------------
+## Data Format
+---
 The input data must be provided in a csv-file format with the following structure:
 
-    .. csv-table::
-       :header: " ID ", " Date ", " Precipitation " , " Water Table Depth "
-       :widths: auto
-       :align: center
-
-       1, 733681, 0.00, -10.4001
-       2, 733682, 0.02, -10.4151
-       3, 733683, 0.24, -10.4151
-       ..., ..., ..., ...
+|   ID  |  Date  |  Precipitation  |  Water Table Depth  |
+| :---: | :----: | :-------------: | :-----------------: |
+| 1     | 733681 |          0.00   |            -10.4001 |
+| 2     | 733682 |          0.01   |            -10.4151 |
+| 3     | 733683 |          0.24   |            -10.4151 |
+| ...   |  ...   |    ...          |               ...   |
 
 The *Date* is a 'datenum' object. The *Precipitation* is given in [L: cm] and the
 *Water Table Depths* are in [L: m] units (increasing downwards). The negative sign
 indicates underground values but in the code is removed.
 
-.. note::
-   We need to convert the dates (from MATLAB to Python). The value `719529` is
-   MATLAB's datenum value of the "Unix epoch" start (1970-01-01), which is the
-   default origin for pandas.to_datetime(). Hence: ::
+**Note:**
+    We need to convert the dates (from MATLAB to Python). The value `719529` is
+    MATLAB's datenum value of the "Unix epoch" start (1970-01-01), which is the
+    default origin for pandas.to_datetime(). Hence: ::
 
     timestamps = pd.to_datetime(r_datenum - 719529, unit='D')
 .. warning::
@@ -41,8 +37,8 @@ indicates underground values but in the code is removed.
    error will be raised and terminate the program.
 
 
-References
-----------
+## References
+---
 The work is described with details in two (open access) publications:
 
 1) Michail D. Vrettas and Inez Y. Fung (2015). "Toward a new parameterization
