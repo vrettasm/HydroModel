@@ -89,6 +89,8 @@ to subsurface properties: Exploration with a 1-D model".
 Journal of Advances in Modeling Earth Systems (JAMES), vol. (9), issue (2),
 pp:1030-1045. https://doi.org/10.1002/2016MS000901.
 
-For any comments please contact me.
+### Contact
+---
+If you have any questions / comments please contact me at: vrettasm@gmail.com
 
 M. Vrettas, PhD.
