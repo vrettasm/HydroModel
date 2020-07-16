@@ -55,8 +55,7 @@ on the computer.
 
 ### Required packages
 
-The recommended version is Python version 3.6+.
-Other required packages are:
+The recommended version is **Python 3.6+**. Some required packages are:
 
 >
 > Numpy, Scipy, Numba, Pandas, h5py, json
@@ -72,6 +71,26 @@ command:
     $ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json
 
 The ‘-O’ option is not necessary, but it could speed up the execution of the simulation.
+
+The models parameters should be given in the 'input_parameters.json' file as:
+
+```
+{  ...
+
+  "Hydrological_Model": {
+    "Name": "vrettas_fung",
+    "Porosity_Profile": "Stratified"
+  },
+
+  "Soil_Properties": {
+    "n": 2.0,
+    "a0": 0.009,
+    "psi_sat": -0.0047,
+    "epsilon": 1.0e-7
+  },
+    ...
+}
+```
 
 **Note:**
 This assumes that the ‘input_parameters.json’ file includes the datafile location in the:
