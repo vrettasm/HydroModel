@@ -72,10 +72,10 @@ command:
 
 The ‘-O’ option is not necessary, but it could speed up the execution of the simulation.
 
-The models parameters should be given in the 'input_parameters.json' file as:
+The models parameters should be given in the 'input_parameters.json' file as follows:
 
 ```
-{  ...
+{ ...
 
   "Hydrological_Model": {
     "Name": "vrettas_fung",
@@ -88,7 +88,8 @@ The models parameters should be given in the 'input_parameters.json' file as:
     "psi_sat": -0.0047,
     "epsilon": 1.0e-7
   },
-    ...
+
+  ...
 }
 ```
 
