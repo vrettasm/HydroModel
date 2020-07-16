@@ -50,6 +50,15 @@ on the computer.
 
     `$ git clone https://github.com/vrettasm/HydroModel.git`
 
+## Required packages
+---
+The recommended version is Python version 3.6+.
+Other packages that are required are:
+
+>
+> Numpy, Scipy, Numba, Pandas, h5py, json
+>
+
 ## How to run
 ---
 To execute the program, first navigate to the main directory of the project
