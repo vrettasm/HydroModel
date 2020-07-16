@@ -1,4 +1,4 @@
-# HydroModel - Berkeley (version 1.0.0)
+# HydroModel - Berkeley (version 1.0)
 ---
 
 This project implements the Python code of the underground (stochastic)
