@@ -119,4 +119,4 @@ https://doi.org/10.1002/2016MS000901.
 ### Contact
 ---
 
-If you have any questions / comments please contact me at: vrettasm@gmail.com
+For any questions / comments please contact me at: vrettasm@gmail.com
