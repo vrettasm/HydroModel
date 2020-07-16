@@ -41,9 +41,11 @@ indicates underground values but in the code is removed.
 ---
 There are two options to install the software.
 
-1. The easiest way is to visit the GitHub web-page of the project:
-https://github.com/vrettasm/HydroModel and download the code in zip format.
-This option doesn’t require a prior installation of git on the computer.
+1. The easiest way is to visit the GitHub web-page of the project and download
+the code in zip format. This option doesn’t require a prior installation of git
+on the computer:
+
+    `[code] -> [Download ZIP]`
 
 2. Alternatively one can clone the project directly using git as follows:
 
