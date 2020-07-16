@@ -29,7 +29,7 @@ indicates underground values but in the code is removed.
 **Note:**
     We need to convert the dates (from MATLAB to Python). The value `719529` is
     MATLAB's datenum value of the "Unix epoch" start (1970-01-01), which is the
-    default origin for pandas.to_datetime(). Hence: ::
+    default origin for pandas.to_datetime(). Hence:
 
     timestamps = pd.to_datetime(r_datenum - 719529, unit='D')
 
@@ -56,12 +56,13 @@ To execute the program, first navigate to the main directory of the project
 (i.e. where the berkeley_hydro_main.py is located), and then run the following
 command:
 
-`$ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json`
+    `$ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json`
 
 The ‘-O’ option is not necessary, but it could speed up the execution of the simulation.
 
 **Note:**
 This assumes that the ‘input_parameters.json’ file includes the datafile location in the:
+
     “Data_Filename”: “path/to/datafile.csv”
 
 ## References
