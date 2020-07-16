@@ -47,7 +47,7 @@ This option doesn’t require a prior installation of git on the computer.
 
 2. Alternatively one can clone the project directly using git as follows:
 
-    $ git clone https://github.com/vrettasm/HydroModel.git
+    `$ git clone https://github.com/vrettasm/HydroModel.git`
 
 ## References
 ---
