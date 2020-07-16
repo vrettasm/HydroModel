@@ -43,14 +43,11 @@ There are two options to install the software.
 
 1. The easiest way is to visit the GitHub web-page of the project and download
 the code in zip format. This option does not require a prior installation of git
-on the computer: [HydroModel](https://github.com/vrettasm/HydroModel)
-
-    `[code] -> [Download ZIP]`
+on the computer: [Code](https://github.com/vrettasm/HydroModel/archive/master.zip).
 
 2. Alternatively one can clone the project directly using git as follows:
 
     `$ git clone https://github.com/vrettasm/HydroModel.git`
-
 
 ## How to run
 ---
