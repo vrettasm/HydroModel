@@ -1,5 +1,7 @@
-# HydroModel - Berkeley
-Hydrological Model (v.1.0.0)
+HydroModel - Berkeley
+=====================
+
+Hydrological Model (version 1.0.0)
 
 This project implements the Python code of the underground (stochastic)
 hydrological model that was developed during my postdoctoral tenure at
@@ -10,6 +12,8 @@ operational. The data (water table depths, precipitation values, etc.) are
 not available online and could be accessible only through communication
 to Prof. Inez Fung (PI of the project).
 
+References
+----------
 The work is described with details in two (open access) publications:
 
 1) Michail D. Vrettas and Inez Y. Fung (2015). "Toward a new parameterization
