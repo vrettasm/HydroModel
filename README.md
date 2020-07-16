@@ -65,7 +65,7 @@ To execute the program, first navigate to the main directory of the project
 (i.e. where the berkeley_hydro_main.py is located), and then run the following
 command:
 
-    `$ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json`
+    $ python3 -O berkeley_hydro_main.py --params ./model_parameters/input_parameters.json
 
 The ‘-O’ option is not necessary, but it could speed up the execution of the simulation.
 
