@@ -1,14 +1,14 @@
 # HydroModel - Berkeley (version 1.0)
 ---
 
-This project implements the Python code of the underground (stochastic)
-hydrological model that was developed during my postdoctoral tenure at
-the Dept. of Earth & Planetary Science, U. C. Berkeley, (2013 - 2016).
+This project implements the Python code of the underground (stochastic) hydrological model
+that was developed during my postdoctoral tenure at the Dept. of Earth & Planetary Science,
+U. C. Berkeley, (2013 - 2016).
 
-There might be updates in the future, but this first version is now fully
-operational. The data (water table depths, precipitation values, etc.) are
-not available online and could be accessible only through communication
-to Prof. Inez Fung (PI of the project).
+There might be updates in the future, but this first version is now fully operational.
+The hydrological data (water table depths, precipitation values, etc.) are not available
+online and could be accessible only through communication to Prof. Inez Fung (PI of the
+project).
 
 ## Data Format
 ---
@@ -18,10 +18,10 @@ following structure:
 
 |   ID  |  Date  |  Precipitation  |  Water Table Depth  |
 | :---: | :----: | :-------------: | :-----------------: |
-| 1     | 733681 |          0.00   |            -10.4001 |
-| 2     | 733682 |          0.01   |            -10.4151 |
-| 3     | 733683 |          0.24   |            -10.4151 |
-| ...   |  ...   |    ...          |               ...   |
+|   1   | 733681 |          0.00   |            -10.4001 |
+|   2   | 733682 |          0.01   |            -10.4151 |
+|   3   | 733683 |          0.24   |            -10.4151 |
+|  ...  |  ...   |    ...          |               ...   |
 
 The *Date* is a 'datenum' object. The *Precipitation* is given in [L: cm] and the
 *Water Table Depths* are in [L: m] units (increasing downwards). The negative sign
