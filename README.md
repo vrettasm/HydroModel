@@ -42,8 +42,8 @@ indicates underground values but in the code is removed.
 There are two options to install the software.
 
 1. The easiest way is to visit the GitHub web-page of the project and download
-the code in zip format. This option doesn’t require a prior installation of git
-on the computer:
+the code in zip format. This option does not require a prior installation of git
+on the computer: [HydroModel](https://github.com/vrettasm/HydroModel)
 
     `[code] -> [Download ZIP]`
 
