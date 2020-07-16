@@ -108,7 +108,7 @@ The work is described with details in two (open access) publications:
 1. Michail D. Vrettas and Inez Y. Fung (2015). "Toward a new parameterization
 of hydraulic conductivity in climate models: Simulation of rapid groundwater
 fluctuations in Northern California". Journal of Advances in Modeling Earth
-Systems (JAMES), vol. (7), issue (4), pp:2105-2135,
+Systems (JAMES), vol. (7), issue (4), pp:2105-2135.
 https://doi.org/10.1002/2015MS000516.
 
 2. Michail D. Vrettas and Inez Y. Fung (2017). "Sensitivity of transpiration
