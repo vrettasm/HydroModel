@@ -25,9 +25,9 @@ following structure:
 |   3   | 733683 |          0.24   |            -10.4151 |
 |  ...  |  ...   |    ...          |               ...   |
 
-The *Date* is a 'datenum' object. The *Precipitation* is given in [L: cm] and the
-*Water Table Depths* are in [L: m] units (increasing downwards). The negative sign
-indicates underground values but in the code is removed.
+The *Date* is a 'datenum' MATLAB's object. The *Precipitation* is given in [L: cm] and
+the *Water Table Depths* are in [L: m] units (increasing downwards). The negative sign
+indicates underground values but in the code this is removed.
 
 **Note:**
     We need to convert the dates (from MATLAB to Python). The value `719529` is
@@ -38,8 +38,8 @@ indicates underground values but in the code is removed.
     timestamps = pd.to_datetime(r_datenum - 719529, unit='D')
 
 **Warning:**
-   The precipitation column is not allowed to have NaN values. In such case an
-   error will be raised and terminate the program.
+   The precipitation column is not allowed to have NaN values. In such case an error
+   will be raised and terminate the program.
 
 ## Installation
 ---
@@ -48,8 +48,8 @@ There are two options to install the software.
 
 1. The easiest way is to visit the GitHub web-page of the project and
 [download the code](https://github.com/vrettasm/HydroModel/archive/master.zip)
-in zip format. This option does not require a prior installation of git
-on the computer.
+in zip format. This option does not require a prior installation of git on the
+computer.
 
 2. Alternatively one can clone the project directly using git as follows:
 
