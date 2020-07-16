@@ -10,6 +10,8 @@ The hydrological data (water table depths, precipitation values, etc.) are not a
 online and could be accessible only through communication to Prof. Inez Fung (PI of the
 project).
 
+M. Vrettas, PhD.
+
 ## Data Format
 ---
 
@@ -118,5 +120,3 @@ https://doi.org/10.1002/2016MS000901.
 ---
 
 If you have any questions / comments please contact me at: vrettasm@gmail.com
-
-M. Vrettas, PhD.
