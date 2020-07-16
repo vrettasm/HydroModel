@@ -13,7 +13,8 @@ to Prof. Inez Fung (PI of the project).
 
 ## Data Format
 ---
-The input data must be provided in a csv-file format with the following structure:
+The hydrological input data must be provided in a csv-file format with the
+following structure:
 
 |   ID  |  Date  |  Precipitation  |  Water Table Depth  |
 | :---: | :----: | :-------------: | :-----------------: |
@@ -29,7 +30,8 @@ indicates underground values but in the code is removed.
 **Note:**
     We need to convert the dates (from MATLAB to Python). The value `719529` is
     MATLAB's datenum value of the "Unix epoch" start (1970-01-01), which is the
-    default origin for pandas.to_datetime(). Hence:
+    default origin for pandas.to_datetime(). Hence, internally, in the code is
+    performed the following:
 
     timestamps = pd.to_datetime(r_datenum - 719529, unit='D')
 
