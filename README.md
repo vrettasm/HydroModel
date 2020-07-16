@@ -48,7 +48,7 @@ on the computer.
 
 2. Alternatively one can clone the project directly using git as follows:
 
-    `$ git clone https://github.com/vrettasm/HydroModel.git`
+    $ git clone https://github.com/vrettasm/HydroModel.git
 
 ### Required packages
 
