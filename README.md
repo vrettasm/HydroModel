@@ -1,6 +1,5 @@
-# HydroModel - Berkeley
+# HydroModel - Berkeley (version 1.0.0)
 ---
-Hydrological Model (version 1.0.0)
 
 This project implements the Python code of the underground (stochastic)
 hydrological model that was developed during my postdoctoral tenure at
@@ -13,6 +12,7 @@ to Prof. Inez Fung (PI of the project).
 
 ## Data Format
 ---
+
 The hydrological input data must be provided in a csv-file format with the
 following structure:
 
@@ -41,6 +41,7 @@ indicates underground values but in the code is removed.
 
 ## Installation
 ---
+
 There are two options to install the software.
 
 1. The easiest way is to visit the GitHub web-page of the project and
@@ -63,6 +64,7 @@ Other required packages are:
 
 ## How to run
 ---
+
 To execute the program, first navigate to the main directory of the project
 (i.e. where the berkeley_hydro_main.py is located), and then run the following
 command:
@@ -78,6 +80,7 @@ This assumes that the ‘input_parameters.json’ file includes the datafile loc
 
 ## References
 ---
+
 The work is described with details in two (open access) publications:
 
 1. Michail D. Vrettas and Inez Y. Fung (2015). "Toward a new parameterization
@@ -93,6 +96,7 @@ https://doi.org/10.1002/2016MS000901.
 
 ### Contact
 ---
+
 If you have any questions / comments please contact me at: vrettasm@gmail.com
 
 M. Vrettas, PhD.
