@@ -94,12 +94,3 @@ pp:1030-1045. https://doi.org/10.1002/2016MS000901.
 If you have any questions / comments please contact me at: vrettasm@gmail.com
 
 M. Vrettas, PhD.
-
-
-```
-{
-  "firstName": "John",
-  "lastName": "Smith",
-  "age": 25
-}
-``` 
