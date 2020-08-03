@@ -12,15 +12,19 @@ __email__ = "michail.vrettas@gmail.com"
 
 def validateInputParametersFile(filename):
     """
-    Validates an input (json) file to check if it contains the required keys.
-    It does not validate the values of the keys.
+    Validates an input (json) file to check if
+    it contains the required keys. It does not
+    validate the values of the keys.
 
-    :param filename: Is a "Path" object that contains the input model parameters
-    for the simulation.
+    :param filename: Is a "Path" object that
+    contains the input model parameters for
+    the simulation.
 
-    :return: A dictionary loaded from the input file.
+    :return: A dictionary loaded from the input
+    file.
 
-    :raises ValueError: if a keyword is missing from the file.
+    :raises ValueError: if a keyword is missing
+    from the file.
     """
 
     # Import locally the json package.
@@ -60,12 +64,14 @@ def validateInputParametersFile(filename):
 # Main function.
 def main(params_file=None, data_file=None):
     """
-    As the name suggests, this is the main function that is called to initiate the
-    simulation run.
+    As the name suggests, this is the main function
+    that is called to initiate the simulation run.
 
-    :param params_file: (string) that points to the input file for the parameters.
+    :param params_file: (string) that points to the
+    input file for the parameters.
 
-    :param data_file: (string) that points to the input file for the water data.
+    :param data_file: (string) that points to the input
+    file for the water data.
 
     :return: None.
     """
