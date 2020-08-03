@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from numpy.random import default_rng, SeedSequence
 
 from .hydraulic_conductivity import HydraulicConductivity
 from .models.vanGenuchten import vanGenuchten
@@ -63,9 +64,9 @@ class Simulation(object):
 
         # Create a random number generator.
         if seed is not None:
-            self.rng = np.random.default_rng(seed)
+            self.rng = default_rng(SeedSequence(seed))
         else:
-            self.rng = np.random.default_rng()
+            self.rng = default_rng()
         # _end_if_
 
         # Place holder for the pde model.
