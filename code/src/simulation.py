@@ -694,7 +694,9 @@ class Simulation(object):
                 # Extract all the data.
                 for key in data:
                     # Default compressions level is '4'.
-                    out_file.create_dataset(key, data=data[key], compression='gzip')
+                    out_file.create_dataset(key, data=data[key],
+                                            shape=data[key].shape,
+                                            compression='gzip')
                 # _end_for_
             # _end_with_
 
