@@ -1,9 +1,9 @@
 # HydroModel - Berkeley (version 1.0)
 ---
 
-This project implements the Python code of the underground (stochastic) hydrological model
-that was developed during my postdoctoral tenure at the Dept. of Earth & Planetary Science,
-U. C. Berkeley, (2013 - 2016).
+This project implements the underground (stochastic) hydrological model (in Python)
+that was developed during my postdoctoral tenure at the Dept. of Earth & Planetary
+Science, U. C. Berkeley, (2013 - 2016).
 
 There might be updates in the future, but this first version is now fully operational.
 The hydrological data (water table depths, precipitation values, etc.) are not available
