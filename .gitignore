@@ -2,6 +2,7 @@ data/
 docs/
 logs/
 .idea/
+code/__pycache__/
 code/src/__pycache__/
 code/tests/__pycache__/
 code/src/models/__pycache__/
