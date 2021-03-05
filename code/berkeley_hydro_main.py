@@ -47,7 +47,7 @@ def validateInputParametersFile(filename):
 
             # The order in here doesn't matter.
             if k not in model_params:
-                raise ValueError(" Key: {0}, is not given.".format(k))
+                raise ValueError(f" Key: {k}, is not given.")
             # _end_if_
 
         # _end_for_
