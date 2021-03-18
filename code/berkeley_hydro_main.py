@@ -106,7 +106,7 @@ def main(params_file=None, data_file=None):
     # _end_if_
 
     # Display where we got the water data from.
-    print(" Simulation water data file: {0}".format(data_file))
+    print(f" Simulation water data file: {data_file}")
 
     try:
         # Open the water data in "Read Only" mode.
