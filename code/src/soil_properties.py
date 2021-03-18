@@ -29,16 +29,16 @@ class SoilProperties(object):
             # Pore size distribution parameter.
             self.param_n = n
         else:
-            raise ValueError(" {0}: Soil property 'n'"
-                             " should be > 1.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'n' should be > 1.")
         # _end_if_
 
         # Check for allowed range.
         if alpha > 0.0:
             self.param_a = alpha
         else:
-            raise ValueError(" {0}: Soil property 'alpha'"
-                             " should be strictly positive.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'alpha' should be strictly positive.")
         # _end_if_
 
         # Pressure head (suction) should only be negative.
@@ -74,8 +74,8 @@ class SoilProperties(object):
             self.param_n = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: Soil property 'n': {1},"
-                             " should be > 1.".format(self.__class__.__name__, new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'n': {new_value}, should be > 1.")
         # _end_if_
     # _end_def_
 
@@ -114,9 +114,9 @@ class SoilProperties(object):
             self.param_a = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: Soil property 'alpha': {1},"
-                             " should be strictly positive.".format(self.__class__.__name__,
-                                                                    new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'alpha': {new_value},"
+                             f" should be strictly positive.")
         # _end_if_
     # _end_def_
 
@@ -145,9 +145,9 @@ class SoilProperties(object):
             self.param_psi_sat = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: Soil property 'psi_sat': {1},"
-                             " should be <= 0.".format(self.__class__.__name__,
-                                                       new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'psi_sat': {new_value},"
+                             f" should be <= 0.")
         # _end_if_
     # _end_def_
 
@@ -176,9 +176,9 @@ class SoilProperties(object):
             self.param_epsilon = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: Soil property 'epsilon': {1},"
-                             " should be (tiny) positive.".format(self.__class__.__name__,
-                                                                  new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Soil property 'epsilon': {new_value},"
+                             f" should be (tiny) positive.")
         # _end_if_
     # _end_def_
 
@@ -190,9 +190,15 @@ class SoilProperties(object):
 
         :return: a string representation of a SoilProperties object.
         """
-        return " SoilProperties Id({0}): n={1}, alpha={2}, psi_sat={3}," \
-               " epsilon={4}".format(id(self), self.param_n, self.param_a,
-                                     self.param_psi_sat, self.param_epsilon)
+        # New line character.
+        new_line = '\n'
+
+        # Return string.
+        return f" SoilProperties Id({id(self)}): {new_line}"\
+               f" n={self.param_n} {new_line}"\
+               f" alpha={self.param_a} {new_line}"\
+               f" psi_sat={self.param_psi_sat} {new_line}" \
+               f" epsilon={self.param_epsilon}"
     # _end_def_
 
 # _end_class_

@@ -43,8 +43,8 @@ class WaterContent(object):
 
         # Check if the input values are in the right order.
         if not self._checkValues():
-            raise ValueError(" {0}: The volumetric water content input values"
-                             " are incorrect.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The volumetric water content input values are incorrect.")
         # _end_if_
 
         # These are in length units [L:cm] and can have negative values.
@@ -106,9 +106,9 @@ class WaterContent(object):
             self.minimum = old_value
 
             # Raise an error with a message.
-            raise ValueError(" {0}: The new minimum: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__,
-                                                               new_value))
+            raise ValueError(f" {self.__class__.__name__}: The new minimum: "
+                             f" {new_value}, is not consistent with the rest"
+                             f" of the values.")
         # _end_if_
     # _end_def_
 
@@ -143,9 +143,8 @@ class WaterContent(object):
             self.maximum = old_value
 
             # Raise an error with a message.
-            raise ValueError(" {0}: The new maximum: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__,
-                                                               new_value))
+            raise ValueError(f" {self.__class__.__name__}: The new maximum: {new_value}"
+                             f" is not consistent with the rest of the values.")
         # _end_if_
     # _end_def_
 
@@ -190,9 +189,8 @@ class WaterContent(object):
             self.residual = old_value
 
             # Raise an error with a message.
-            raise ValueError(" {0}: The new residual: {1}, is not consistent with"
-                             " the rest of the values.".format(self.__class__.__name__,
-                                                               new_value))
+            raise ValueError(f" {self.__class__.__name__}: The new residual: {new_value}"
+                             f" is not consistent with the rest of the values.")
         # _end_if_
     # _end_def_
 
@@ -248,11 +246,13 @@ class WaterContent(object):
 
         :return: a string representation of a WaterContent object.
         """
-        return " WaterContent Id({0}):"\
-               " Minimum={1}, Maximum={2}, Residual={3},"\
-               " Wilting={4}, Field capacity={5}".format(id(self), self.minimum,
-                                                         self.maximum, self.residual,
-                                                         self.wilting, self.field_cap)
+        # New line character.
+        new_line = '\n'
+
+        return f" WaterContent Id({id(self)}): {new_line}"\
+               f" Minimum={self.minimum}, Maximum={self.maximum} {new_line}"\
+               f" Residual={self.residual}, Wilting={self.wilting} {new_line}"\
+               f" Field capacity={self.field_cap}"
     # _end_def_
 
 # _end_class_

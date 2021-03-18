@@ -32,8 +32,8 @@ class RichardsPDE(object):
 
         # Check if we have been given input.
         if m_data is None:
-            raise ValueError(" {0}: No input is given. The model"
-                             " cannot initialize.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" No input is given. The model cannot initialize.")
         # _end_if_
 
         # Variable output arguments.
@@ -59,8 +59,8 @@ class RichardsPDE(object):
 
         # Make sure the space domain is increasing (downwards).
         if np.any(dx <= 0.0):
-            raise RuntimeError(" {0}: Space domain is not"
-                               " increasing.".format(self.__class__.__name__))
+            raise RuntimeError(f" {self.__class__.__name__}:"
+                               f" Space domain is not increasing.")
         # _end_if_
 
         # Initialize the $nx-1$ mid-points where functions will be evaluated.
@@ -526,8 +526,8 @@ class RichardsPDE(object):
 
                 # If we reach here the solver failed to integrate successfully.
                 if n_trials == 0:
-                    print(" {0}: The ODE solver failed with message:"
-                          " {1}".format(self.__class__.__name__, sol_t.message))
+                    print(f" {self.__class__.__name__}:"
+                          f" The ODE solver failed with message: {sol_t.message}")
                 # _end_if_
             # _end_if_
         # _end_while_
@@ -560,14 +560,14 @@ def midpoints(x_left, fx_left, x_right, fx_right):
 
     # Check for input mis-match.
     if fx_left.shape != fx_right.shape:
-        raise RuntimeError(" midpoints: Input 'fx' dimensions do not match."
-                           " {0} not equal to {1}".format(fx_left.shape, fx_right.shape))
+        raise RuntimeError(f" midpoints: Input 'fx' dimensions do not match."
+                           f" {fx_left.shape} not equal to {fx_right.shape}.")
     # _end_if_
 
     # Check for input mis-match.
     if x_left.shape != x_right.shape:
-        raise RuntimeError(" midpoints: Input 'x' dimensions do not match."
-                           " {0} not equal to {1}".format(x_left.shape, x_right.shape))
+        raise RuntimeError(f" midpoints: Input 'x' dimensions do not match."
+                           f" {x_left.shape} not equal to {x_right.shape}. ")
     # _end_if_
 
     # Use a simple (arithmetic) average to approximate

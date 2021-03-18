@@ -36,25 +36,25 @@ class HydraulicConductivity(object):
         if sat_soil > 0.0:
             self.param_sat_soil = sat_soil
         else:
-            raise ValueError(" {0}: The saturated value of the Soil layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         sat_soil))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Soil layer: "
+                             f" {sat_soil} should be strictly positive.")
         # _end_if_
 
         if sat_saprolite > 0.0:
             self.param_sat_saprolite = sat_saprolite
         else:
-            raise ValueError(" {0}: The saturated value of the Saprolite layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         sat_saprolite))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Saprolite layer: "
+                             f" {sat_saprolite} should be strictly positive.")
         # _end_if_
 
         if sat_fresh_bedrock > 0.0:
             self.param_sat_fresh_bedrock = sat_fresh_bedrock
         else:
-            raise ValueError(" {0}: The saturated value of the Fresh Bedrock layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         sat_fresh_bedrock))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Fresh Bedrock layer: "
+                             f" {sat_fresh_bedrock} should be strictly positive.")
         # _end_if_
 
         # Noise related variables.
@@ -87,9 +87,9 @@ class HydraulicConductivity(object):
             self.param_sat_soil = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: The saturated value of the Soil layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Soil layer: "
+                             f" {new_value} should be strictly positive.")
         # _end_if_
     # _end_def_
 
@@ -118,9 +118,9 @@ class HydraulicConductivity(object):
             self.param_sat_saprolite = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: The saturated value of the Saprolite layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Saprolite layer:"
+                             f" {new_value} should be strictly positive.")
         # _end_if_
     # _end_def_
 
@@ -149,9 +149,9 @@ class HydraulicConductivity(object):
             self.param_sat_fresh_bedrock = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: The saturated value of the Fresh Bedrock layer:"
-                             " {1}, should be strictly positive.".format(self.__class__.__name__,
-                                                                         new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The saturated value of the Fresh Bedrock layer:"
+                             f" {new_value} should be strictly positive.")
         # _end_if_
     # _end_def_
 
@@ -180,9 +180,9 @@ class HydraulicConductivity(object):
             self.param_sigma_noise = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: The sigma amplitude value of the noise model:"
-                             " {1}, should be non-negative.".format(self.__class__.__name__,
-                                                                    new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The sigma amplitude value of the noise model:"
+                             f" {new_value} should be non-negative.")
         # _end_if_
     # _end_def_
 
@@ -211,9 +211,9 @@ class HydraulicConductivity(object):
             self.param_lambda_exponent = new_value
         else:
             # Raise an error with a message.
-            raise ValueError(" {0}: The lambda exponent value of the noise model:"
-                             " {1}, should be non-negative.".format(self.__class__.__name__,
-                                                                    new_value))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The lambda exponent value of the noise model:"
+                             f" {new_value} should be non-negative.")
         # _end_if_
     # _end_def_
 
@@ -223,13 +223,18 @@ class HydraulicConductivity(object):
         Override to print a readable string presentation of the object.
         This will include its id(), along with its fields values.
 
-        :return: a string representation of a HydraulicConductivity object.
+        :return: a string representation of a HydraulicConductivity.
         """
-        return " HydraulicConductivity Id({0}):"\
-               " Sat-Soil={1}, Sat-Saprolite={2}, Sat-Fresh-Bedrock={3},"\
-               " Sigma={4}, Lambda={5}".format(id(self), self.sat_soil, self.sat_saprolite,
-                                               self.sat_fresh_bedrock, self.sigma_noise,
-                                               self.lambda_exponent)
+        # New line character.
+        new_line = '\n'
+
+        # Return the string.
+        return f" HydraulicConductivity Id({id(self)}): {new_line}"\
+               f" Sat-Soil={self.sat_soil} {new_line}"\
+               f" Sat-Saprolite={self.sat_saprolite} {new_line}"\
+               f" Sat-Fresh-Bedrock={self.sat_fresh_bedrock} {new_line}"\
+               f" Sigma={self.sigma_noise} {new_line}"\
+               f" Lambda={self.lambda_exponent}"
     # _end_def_
 
 # _end_class_

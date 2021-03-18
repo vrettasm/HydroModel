@@ -118,8 +118,8 @@ class TreeRoots(object):
             root_pdf = (w1 * root_a) + (w2 * root_b)
 
         else:
-            raise ValueError(" {0}: Wrong root density profile type:"
-                             " {1}".format(self.__class__.__name__, r_model))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Wrong root density profile type: {r_model}")
         # _end_if_
 
         # Cut-off very small values before the normalization.
@@ -133,6 +133,26 @@ class TreeRoots(object):
 
         # Interpolate the profile on the total root depth [L: cm].
         self.f_interp = interp1d(np.linspace(0.0, ln * dz, ln), self.profile)
+    # _end_def_
+
+    @property
+    def max_root_depth(self):
+        """
+        Accessor of the maximum root depth [L: cm].
+
+        :return: the depth in centimeters.
+        """
+        return self.max_depth_cm
+    # _end_def_
+
+    @property
+    def root_type(self):
+        """
+        Accessor of the root density model type.
+
+        :return: the modelled pdf type (string).
+        """
+        return self.r_model
     # _end_def_
 
     def __call__(self, z_new=None):
@@ -185,9 +205,9 @@ class TreeRoots(object):
 
         # Make sure the dimensions match.
         if dim_d != z_roots.shape[0]:
-            raise RuntimeError(" {0}: Input dimensions do not match:"
-                               " {1} not equal to {2}.".format(self.__class__.__name__,
-                                                               dim_d, z_roots.shape[0]))
+            raise RuntimeError(f" {self.__class__.__name__}:"
+                               f" Input dimensions do not match: {dim_d}"
+                               f" not equal to {z_roots.shape[0]}.")
         # _end_if_
 
         # Compute porosity, field capacity and wilting points at 'z'.
@@ -273,33 +293,19 @@ class TreeRoots(object):
 
     def __str__(self):
         """
-        Override to print a readable string presentation of the Tree Root object.
-        At the moment this will include its id(), along with its profile type.
+        Override to  print a  readable string  presentation of the
+        Tree Root object. At the moment this will include its id()
+        along with its profile type.
 
         :return: a string representation of a Root density object.
         """
-        return " Tree-Roots Id({0}): Type={1},"\
-               " Max-Depth={2} [cm]".format(id(self), self.r_model, self.max_depth_cm)
-    # _end_def_
+        # New line character.
+        new_line = '\n'
 
-    @property
-    def max_root_depth(self):
-        """
-        Accessor of the maximum root depth [L: cm].
-
-        :return: the depth in centimeters.
-        """
-        return self.max_depth_cm
-    # _end_def_
-
-    @property
-    def root_type(self):
-        """
-        Accessor of the root density model type.
-
-        :return: the modelled pdf type (string).
-        """
-        return self.r_model
+        # Return string.
+        return f" Tree-Roots Id({id(self)}): {new_line}"\
+               f" Type={self.r_model} {new_line}"\
+               f" Max-Depth={self.max_depth_cm} [cm]."
     # _end_def_
 
 # _end_class_

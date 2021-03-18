@@ -111,8 +111,8 @@ class Simulation(object):
 
         # Check if the Well number exists in the site info file.
         if not str(self.mData["Well_No"]) in site_info["Well"]:
-            raise ValueError(" {0}: The selected well does not exist"
-                             " in the site information file.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" The selected well does not exist in the site information file.")
         # _end_if_
 
         # Extract the Well information.
@@ -120,7 +120,8 @@ class Simulation(object):
 
         # Make sure the well is not defined as fully saturated.
         if well["sat_depth"] >= well["max_depth"]:
-            raise RuntimeError(" {0}: The well seems fully saturated.".format(self.__class__.__name__))
+            raise RuntimeError(f" {self.__class__.__name__}:"
+                               f" The well seems fully saturated.")
         # _end_if_
 
         # Compute the number of continuously saturated cell (from the bottom).
@@ -149,8 +150,8 @@ class Simulation(object):
                                   params["Soil_Properties"]["epsilon"])
         except Exception as e0:
             # Display the error message.
-            print(" SoilProperties failed to initialize: {}.\n"
-                  " It will use default initialization parameters.".format(e0))
+            print(f" SoilProperties failed to initialize: {e0}."
+                  f" It will use default initialization parameters.")
 
             # Default initialization.
             soil = SoilProperties()
@@ -168,8 +169,8 @@ class Simulation(object):
                                  params["Water_Content"]["Field_Capacity_cm"])
         except Exception as e0:
             # Display the error message.
-            print(" WaterContent failed to initialize: {}.\n"
-                  " It will use default initialization parameters.".format(e0))
+            print(f" WaterContent failed to initialize: {e0}."
+                  f" It will use default initialization parameters.")
 
             # Default initialization.
             theta = WaterContent()
@@ -187,8 +188,8 @@ class Simulation(object):
                                       params["Hydraulic_Conductivity"]["Lambda_Exponent"])
         except Exception as e0:
             # Display the error message.
-            print(" HydraulicConductivity failed to initialize: {}.\n"
-                  " It will use default initialization parameters.".format(e0))
+            print(f" HydraulicConductivity failed to initialize: {e0}."
+                  f" It will use default initialization parameters.")
 
             # Default initialization.
             K = HydraulicConductivity()
@@ -245,8 +246,8 @@ class Simulation(object):
 
         # Check if there are NaN values.
         if np.any(np.isnan(z_wtd_cm)):
-            raise RuntimeError(" {0}: Water table depth observations"
-                               " contain NaN values.".format(self.__class__.__name__))
+            raise RuntimeError(f" {self.__class__.__name__}:"
+                               f" Water table depth observations contain NaN values.")
         # _end_if_
 
         # Since the observational data are not "gridded" we put them
@@ -258,8 +259,8 @@ class Simulation(object):
 
         # Check if there are NaN values.
         if np.any(np.isnan(precip_cm)):
-            raise ValueError(" {0}: Precipitation observations"
-                             " contain NaN values.".format(self.__class__.__name__))
+            raise ValueError(f" {self.__class__.__name__}:"
+                             f" Precipitation observations contain NaN values.")
         # _end_if_
 
         # Store to dictionary.
@@ -371,12 +372,12 @@ class Simulation(object):
 
                 # Check if the dimensions match.
                 if z_grid.shape != init_cond.shape:
-                    raise RuntimeError(" {0} : IC vector's dimensions do not match"
-                                       " the spatial grid.".format(self.__class__.__name__))
+                    raise RuntimeError(f" {self.__class__.__name__}:"
+                                       f" IC vector's dimensions do not match the spatial grid.")
                 # _end_if_
 
                 # Print a message.
-                print(" IC vector was loaded successfully from: {0}.".format(ic_data_file))
+                print(f" IC vector was loaded successfully from: {ic_data_file}.")
             # _end_with_
 
             # Create an initial conditions vector.
@@ -396,9 +397,12 @@ class Simulation(object):
         # [WARNING] Set the flag to TRUE!
         self.mData["sim_flags"]["SPINUP"] = True
 
+        # Extract the well number.
+        well_no = self.mData["Well_No"]
+
         # Display info.
-        print("\n [Initial Conditions for Well no. {0}]"
-              " Burn in period started ...".format(self.mData["Well_No"]))
+        print(f" [Initial Conditions for Well no. {well_no}]"
+              f" Burn in period started ...")
 
         # Spatial domain.
         z = self.mData["z_grid"]
@@ -461,14 +465,15 @@ class Simulation(object):
 
             # Repeat the burn-in integration as long as the distance
             # between the two solutions is above a threshold value.
-            if abs_error <= (2.0 * dz) and mse_0 <= 0.01:
+            if abs_error <= (2.0 * dz) and (mse_0 <= 0.01):
                 # Change the flag.
                 early_stop = True
 
                 # Display final message.
-                print(" [Initial Conditions for Well no. {0}] finished at [itr: {1}] with"
-                      " [abs(error): {2}] and [MSE: {3}] \n".format(self.mData["Well_No"],
-                                                                    j, abs_error, mse_0))
+                print(f" [Initial Conditions for Well no. {well_no}]"
+                      f" finished at [itr: {j}] with [abs(error): {abs_error}]"
+                      f" and [MSE: {mse_0}]")
+
                 # Exit the loop.
                 break
             # _end_if_
@@ -476,8 +481,8 @@ class Simulation(object):
 
         # At this point the algorithm has reached maximum number of iterations.
         if not early_stop:
-            print(" [Initial Conditions for Well no. {0}]"
-                  " finished at maximum number of iterations.\n".format(self.mData["Well_No"]))
+            print(f" [Initial Conditions for Well no. {well_no}]"
+                  f" finished at maximum number of iterations.")
         # _end_of_
 
         # [WARNING] Set the flag to TRUE!
@@ -489,16 +494,16 @@ class Simulation(object):
 
     def run(self):
         """
-        Runs the PDE model forward in time. All the output information is store in
-        self.output dictionary, where we can later save it to the disk for further
-        analysis.
+        Runs the PDE model forward in time. All the output information
+        is store in self.output dictionary, where we can later save it
+        to the disk for further analysis.
 
         :return: None
         """
         # Check if the model parameters have been initialized.
         if not self.mData:
-            raise RuntimeError(" {0}: Simulation data structure"
-                               " 'mData' is empty.".format(self.__class__.__name__))
+            raise RuntimeError(f" {self.__class__.__name__}:"
+                               f" Simulation data structure 'mData' is empty.")
         # _end_if_
 
         # Transpiration and lateral flow values.
@@ -678,11 +683,11 @@ class Simulation(object):
         # Check if the output dictionary is empty.
         if not self.output:
             # Print a message and do not save anything.
-            print(" {0}: Simulation data structure 'output'"
-                  " is empty.".format(self.__class__.__name__))
+            print(f" {self.__class__.__name__}:"
+                  f" Simulation data structure 'output' is empty.")
         else:
             # Initial message.
-            print(" Saving the results to: {0}.h5".format(self.name))
+            print(f" Saving the results to: {self.name}.h5")
 
             # Create the output filename. Remove spaces (if any).
             file_out = Path(self.name.strip().replace(" ", "_") + ".h5")
