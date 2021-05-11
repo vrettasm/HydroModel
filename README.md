@@ -63,6 +63,11 @@ The recommended version is **Python 3.6+**. Some required packages are:
 > Numpy, Scipy, Numba, Pandas, h5py, json
 >
 
+To simplify the required packages just use:
+
+    $ pip install -r requirements.txt
+
+
 ## How to run
 ---
 
